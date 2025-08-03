@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<robot name="hamr" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:include filename="common_properties.xacro" /> 
+    <xacro:include filename="hamr_sw.xacro" /> 
+    <xacro:include filename="hamr_gazebo.xacro" />
+    <xacro:include filename="camera.xacro" />
+
+</robot>

@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<robot name="hamr" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <gazebo reference="right_wheel_link">
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
+    </gazebo>
+
+    <gazebo reference="left_wheel_link">
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
+    </gazebo>
+
+    <gazebo reference="right_caster_link">
+        <mu1 value="0.2" />
+        <mu2 value="0.2" />
+    </gazebo>
+
+    <gazebo reference="left_caster_link">
+        <mu1 value="0.2" />
+        <mu2 value="0.2" />
+    </gazebo>
+
+
+    <gazebo reference="right_caster_wheel_link">
+        <mu1 value="0.8" />
+        <mu2 value="0.8" />
+    </gazebo>
+
+
+    <gazebo reference="left_caster_wheel_link">
+        <mu1 value="0.8" />
+        <mu2 value="0.8" />
+    </gazebo>
+
+    <gazebo reference="turret_link">
+        <mu2 value="0.6" />
+        <mu1 value="0.6" />
+    </gazebo>
+
+
+    <gazebo>
+        <plugin
+            filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher">
+            <!-- We could stop here - would publish every joint. But better to be specific -->
+            <joint_name>base_left_wheel_joint</joint_name>
+            <joint_name>base_right_wheel_joint</joint_name>
+
+            <joint_name>base_right_caster_joint</joint_name>
+            <joint_name>base_left_caster_joint</joint_name>
+
+            <joint_name>right_caster_right_caster_wheel_joint</joint_name>
+            <joint_name>left_caster_left_caster_wheel_joint</joint_name>
+
+            <joint_name>base_turret_joint</joint_name>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>base_left_wheel_joint</joint_name>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>base_right_wheel_joint</joint_name>
+        </plugin>
+    </gazebo>
+    
+    <gazebo>
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>base_turret_joint</joint_name>
+        </plugin>
+    </gazebo>
+
+    <gazebo>
+        <plugin
+            filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+            <!-- world-fixed frame for odom -->
+            <odom_frame>odom</odom_frame>
+            <!-- body-fixed frame on your robot -->
+            <robot_base_frame>base_footprint</robot_base_frame>
+            <!-- publish rate (Hz) -->
+            <odom_publish_frequency>50</odom_publish_frequency>
+            <!-- ROS2 topics -->
+            <odom_topic>/model/hamr/odometry</odom_topic>
+            <!-- publish the TF on the standard /tf topic -->
+            <tf_topic>/model/hamr/tf</tf_topic>
+            <!-- 2D odometry -->
+            <dimensions>2</dimensions>
+            <xyz_offset>0.284843388017437 0.203598611982565 0</xyz_offset>
+        </plugin>
+    </gazebo>
+
+</robot>
+
+
+<!-- <gazebo>
+    <plugin
+        filename="gz-sim-diff-drive-system"
+        name="gz::sim::systems::DiffDrive">
+        <left_joint>base_left_wheel_joint</left_joint>
+        <right_joint>base_right_wheel_joint</right_joint>
+        <wheel_separation>0.308</wheel_separation> 
+        <wheel_radius>0.0762</wheel_radius>
+        <frame_id>odom</frame_id>
+        <child_frame_id>dummy_link</child_frame_id>
+    </plugin>
+</gazebo> -->

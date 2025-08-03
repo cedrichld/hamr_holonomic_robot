@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<robot
+  xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+
+  <xacro:property name="a_dim" value="0.2" />
+  <xacro:property name="b_dim" value="0.2" />
+  <xacro:property name="a_dim" value="0.2" />
+
+  <link name="base_footprint" />
+
+  <joint name="base_footprint_base_joint" type="fixed">
+    <origin
+      xyz="0 0 0.12064984794"
+      rpy="0 0 ${pi/2.0}" />
+    <parent
+      link="base_footprint" />
+    <child
+      link="base_link" />
+  </joint>
+
+  <link name="base_link">
+    <inertial>
+      <origin
+        xyz="0.198549611345678 -0.271316507443243 0.0289830936800706"
+        rpy="0 0 0" />
+      <mass
+        value="3.89825211968488" />
+      <inertia
+        ixx="0.0661197424829709"
+        ixy="0.000127503435039246"
+        ixz="-3.37223289848948E-05"
+        iyy="0.0537150913742591"
+        iyz="1.76042008590663E-10"
+        izz="0.119166120190766" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/base_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/base_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="right_wheel_link">
+
+    <inertial>
+      <origin
+        xyz="-0.00186864044901727 2.89919122223314E-07 -1.06873356706116E-07"
+        rpy="0 1.5707963267949 0" />
+      <mass
+        value="0.201354791790072" />
+      <inertia
+        ixx="0.000633771005763446"
+        ixy="6.31284156682718E-10"
+        ixz="-2.33742432524019E-10"
+        iyy="0.000327993762072381"
+        iyz="-1.05208219357446E-10"
+        izz="0.000327993534995818" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 1.5707963267949 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/right_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.501960784313725 0.501960784313725 0.501960784313725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 1.5707963267949 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/right_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_right_wheel_joint" type="continuous">
+    <origin
+      xyz="0.0536437399956872 -0.0880220830805112 -0.0444496955381151"
+      rpy="0 1.5707963267949 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+
+  <link name="left_wheel_link">
+    <inertial>
+      <origin
+        xyz="-1.54965267659679E-07 -2.70882595285182E-07 -0.0125686288378637"
+        rpy="0 ${pi} 0" />
+      <mass
+        value="0.201354790396108" />
+      <inertia
+        ixx="0.000327993572579979"
+        ixy="1.36473912872677E-10"
+        ixz="3.33712968652168E-10"
+        iyy="0.000327993723903578"
+        iyz="5.84145333206651E-10"
+        izz="0.000633771005385494" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 ${pi} 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/left_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.501960784313725 0.501960784313725 0.501960784313725 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 ${pi} 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/left_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_left_wheel_joint" type="continuous">
+    <origin
+      xyz="0.365456260020371 -0.0880218689795108 -0.044451036743372"
+      rpy="0 1.5707963267949 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+
+  <link name="right_caster_link">
+    <inertial>
+      <origin
+        xyz="-0.0150012811060658 -0.0307436227278899 0.000152559555446186"
+        rpy="0 0 0" />
+      <mass
+        value="0.0265082807354226" />
+      <inertia
+        ixx="1.60132980312546E-05"
+        ixy="-4.99863435365951E-06"
+        ixz="3.31944351355999E-07"
+        iyy="1.47149465447076E-05"
+        iyz="6.51321675924592E-07"
+        izz="1.89660027877702E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/right_caster_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/right_caster_link.stl" />
+      </geometry>
+    </collision>
+  </link> 
+
+  <joint name="base_right_caster_joint" type="continuous">
+    <origin
+      xyz="0.0693170406900002 -0.443936368975549 0"
+      rpy="1.57079632679489 0 3.14159265358979" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_caster_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link name="right_caster_wheel_link">
+
+    <inertial>
+      <origin
+        xyz="0 -1.38777878078145E-17 3.18171516239252E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.16654404953881" />
+      <inertia
+        ixx="0.000108847088077107"
+        ixy="6.30306408439238E-21"
+        ixz="-2.84317671038941E-19"
+        iyy="0.000108847088077106"
+        iyz="5.26640272588924E-20"
+        izz="0.000204453159280929" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/right_caster_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/right_caster_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_caster_right_caster_wheel_joint" type="continuous">
+    <origin
+      xyz="-0.0349249999999998 -0.0698500000000001 0"
+      rpy="3.14159265358979 0 1.5707963267949" />
+    <parent
+      link="right_caster_link" />
+    <child
+      link="right_caster_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+
+  <link name="left_caster_link">
+    <inertial>
+      <origin
+        xyz="-0.0150012924946221 -0.0307436318748196 0.000152540697397341"
+        rpy="0 0 0" />
+      <mass
+        value="0.0265082807354226" />
+      <inertia
+        ixx="1.60132980312558E-05"
+        ixy="-4.99863435365951E-06"
+        ixz="3.31944351356076E-07"
+        iyy="1.47149465447088E-05"
+        iyz="6.51321675924747E-07"
+        izz="1.89660027877702E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/left_caster_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/left_caster_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_left_caster_joint" type="continuous">
+    <origin
+      xyz="0.33708295931 -0.443936368975549 0"
+      rpy="1.5707963267949 0 3.14159265358979" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_caster_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link name="left_caster_wheel_link">
+    <inertial>
+      <origin
+        xyz="0 0 3.18171516239252E-05"
+        rpy="0 0 0" />
+      <mass
+        value="0.16654404953881" />
+      <inertia
+        ixx="0.000108847088077107"
+        ixy="-9.95970176453651E-21"
+        ixz="-4.39740781441153E-20"
+        iyy="0.000108847088077107"
+        iyz="1.89685544420883E-20"
+        izz="0.000204453159280929" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/left_caster_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/left_caster_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_caster_left_caster_wheel_joint" type="continuous">
+    <origin
+      xyz="-0.0349249999999999 -0.0698500000000003 0"
+      rpy="3.14159265358979 0 3.14159265358979" />
+    <parent
+      link="left_caster_link" />
+    <child
+      link="left_caster_wheel_link" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+
+  <link name="turret_link">
+    <inertial>
+      <origin
+        xyz="0 0 0.0251720396917002"
+        rpy="0 0 0" />
+      <mass
+        value="1.09707959594957" />
+      <inertia
+        ixx="0.0121008307090302"
+        ixy="-1.18374646022879E-12"
+        ixz="4.33557351686518E-11"
+        iyy="0.0121008307080653"
+        iyz="-5.70978727760025E-12"
+        izz="0.0241928906037461" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="-3.14159265358979 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/turret_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.258823529411765 0.254901960784314 0.243137254901961 0.5" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="-3.14159265358979 0 0" />
+      <geometry>
+        <mesh
+          filename="package://hamr_description/meshes/turret_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_turret_joint" type="continuous">
+    <origin
+      xyz="0.203598611982565 -0.284843388017437 0.0645584712240723"
+      rpy="0 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="turret_link" />
+    <axis
+      xyz="0 0 1" />
+
+    <limit effort="100" velocity="100" />
+    <dynamics friction="0.3" damping="0.3" />
+  </joint>
+
+
+</robot>
