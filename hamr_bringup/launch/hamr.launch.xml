@@ -36,4 +36,7 @@
 
     <!-- <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" /> -->
 
+    <!-- Launch HAMR Controller -->
+    <node pkg="hamr_control" exec="hamr_controller" />
+
 </launch>

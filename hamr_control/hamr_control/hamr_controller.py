@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
@@ -12,6 +13,12 @@ from geometry_msgs.msg import PoseWithCovariance
 ### - - UTILITIES - - ###
 def wrap_angle(a):
     return (a + math.pi) % (2.0 * math.pi) - math.pi
+
+def quat_to_angle(q):
+    return math.atan2(
+            2.0 * (q.w * q.z + q.x * q.y),
+            1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        )
 
 class PIAccumulator:
     def __init__(self, limit: float):
@@ -31,15 +38,27 @@ class HamrControlNode(Node):
     def __init__(self):
         super().__init__("hamr_controller_node")
 
-        ### - - Timer Settings - - ###
+        ### - - HAMR Config params (m) - - ###
+        default_hamr_config = {"r_wheel": 0.0762,
+                               "a_wheel": 0.149556,
+                               "b_wheel": 0.19682}
+        for a, b in default_hamr_config.items():
+            self.declare_parameter(a, b)
+        self.hamr_config = {
+            "r_wheel": self.get_parameter("r_wheel").value,
+            "a_wheel": self.get_parameter("a_wheel").value,
+            "b_wheel": self.get_parameter("b_wheel").value,
+        }
+
+        ### - - dt Settings - - ###
         self.declare_parameter("dt", 0.05)
         self.dt = self.get_parameter("dt").value
         
-        ### - - PID Parameters for distance and angle - - ###
+        ### - - PID Parameters for x, y and yaw - - ###
         PID_default_gains = {
-            "P_x": 3.5, "I_x": 0.05, "D_x": 0.05,
-            "P_y": 3.5, "I_y": 0.05, "D_y": 0.05,
-            "P_yaw": 20.0, "I_yaw": 0.001, "D_yaw": 0.01,
+            "P_x": 0.1, "I_x": 0.005, "D_x": 0.001,
+            "P_y": 0.1, "I_y": 0.005, "D_y": 0.001,
+            "P_yaw": 0.5, "I_yaw": 0.001, "D_yaw": 0.001,
         }
         for a, b in PID_default_gains.items():
             self.declare_parameter(a, b)
@@ -60,18 +79,21 @@ class HamrControlNode(Node):
                 "D" : self.get_parameter("D_yaw").value,
             }
         }
+
         self.add_post_set_parameters_callback(self.parameters_callback)
         # self.timer_ = self.create_timer(self.dt, self.publish_cmd)
-        
+
         ### - - Set Publishers and Subscribers - - ##
         self.left_wheel_vel_ = self.create_publisher(Float64, "/left_wheel/cmd_vel", 1)
         self.right_wheel_vel_ = self.create_publisher(Float64, "/right_wheel/cmd_vel", 1)
         self.turret_vel_ = self.create_publisher(Float64, "/turret/cmd_vel", 1)
-        # self.sub_reference_ = self.create_subscription(Pose, "target_turtle", 
-        #                             self.callback_target, 1)
+        
+        self.odom_sub_ = self.create_subscription(Odometry, "/hamr/odom", self.callback_odom, 1)
+        self.reference_sub_ = self.create_subscription(PoseWithCovariance, "/reference_trajectory", 
+                                    self.callback_reference, 1)
 
         ## - - State Variables - - ##        
-        self.odom_: PoseWithCovariance = None # interested in x, y, yaw
+        self.pose_: PoseWithCovariance = None # interested in x, y, yaw
         self.target_: PoseWithCovariance = None # interested in x, y, yaw
 
         self.err_x_prev = 0.0
@@ -80,16 +102,16 @@ class HamrControlNode(Node):
 
         ## - - Filtered derivatives - - ##
         self.d_err_x_filt = 0.0
+        self.d_err_y_filt = 0.0
         self.d_err_yaw_filt = 0.0
         self.d_alpha = 0.15 # 0 < alpha < 1 (lower stronger smoothing)
 
         ## - - Integral Accumulators - - ##
-        self.I_d = PIAccumulator(limit=2.0)
-        self.I_angle = PIAccumulator(limit=1.0)
+        self.I_x = PIAccumulator(limit=2.0)
+        self.I_y = PIAccumulator(limit=2.0)
+        self.I_yaw = PIAccumulator(limit=1.0)
 
-        ## - - Velocities to publish and thresholds - - ##
-        self.v_ = 0.0
-        self.w_ = 0.0
+        ## - - thresholds - - ##
         self.threshold_x_y = 0.01
         self.threshold_yaw = 0.01
 
@@ -100,80 +122,135 @@ class HamrControlNode(Node):
                                 + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
                                 str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
 
-    def compute_errors(self):
-        ''' Find the distance error to target '''
-        dx = self.target_.x - self.pose_.x
-        dy = self.target_.y - self.pose_.y
-        err_d = math.hypot(dx, dy)
-
-        desired_theta = math.atan2(dy, dx)
-        err_angle = wrap_angle(desired_theta - self.pose_.theta)
-
-        return err_d, err_angle
-
     def pid_step(self):
-        ''' Compute velocity an omega based on PID Controller Logic '''
-        if self.pose_ == None or self.target_ == None:
+        ''' Compute velocities based on PID Controller Logic '''
+        def compute_errors():
+            ''' Find the distance error to target '''
+            err_x = self.target_.pose.position.x - self.pose_.pose.position.x
+            err_y = self.target_.pose.position.y - self.pose_.pose.position.y
+
+            yaw_des = quat_to_angle(self.target_.pose.orientation)
+            yaw_curr = quat_to_angle(self.pose_.pose.orientation)
+                
+            err_yaw = wrap_angle(yaw_des - yaw_curr)
+
+            return err_x, err_y, err_yaw, yaw_curr
+        
+        if self.pose_ == None:
+            self.get_logger().warn("Waiting on odom to publish cmds")
+            return
+        if self.target_ == None:
+            # self.get_logger().info("Waiting on target to publish cmds")
             return
 
-        err_d, err_angle = self.compute_errors()
+        err_x, err_y, err_yaw, yaw_curr = compute_errors()
         
-        if (err_d < self.threshold_x_y):
+        ## x, y loop
+        if (math.hypot(err_x, err_y) < self.threshold_x_y):
             ## Check if at target
-            self.v_ = 0
+            desired_x_dot, desired_y_dot = 0, 0
             self.err_x_prev = 0
             self.err_y_prev = 0
-            self.I_d.reset()
-            if (err_angle < self.threshold_yaw):
-                self.w_ = 0
-                self.err_yaw_prev = 0
-                self.I_angle.reset()
+            self.I_x.reset()
+            self.I_y.reset()
         else:
-            ## Distance loop
-            P_d = self.gains["distance"]["P"] * err_d
-            I_d_term = self.gains["distance"]["I"] * self.I_d.update(err_d, self.dt)
+            # - for x - #
+            P_x = self.gains["x"]["P"] * err_x
+            I_x_term = self.gains["x"]["I"] * self.I_x.update(err_x, self.dt)
 
-            d_raw_d = (err_d - self.err_x_prev) / self.dt
-            self.d_err_x_filt = (self.d_alpha * d_raw_d +
+            d_raw_x = (err_x - self.err_x_prev) / self.dt
+            self.d_err_x_filt = (self.d_alpha * d_raw_x +
                                 (1.0 - self.d_alpha) * self.d_err_x_filt)
-            D_d = self.gains["distance"]["D"] * self.d_err_x_filt
+            D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
-            self.v_ = P_d + I_d_term + D_d
-            self.err_x_prev = err_d
+            desired_x_dot = P_x + I_x_term + D_x
+            self.err_x_prev = err_x
 
-            ## Angle loop
-            P_angle = self.gains["angle"]["P"] * err_angle
-            I_angle_term = self.gains["angle"]["I"] * self.I_angle.update(err_angle, self.dt)
+            # - for y - #
+            P_y = self.gains["y"]["P"] * err_y
+            I_y_term = self.gains["y"]["I"] * self.I_y.update(err_y, self.dt)
 
-            d_raw_angle = (err_angle - self.err_yaw_prev) / self.dt
-            self.d_err_yaw_filt = (self.d_alpha * d_raw_angle +
+            d_raw_y = (err_y - self.err_y_prev) / self.dt
+            self.d_err_y_filt = (self.d_alpha * d_raw_y +
+                                (1.0 - self.d_alpha) * self.d_err_y_filt)
+            D_y = self.gains["y"]["D"] * self.d_err_y_filt
+
+            desired_y_dot = P_y + I_y_term + D_y
+            self.err_y_prev = err_y
+            
+        ## yaw loop
+        if (err_yaw < self.threshold_yaw):
+            ## Check if at target
+            desired_yaw_dot = 0 
+            self.err_yaw_prev = 0
+            self.I_yaw.reset()
+        else:
+            P_yaw = self.gains["yaw"]["P"] * err_yaw
+            I_yaw_term = self.gains["yaw"]["I"] * self.I_yaw.update(err_yaw, self.dt)
+
+            d_raw_yaw = (err_yaw - self.err_yaw_prev) / self.dt
+            self.d_err_yaw_filt = (self.d_alpha * d_raw_yaw +
                                 (1.0 - self.d_alpha) * self.d_err_yaw_filt)
-            D_angle = self.gains["angle"]["D"] * self.d_err_yaw_filt
+            D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
 
-            self.w_ = P_angle + I_angle_term + D_angle
-            self.err_yaw_prev = err_angle
+            desired_yaw_dot = P_yaw + I_yaw_term + D_yaw
+            self.err_yaw_prev = err_yaw
+        
+        self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
+                                        desired_yaw_dot]), yaw_curr) # desired vel
 
-    def callback_pose(self, msg: Pose):
+    def callback_odom(self, msg: Odometry):
         ''' Subscription callback to the pose of turtle1 '''
-        self.pose_ = msg
+        self.pose_ = msg.pose
+        self.pid_step()
 
-    def callback_target(self, msg: Pose):
+    def callback_reference(self, msg: PoseWithCovariance):
         self.target_ = msg
-        self.I_d.reset()
-        self.I_angle.reset()
-        self.get_logger().info("Going to target: " + str((msg.x, msg.y)))
+        self.I_x.reset()
+        self.I_y.reset()
+        self.I_yaw.reset()
+        self.get_logger().info("Going to target: " + str((msg.pose.position.x, msg.pose.position.y)))
 
-    def publish_velocities(self):
-        left, right, turret = Float64(), Float64(), Float64()
-        left.data, right.data, turret.data = pass
+    def inverse_jacobian(self, yaw):
+        r_w, b, a = self.hamr_config["r_wheel"], self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
+        c, s = np.cos(yaw), np.sin(yaw)
+        
+        J = np.array([
+            [r_w/2 * (c + s*b/a), r_w/2 * (c - s*b/a), 0],
+            [r_w/2 * (-s + c*b/a), r_w/2 * (-s - c*b/a), 0],
+            [r_w/(2*a), -r_w/(2*a), 1]
+        ])
+        return np.linalg.inv(J)
 
-        self.left_wheel_vel_.publish(left)
-        self.right_wheel_vel_.publish(right)
-        self.turret_vel_.publish(turret)
+    def compute_velocities(self, desired_velocity, yaw):
+        ''' Derived Jacobian based on dynamics - returns angular velocities for:
+                1. left_wheel
+                2. right_wheel
+                3. turret 
+        '''
+        r_w, b, a = self.hamr_config["r_wheel"], self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
+        c, s = np.cos(yaw), np.sin(yaw)
+        
+        J = np.array([
+            [r_w/2 * (c + s*b/a), r_w/2 * (c - s*b/a), 0],
+            [r_w/2 * (-s + c*b/a), r_w/2 * (-s - c*b/a), 0],
+            [r_w/(2*a), -r_w/(2*a), 1]
+        ])
+
+        return np.linalg.solve(J, desired_velocity) # will return angular vels for joints
+
+    def publish_joint_cmd(self, desired_velocity, yaw):
+        left_wheel_omega, right_wheel_omega, turret_omega = Float64(), Float64(), Float64()
+        omegas = self.compute_velocities(desired_velocity, yaw)
+        left_wheel_omega.data, right_wheel_omega.data, turret_omega.data = omegas
+
+        self.left_wheel_vel_.publish(left_wheel_omega)
+        self.right_wheel_vel_.publish(right_wheel_omega)
+        self.turret_vel_.publish(turret_omega)
 
     # Used if we want to change parameter during runtime
     def parameters_callback(self, params: list[Parameter]): 
-        name_map = {
+        pid_name_map = {
             "P_x": ("x", "P"),
             "I_x": ("x", "I"),
             "D_x": ("x", "D"),
@@ -184,10 +261,14 @@ class HamrControlNode(Node):
             "I_yaw":("yaw", "I"),
             "D_yaw":("yaw", "D"),
         }
+        config_name_map = ("r_wheel", "a_wheel", "b_wheel")
         for p in params:
-            if p.name in name_map:
-                group, term = name_map[p.name]
+            if p.name in pid_name_map:
+                group, term = pid_name_map[p.name]
                 self.gains[group][term] = p.value
+                self.get_logger().info(f"{p.name} changed to {p.value}")
+            elif p.name in config_name_map:
+                self.hamr_config[p.name] = p.value
                 self.get_logger().info(f"{p.name} changed to {p.value}")
             # elif p.name == "dt":
             #     new_period = float(p.value)
