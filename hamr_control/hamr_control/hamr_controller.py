@@ -68,9 +68,9 @@ class HamrControlNode(Node):
         
         ### - - PID Parameters for x, y and yaw - - ###
         PID_default_gains = {
-            "P_x": 5.0, "I_x": 3.0, "D_x": 0.05,
-            "P_y": 5.0, "I_y": 3.0, "D_y": 0.05,
-            "P_yaw": 10.0, "I_yaw": 1.5, "D_yaw": 0.2,
+            "P_x": 0.1, "I_x": 0.005, "D_x": 0.001,
+            "P_y": 0.1, "I_y": 0.005, "D_y": 0.001,
+            "P_yaw": 0.5, "I_yaw": 0.001, "D_yaw": 0.001,
         }
         for a, b in PID_default_gains.items():
             self.declare_parameter(a, b)
@@ -122,9 +122,9 @@ class HamrControlNode(Node):
         self.d_alpha = 0.15 # 0 < alpha < 1 (lower stronger smoothing)
 
         ## - - Integral Accumulators - - ##
-        self.I_x = PIAccumulator(limit=5.0)
-        self.I_y = PIAccumulator(limit=5.0)
-        self.I_yaw = PIAccumulator(limit=2.0)
+        self.I_x = PIAccumulator(limit=1.0)
+        self.I_y = PIAccumulator(limit=1.0)
+        self.I_yaw = PIAccumulator(limit=0.2)
 
         ## - - thresholds - - ##
         self.threshold_x_y = 0.01

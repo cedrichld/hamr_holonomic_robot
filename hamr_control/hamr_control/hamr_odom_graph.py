@@ -9,7 +9,7 @@ import time
 
 class OdomGraphNode(Node):
     def __init__(self):
-        super().__init__("hamd_odom_graph_node")
+        super().__init__("hamr_odom_graph_node")
         self.odom_sub_ = self.create_subscription(Odometry, "/hamr/odom", self.odom_callback, 10)
         self.tf_sub_ = self.create_subscription(TFMessage, "/tf", self.callback_tf, 1)
         self.get_logger().info("OdomGraphNode started.")
