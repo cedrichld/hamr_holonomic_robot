@@ -68,9 +68,9 @@ class HamrControlNode(Node):
         
         ### - - PID Parameters for x, y and yaw - - ###
         PID_default_gains = {
-            "P_x": 0.1, "I_x": 0.005, "D_x": 0.001,
-            "P_y": 0.1, "I_y": 0.005, "D_y": 0.001,
-            "P_yaw": 0.5, "I_yaw": 0.001, "D_yaw": 0.001,
+            "P_x": 5.0, "I_x": 3.0, "D_x": 0.05,
+            "P_y": 5.0, "I_y": 3.0, "D_y": 0.05,
+            "P_yaw": 10.0, "I_yaw": 1.5, "D_yaw": 0.2,
         }
         for a, b in PID_default_gains.items():
             self.declare_parameter(a, b)
@@ -109,7 +109,7 @@ class HamrControlNode(Node):
         ## - - State Variables - - ##        
         self.pose_base_: PoseWithCovariance = None # interested in x, y, yaw
         self.reference_: PoseWithCovariance = None # interested in x, y, yaw
-        self.turret_orientation_: Quaternion = None # interested in relative yaw of turret
+        self.turret_to_base_orientation_: Quaternion = None # interested in relative yaw of turret
 
         self.err_x_prev = 0.0
         self.err_y_prev = 0.0
@@ -144,14 +144,14 @@ class HamrControlNode(Node):
             err_x = self.reference_.pose.position.x - self.pose_base_.pose.position.x
             err_y = self.reference_.pose.position.y - self.pose_base_.pose.position.y
 
-            yaw_des = quat_to_angle(self.reference_.pose.orientation)
-            yaw_curr_b = quat_to_angle(self.pose_base_.pose.orientation)
-            yaw_curr_t = quat_to_angle(self.turret_orientation_)
-            yaw_curr = yaw_curr_b + yaw_curr_t
+            yaw_des = quat_to_angle(self.reference_.pose.orientation) # desired yaw for the turret wrt to world frame (used for error)
+            yaw_curr_b_w = quat_to_angle(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
+            yaw_curr_t_b = quat_to_angle(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
+            yaw_curr_t_w = yaw_curr_b_w + yaw_curr_t_b # turret orientation wrt to world frame (used for error)
 
-            err_yaw = wrap_angle(yaw_des - yaw_curr)
+            err_yaw = wrap_angle(yaw_des - yaw_curr_t_w)
 
-            return err_x, err_y, err_yaw, yaw_curr_t # yaw_curr_t passed to jacobian later
+            return err_x, err_y, err_yaw, yaw_curr_t_b # yaw_curr_t_b passed to jacobian later
         
         if self.pose_base_ == None:
             self.get_logger().warn("Waiting on odom to publish cmds")
@@ -159,11 +159,11 @@ class HamrControlNode(Node):
         if self.reference_ == None:
             # self.get_logger().info("Waiting on target to publish cmds")
             return
-        if self.turret_orientation_ == None:
+        if self.turret_to_base_orientation_ == None:
             # self.get_logger().info("Waiting on target to publish cmds")
             return
 
-        err_x, err_y, err_yaw, yaw_curr_t = compute_errors()
+        err_x, err_y, err_yaw, yaw_curr_t_b = compute_errors()
         
         ## x, y loop
         if math.hypot(err_x, err_y) < self.threshold_x_y:
@@ -217,7 +217,7 @@ class HamrControlNode(Node):
             self.err_yaw_prev = err_yaw
         
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
-                                        desired_yaw_dot]), wrap_angle(yaw_curr_t)) # desired vel
+                                        desired_yaw_dot]), wrap_angle(yaw_curr_t_b)) # desired vel
 
     def callback_odom(self, msg: Odometry):
         ''' Subscription callback to the pose of turtle1 '''
@@ -228,7 +228,7 @@ class HamrControlNode(Node):
         ''' Look through all TFs and find turret_link to get it's Quaternion '''
         for t in msg.transforms:
             if t.child_frame_id == "turret_link":
-                self.turret_orientation_ = t.transform.rotation # Quaternion
+                self.turret_to_base_orientation_ = t.transform.rotation # Quaternion
                 break
 
     def callback_reference(self, msg: PoseWithCovariance):
