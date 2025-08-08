@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
+from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,12 +11,14 @@ class OdomGraphNode(Node):
     def __init__(self):
         super().__init__("hamd_odom_graph_node")
         self.odom_sub_ = self.create_subscription(Odometry, "/hamr/odom", self.odom_callback, 10)
+        self.tf_sub_ = self.create_subscription(TFMessage, "/tf", self.callback_tf, 1)
         self.get_logger().info("OdomGraphNode started.")
         
         # current values
         self.curr_x = 0.0
         self.curr_y = 0.0
         self.curr_yaw = 0.0
+        self.curr_yaw_t = 0.0
 
     def odom_callback(self, msg: Odometry):
         self.curr_x = msg.pose.pose.position.x
@@ -27,11 +30,22 @@ class OdomGraphNode(Node):
             1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         )
 
+    def callback_tf(self, msg: TFMessage):
+        ''' Look through all TFs and find turret_link to get it's Quaternion '''
+        for t in msg.transforms:
+            if t.child_frame_id == "turret_link":
+                q = t.transform.rotation # Quaternion
+                self.curr_yaw_t = np.arctan2(
+                    2.0 * (q.w * q.z + q.x * q.y),
+                    1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+                )
+                break
+
 def main(args=None):
     rclpy.init(args=args)
     node = OdomGraphNode()
 
-    # —— Set up live plot ——  
+    # Set up live plot  
     plt.ion()  
     fig, ax = plt.subplots()
     ax.set_xlabel('Time (s)')
@@ -48,7 +62,7 @@ def main(args=None):
 
     try:
         while rclpy.ok():
-            # **pump** ROS callbacks
+            # pump ROS callbacks
             rclpy.spin_once(node, timeout_sec=0.1)
 
             # record timestamp and values
@@ -56,14 +70,14 @@ def main(args=None):
             t_buf.append(t)
             x_buf.append(node.curr_x)
             y_buf.append(node.curr_y)
-            yaw_buf.append(node.curr_yaw)
+            yaw_buf.append(node.curr_yaw + node.curr_yaw_t)
 
-            # **update** lines
+            # update lines
             line_x.set_data(t_buf, x_buf)
             line_y.set_data(t_buf, y_buf)
             line_yaw.set_data(t_buf, yaw_buf)
 
-            # **autoscale** axes
+            # autoscale axes
             ax.relim()
             ax.autoscale_view()
 

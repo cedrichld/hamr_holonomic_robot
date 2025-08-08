@@ -37,6 +37,9 @@
     <!-- <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" /> -->
 
     <!-- Launch HAMR Controller -->
-    <node pkg="hamr_control" exec="hamr_controller" />
+    <node pkg="hamr_control" exec="hamr_controller" >
+        <param from="$(find-pkg-share hamr_bringup)/config/hamr_pid_params.yaml" />
+    </node>
+    <node pkg="hamr_control" exec="hamr_odom_graph" />
 
 </launch>
