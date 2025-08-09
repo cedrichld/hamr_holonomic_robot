@@ -1,24 +1,22 @@
 <?xml version="1.0"?>
-<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>hamr_control</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <version>0.1.0</version>
+  <description>HAMR controller – C++ and Python</description>
   <maintainer email="cedrich@seas.upenn.edu">cedric</maintainer>
-  <license>TODO: License declaration</license>
+  <license>MIT</license>
 
-  <depend>rclpy</depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- C++ deps -->
+  <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>tf2_msgs</depend>
-  
-  <test_depend>ament_copyright</test_depend>
-  <test_depend>ament_flake8</test_depend>
-  <test_depend>ament_pep257</test_depend>
-  <test_depend>python3-pytest</test_depend>
+  <depend>Eigen3</depend>
+  <depend>hamr_interfaces</depend>
 
-  <export>
-    <build_type>ament_python</build_type>
-  </export>
+  <!-- Keep if you still want to ship the Python node too -->
+  <depend>rclpy</depend>
+  <depend>tf2_msgs</depend>
 </package>
