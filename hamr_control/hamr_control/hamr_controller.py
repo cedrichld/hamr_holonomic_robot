@@ -8,20 +8,22 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoS
 from std_msgs.msg import Float64 # to send velocity commands
 from nav_msgs.msg import Odometry # used to get the base current state (position in xyz)
 from geometry_msgs.msg import PoseWithCovariance # used for reference and current pose - not using covariance rn
-from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
 from geometry_msgs.msg import Quaternion # for the turret relative 
+from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
+
+from hamr_interfaces.msg import LiveGains
 
 ''' Main issues '''
 ## FIXED: Using wrong yaw in Jacobian (and in pid_controller?)
     # Fix1: Subscribe to JointState (or TF) to read the turret joint angle
     # Fix2: Use yaw_drive = yaw_base + turret_angle in the Jacobian
-## TODO: Controller timing (dt)
+## FIXED: Controller timing (dt)
     # Integrating using fixed dt but call from odom callback which 
         # has its own rate (I/D will be way off)
     # Fix: compute dt from msg.header.stamp or run timer
 
 ''' Smaller issues '''
-## TODO:Cap velocitie in x,y and yaw as well as joint velocities 
+## TODO:Cap velocities in x,y and yaw as well as joint velocities 
 
 ### - - UTILITIES - - ###
 def wrap_angle(a):
@@ -61,10 +63,6 @@ class HamrControlNode(Node):
             "a_wheel": self.get_parameter("a_wheel").value,
             "b_wheel": self.get_parameter("b_wheel").value,
         }
-
-        ### - - dt Settings - - ###
-        self.declare_parameter("dt", 0.05)
-        self.dt = self.get_parameter("dt").value
         
         ### - - PID Parameters for x, y and yaw - - ###
         PID_default_gains = {
@@ -92,8 +90,9 @@ class HamrControlNode(Node):
             }
         }
 
+        self.declare_parameter("control_rate_hz", 100.0)
+
         self.add_post_set_parameters_callback(self.parameters_callback)
-        # self.timer_ = self.create_timer(self.dt, self.publish_cmd)
 
         ### - - Set Publishers and Subscribers - - ##
         self.left_wheel_vel_ = self.create_publisher(Float64, "/left_wheel/cmd_vel", 1)
@@ -105,6 +104,17 @@ class HamrControlNode(Node):
 
         self.reference_sub_ = self.create_subscription(PoseWithCovariance, "/reference_trajectory", 
                                     self.callback_reference, 1)
+        
+        # For debugging
+        self.gains_pub_ = self.create_publisher(LiveGains, "/live_gains", 10)
+        
+        # Control Rate
+        self.control_rate_hz = self.get_parameter("control_rate_hz").value
+        self.last_control_time = self.get_clock().now()
+        self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
+        self.dt = 0
+
+        ### - - Variables - - ###
 
         ## - - State Variables - - ##        
         self.pose_base_: PoseWithCovariance = None # interested in x, y, yaw
@@ -122,8 +132,8 @@ class HamrControlNode(Node):
         self.d_alpha = 0.15 # 0 < alpha < 1 (lower stronger smoothing)
 
         ## - - Integral Accumulators - - ##
-        self.I_x = PIAccumulator(limit=1.0)
-        self.I_y = PIAccumulator(limit=1.0)
+        self.I_x = PIAccumulator(limit=0.2)
+        self.I_y = PIAccumulator(limit=0.2)
         self.I_yaw = PIAccumulator(limit=0.2)
 
         ## - - thresholds - - ##
@@ -153,18 +163,11 @@ class HamrControlNode(Node):
 
             return err_x, err_y, err_yaw, yaw_curr_t_b # yaw_curr_t_b passed to jacobian later
         
-        if self.pose_base_ == None:
-            self.get_logger().warn("Waiting on odom to publish cmds")
-            return
-        if self.reference_ == None:
-            # self.get_logger().info("Waiting on target to publish cmds")
-            return
-        if self.turret_to_base_orientation_ == None:
-            # self.get_logger().info("Waiting on target to publish cmds")
-            return
-
         err_x, err_y, err_yaw, yaw_curr_t_b = compute_errors()
         
+        # For debugging and publishing gains
+        P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw = 0, 0, 0, 0, 0, 0, 0, 0, 0
+
         ## x, y loop
         if math.hypot(err_x, err_y) < self.threshold_x_y:
             ## Check if at target
@@ -216,13 +219,34 @@ class HamrControlNode(Node):
             desired_yaw_dot = P_yaw + I_yaw_term + D_yaw
             self.err_yaw_prev = err_yaw
         
+        self.publish_live_gains(P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
                                         desired_yaw_dot]), wrap_angle(yaw_curr_t_b)) # desired vel
+
+    def publish_live_gains(self, P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw):
+        gains = LiveGains()
+        gains.gains = [P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw]
+        self.gains_pub_.publish(gains)
 
     def callback_odom(self, msg: Odometry):
         ''' Subscription callback to the pose of turtle1 '''
         self.pose_base_ = msg.pose
-        self.pid_step()
+
+    def control_tick(self):
+        ''' Send command ever 1 control_rate_hz '''
+        now = self.get_clock().now()
+        dur = (now - self.last_control_time) # rclpy.duration.Duration
+        self.last_control_time = now
+
+        dt = dur.nanoseconds * 1e-9
+        if not math.isfinite(dt) or dt <= 0.0:
+            return
+        
+        self.dt = max(1e-4, min(dt, 0.1))
+
+        if (self.pose_base_ is not None and self.reference_ is not None 
+                and self.turret_to_base_orientation_ is not None):
+            self.pid_step()
 
     def callback_tf(self, msg: TFMessage):
         ''' Look through all TFs and find turret_link to get it's Quaternion '''
@@ -287,15 +311,6 @@ class HamrControlNode(Node):
             elif p.name in config_name_map:
                 self.hamr_config[p.name] = p.value
                 self.get_logger().info(f"{p.name} changed to {p.value}")
-            # elif p.name == "dt":
-            #     new_period = float(p.value)
-            #     if new_period <= 0.0:
-            #         self.get_logger().warn("spawn_period must be > 0")
-            #         continue
-            #     self.dt = new_period
-            #     self.timer_.cancel()
-            #     self.timer_ = self.create_timer(self.dt, self.publish_cmd)
-            #     self.get_logger().info(f"{p.name} changed to {p.value}")
 
 def main(args=None):
     rclpy.init(args=args)
@@ -303,7 +318,6 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-    
     
 if __name__ == "__main__":
     main()

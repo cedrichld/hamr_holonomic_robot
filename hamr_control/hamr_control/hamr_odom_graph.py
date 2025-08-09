@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
+from geometry_msgs.msg import PoseWithCovariance
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,6 +13,11 @@ class OdomGraphNode(Node):
         super().__init__("hamr_odom_graph_node")
         self.odom_sub_ = self.create_subscription(Odometry, "/hamr/odom", self.odom_callback, 10)
         self.tf_sub_ = self.create_subscription(TFMessage, "/tf", self.callback_tf, 1)
+        self.reference_sub_ = self.create_subscription(PoseWithCovariance, "/reference_trajectory", 
+                                    self.callback_reference, 1)
+        
+        self.reference_: PoseWithCovariance = None
+        
         self.get_logger().info("OdomGraphNode started.")
         
         # current values
@@ -29,6 +35,9 @@ class OdomGraphNode(Node):
             2.0 * (q.w * q.z + q.x * q.y),
             1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         )
+    
+    def callback_reference(self, msg: PoseWithCovariance):
+        self.reference_ = msg
 
     def callback_tf(self, msg: TFMessage):
         ''' Look through all TFs and find turret_link to get it's Quaternion '''

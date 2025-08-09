@@ -1,11 +1,11 @@
 /hamr_controller_node:
   ros__parameters:
-    D_x: 0.01
-    D_y: 0.01
+    D_x: 0.2
+    D_y: 0.2
     D_yaw: 0.005
     I_x: 0.1
     I_y: 0.1
-    I_yaw: 0.001
-    P_x: 0.08
-    P_y: 0.1
-    P_yaw: 0.5
+    I_yaw: 0.01
+    P_x: 0.5
+    P_y: 0.5
+    P_yaw: 0.6
