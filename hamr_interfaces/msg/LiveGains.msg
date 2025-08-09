@@ -1,1 +1,9 @@
-float64[9] gains
+float64 p_x 
+float64 d_x 
+float64 i_x 
+float64 p_y 
+float64 d_y 
+float64 i_y 
+float64 p_yaw 
+float64 d_yaw 
+float64 i_yaw

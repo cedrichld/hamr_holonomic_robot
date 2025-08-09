@@ -21,9 +21,13 @@ from hamr_interfaces.msg import LiveGains
     # Integrating using fixed dt but call from odom callback which 
         # has its own rate (I/D will be way off)
     # Fix: compute dt from msg.header.stamp or run timer
+### TODO: 
+## Fix alternating yaw (not working outside of 0)
+## 
+
 
 ''' Smaller issues '''
-## TODO:Cap velocities in x,y and yaw as well as joint velocities 
+## TODO: Cap velocities in x,y and yaw as well as joint velocities 
 
 ### - - UTILITIES - - ###
 def wrap_angle(a):
@@ -155,18 +159,18 @@ class HamrControlNode(Node):
             err_y = self.reference_.pose.position.y - self.pose_base_.pose.position.y
 
             yaw_des = quat_to_angle(self.reference_.pose.orientation) # desired yaw for the turret wrt to world frame (used for error)
-            yaw_curr_b_w = quat_to_angle(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
-            yaw_curr_t_b = quat_to_angle(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
-            yaw_curr_t_w = yaw_curr_b_w + yaw_curr_t_b # turret orientation wrt to world frame (used for error)
+            yaw_base_w = quat_to_angle(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
+            yaw_turret_b = quat_to_angle(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
+            
+            psi_drive = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
+            err_yaw = wrap_angle(yaw_des - psi_drive)
 
-            err_yaw = wrap_angle(yaw_des - yaw_curr_t_w)
-
-            return err_x, err_y, err_yaw, yaw_curr_t_b # yaw_curr_t_b passed to jacobian later
+            return err_x, err_y, err_yaw, yaw_turret_b # yaw_curr_t_b passed to jacobian later
         
-        err_x, err_y, err_yaw, yaw_curr_t_b = compute_errors()
+        err_x, err_y, err_yaw, psi_drive = compute_errors()
         
         # For debugging and publishing gains
-        P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw = 0, 0, 0, 0, 0, 0, 0, 0, 0
+        P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
         ## x, y loop
         if math.hypot(err_x, err_y) < self.threshold_x_y:
@@ -221,11 +225,13 @@ class HamrControlNode(Node):
         
         self.publish_live_gains(P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
-                                        desired_yaw_dot]), wrap_angle(yaw_curr_t_b)) # desired vel
+                                        desired_yaw_dot]), psi_drive) # desired vel
 
     def publish_live_gains(self, P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw):
         gains = LiveGains()
-        gains.gains = [P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw]
+        gains.p_x, gains.d_x, gains.i_x = P_x, D_x, I_x
+        gains.p_y, gains.d_y, gains.i_y = P_y, D_y, I_y
+        gains.p_yaw, gains.d_yaw, gains.i_yaw = P_yaw, D_yaw, I_yaw
         self.gains_pub_.publish(gains)
 
     def callback_odom(self, msg: Odometry):
@@ -251,7 +257,7 @@ class HamrControlNode(Node):
     def callback_tf(self, msg: TFMessage):
         ''' Look through all TFs and find turret_link to get it's Quaternion '''
         for t in msg.transforms:
-            if t.child_frame_id == "turret_link":
+            if t.child_frame_id == "turret_link" and t.header.frame_id  == "base_link":
                 self.turret_to_base_orientation_ = t.transform.rotation # Quaternion
                 break
 

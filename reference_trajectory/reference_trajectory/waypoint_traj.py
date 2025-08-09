@@ -42,9 +42,14 @@ class TrajectoryNode(Node):
         self.err_yaw = math.inf
 
         points = np.array([
-            [0.0, 0.0],
-            [5.0, 0.0],
-            [5.0, 5.0],
+            # [0.0, 0.0], # SQUARE
+            # [5.0, 0.0],
+            # [5.0, 5.0],
+            # [0.0, 5.0],
+            # [0.0, 0.0],
+
+            [0.0, 0.0], # TRIANGLE
+            [5.0, 2.5],
             [0.0, 5.0],
             [0.0, 0.0],
         ])
@@ -65,10 +70,13 @@ class TrajectoryNode(Node):
         pose.pose.orientation = yaw_to_quaternion(yaw)
         self.reference_trajectory_pub_.publish(pose)
         self.get_logger().info("pose: x=%d, y=%d, yaw=%d" % (x, y, yaw))
+        if t >= self.trajectory.total_time:
+            self.get_logger().info("Resetting traj")
+            self.last_reference_time = self.get_clock().now()
 
 
 class WaypointTraj(object):
-    def __init__(self, points, speed=0.25):
+    def __init__(self, points, speed=1.5):
         """
         Inputs: points, (N, 2) array of N waypoint coordinates in 2D
         """
