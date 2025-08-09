@@ -3,12 +3,27 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy # not used yet
 
-from std_msgs.msg import Float64
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import PoseWithCovariance
-# from tf2_msgs.msg import TFMessage
+from std_msgs.msg import Float64 # to send velocity commands
+from nav_msgs.msg import Odometry # used to get the base current state (position in xyz)
+from geometry_msgs.msg import PoseWithCovariance # used for reference and current pose - not using covariance rn
+from geometry_msgs.msg import Quaternion # for the turret relative 
+from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
+
+from hamr_interfaces.msg import LiveGains
+
+''' Main issues '''
+## FIXED: Using wrong yaw in Jacobian (and in pid_controller?)
+    # Fix1: Subscribe to JointState (or TF) to read the turret joint angle
+    # Fix2: Use yaw_drive = yaw_base + turret_angle in the Jacobian
+## FIXED: Controller timing (dt)
+    # Integrating using fixed dt but call from odom callback which 
+        # has its own rate (I/D will be way off)
+    # Fix: compute dt from msg.header.stamp or run timer
+
+''' Smaller issues '''
+## TODO:Cap velocities in x,y and yaw as well as joint velocities 
 
 ### - - UTILITIES - - ###
 def wrap_angle(a):
@@ -31,8 +46,7 @@ class PIAccumulator:
         return self.sum
 
     def reset(self):
-        self.sum = 0.0
-        
+        self.sum = 0.0        
 
 class HamrControlNode(Node):
     def __init__(self):
@@ -49,10 +63,6 @@ class HamrControlNode(Node):
             "a_wheel": self.get_parameter("a_wheel").value,
             "b_wheel": self.get_parameter("b_wheel").value,
         }
-
-        ### - - dt Settings - - ###
-        self.declare_parameter("dt", 0.05)
-        self.dt = self.get_parameter("dt").value
         
         ### - - PID Parameters for x, y and yaw - - ###
         PID_default_gains = {
@@ -80,8 +90,9 @@ class HamrControlNode(Node):
             }
         }
 
+        self.declare_parameter("control_rate_hz", 100.0)
+
         self.add_post_set_parameters_callback(self.parameters_callback)
-        # self.timer_ = self.create_timer(self.dt, self.publish_cmd)
 
         ### - - Set Publishers and Subscribers - - ##
         self.left_wheel_vel_ = self.create_publisher(Float64, "/left_wheel/cmd_vel", 1)
@@ -89,12 +100,26 @@ class HamrControlNode(Node):
         self.turret_vel_ = self.create_publisher(Float64, "/turret/cmd_vel", 1)
         
         self.odom_sub_ = self.create_subscription(Odometry, "/hamr/odom", self.callback_odom, 1)
+        self.tf_sub_ = self.create_subscription(TFMessage, "/tf", self.callback_tf, 1)
+
         self.reference_sub_ = self.create_subscription(PoseWithCovariance, "/reference_trajectory", 
                                     self.callback_reference, 1)
+        
+        # For debugging
+        self.gains_pub_ = self.create_publisher(LiveGains, "/live_gains", 10)
+        
+        # Control Rate
+        self.control_rate_hz = self.get_parameter("control_rate_hz").value
+        self.last_control_time = self.get_clock().now()
+        self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
+        self.dt = 0
+
+        ### - - Variables - - ###
 
         ## - - State Variables - - ##        
-        self.pose_: PoseWithCovariance = None # interested in x, y, yaw
-        self.target_: PoseWithCovariance = None # interested in x, y, yaw
+        self.pose_base_: PoseWithCovariance = None # interested in x, y, yaw
+        self.reference_: PoseWithCovariance = None # interested in x, y, yaw
+        self.turret_to_base_orientation_: Quaternion = None # interested in relative yaw of turret
 
         self.err_x_prev = 0.0
         self.err_y_prev = 0.0
@@ -107,9 +132,9 @@ class HamrControlNode(Node):
         self.d_alpha = 0.15 # 0 < alpha < 1 (lower stronger smoothing)
 
         ## - - Integral Accumulators - - ##
-        self.I_x = PIAccumulator(limit=2.0)
-        self.I_y = PIAccumulator(limit=2.0)
-        self.I_yaw = PIAccumulator(limit=1.0)
+        self.I_x = PIAccumulator(limit=0.2)
+        self.I_y = PIAccumulator(limit=0.2)
+        self.I_yaw = PIAccumulator(limit=0.2)
 
         ## - - thresholds - - ##
         self.threshold_x_y = 0.01
@@ -118,7 +143,7 @@ class HamrControlNode(Node):
         self.get_logger().info("HAMR Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
                                ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
                                 + "; P_y: " + str(self.gains["y"]["P"]) + 
-                               ", I_x: " + str(self.gains["y"]["I"]) + ", D_x: " + str(self.gains["y"]["D"])
+                               ", I_y: " + str(self.gains["y"]["I"]) + ", D_x: " + str(self.gains["y"]["D"])
                                 + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
                                 str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
 
@@ -126,27 +151,25 @@ class HamrControlNode(Node):
         ''' Compute velocities based on PID Controller Logic '''
         def compute_errors():
             ''' Find the distance error to target '''
-            err_x = self.target_.pose.position.x - self.pose_.pose.position.x
-            err_y = self.target_.pose.position.y - self.pose_.pose.position.y
+            err_x = self.reference_.pose.position.x - self.pose_base_.pose.position.x
+            err_y = self.reference_.pose.position.y - self.pose_base_.pose.position.y
 
-            yaw_des = quat_to_angle(self.target_.pose.orientation)
-            yaw_curr = quat_to_angle(self.pose_.pose.orientation)
-                
-            err_yaw = wrap_angle(yaw_des - yaw_curr)
+            yaw_des = quat_to_angle(self.reference_.pose.orientation) # desired yaw for the turret wrt to world frame (used for error)
+            yaw_curr_b_w = quat_to_angle(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
+            yaw_curr_t_b = quat_to_angle(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
+            yaw_curr_t_w = yaw_curr_b_w + yaw_curr_t_b # turret orientation wrt to world frame (used for error)
 
-            return err_x, err_y, err_yaw, yaw_curr
+            err_yaw = wrap_angle(yaw_des - yaw_curr_t_w)
+
+            return err_x, err_y, err_yaw, yaw_curr_t_b # yaw_curr_t_b passed to jacobian later
         
-        if self.pose_ == None:
-            self.get_logger().warn("Waiting on odom to publish cmds")
-            return
-        if self.target_ == None:
-            # self.get_logger().info("Waiting on target to publish cmds")
-            return
-
-        err_x, err_y, err_yaw, yaw_curr = compute_errors()
+        err_x, err_y, err_yaw, yaw_curr_t_b = compute_errors()
         
+        # For debugging and publishing gains
+        P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw = 0, 0, 0, 0, 0, 0, 0, 0, 0
+
         ## x, y loop
-        if (math.hypot(err_x, err_y) < self.threshold_x_y):
+        if math.hypot(err_x, err_y) < self.threshold_x_y:
             ## Check if at target
             desired_x_dot, desired_y_dot = 0, 0
             self.err_x_prev = 0
@@ -179,7 +202,7 @@ class HamrControlNode(Node):
             self.err_y_prev = err_y
             
         ## yaw loop
-        if (err_yaw < self.threshold_yaw):
+        if abs(err_yaw) < self.threshold_yaw:
             ## Check if at target
             desired_yaw_dot = 0 
             self.err_yaw_prev = 0
@@ -196,39 +219,57 @@ class HamrControlNode(Node):
             desired_yaw_dot = P_yaw + I_yaw_term + D_yaw
             self.err_yaw_prev = err_yaw
         
+        self.publish_live_gains(P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
-                                        desired_yaw_dot]), yaw_curr) # desired vel
+                                        desired_yaw_dot]), wrap_angle(yaw_curr_t_b)) # desired vel
+
+    def publish_live_gains(self, P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw):
+        gains = LiveGains()
+        gains.gains = [P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw]
+        self.gains_pub_.publish(gains)
 
     def callback_odom(self, msg: Odometry):
         ''' Subscription callback to the pose of turtle1 '''
-        self.pose_ = msg.pose
-        self.pid_step()
+        self.pose_base_ = msg.pose
+
+    def control_tick(self):
+        ''' Send command ever 1 control_rate_hz '''
+        now = self.get_clock().now()
+        dur = (now - self.last_control_time) # rclpy.duration.Duration
+        self.last_control_time = now
+
+        dt = dur.nanoseconds * 1e-9
+        if not math.isfinite(dt) or dt <= 0.0:
+            return
+        
+        self.dt = max(1e-4, min(dt, 0.1))
+
+        if (self.pose_base_ is not None and self.reference_ is not None 
+                and self.turret_to_base_orientation_ is not None):
+            self.pid_step()
+
+    def callback_tf(self, msg: TFMessage):
+        ''' Look through all TFs and find turret_link to get it's Quaternion '''
+        for t in msg.transforms:
+            if t.child_frame_id == "turret_link":
+                self.turret_to_base_orientation_ = t.transform.rotation # Quaternion
+                break
 
     def callback_reference(self, msg: PoseWithCovariance):
-        self.target_ = msg
+        self.reference_ = msg
         self.I_x.reset()
         self.I_y.reset()
         self.I_yaw.reset()
         self.get_logger().info("Going to target: " + str((msg.pose.position.x, msg.pose.position.y)))
 
-    def inverse_jacobian(self, yaw):
-        r_w, b, a = self.hamr_config["r_wheel"], self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
-        c, s = np.cos(yaw), np.sin(yaw)
-        
-        J = np.array([
-            [r_w/2 * (c + s*b/a), r_w/2 * (c - s*b/a), 0],
-            [r_w/2 * (-s + c*b/a), r_w/2 * (-s - c*b/a), 0],
-            [r_w/(2*a), -r_w/(2*a), 1]
-        ])
-        return np.linalg.inv(J)
-
     def compute_velocities(self, desired_velocity, yaw):
         ''' Derived Jacobian based on dynamics - returns angular velocities for:
-                1. left_wheel
-                2. right_wheel
+                1. right_wheel
+                2. left_wheel
                 3. turret 
         '''
-        r_w, b, a = self.hamr_config["r_wheel"], self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
+        r_w, b, a = self.hamr_config["r_wheel"], \
+            self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
         c, s = np.cos(yaw), np.sin(yaw)
         
         J = np.array([
@@ -240,12 +281,12 @@ class HamrControlNode(Node):
         return np.linalg.solve(J, desired_velocity) # will return angular vels for joints
 
     def publish_joint_cmd(self, desired_velocity, yaw):
-        left_wheel_omega, right_wheel_omega, turret_omega = Float64(), Float64(), Float64()
+        right_wheel_omega, left_wheel_omega, turret_omega = Float64(), Float64(), Float64()
         omegas = self.compute_velocities(desired_velocity, yaw)
-        left_wheel_omega.data, right_wheel_omega.data, turret_omega.data = omegas
+        right_wheel_omega.data, left_wheel_omega.data, turret_omega.data = omegas
 
-        self.left_wheel_vel_.publish(left_wheel_omega)
         self.right_wheel_vel_.publish(right_wheel_omega)
+        self.left_wheel_vel_.publish(left_wheel_omega)
         self.turret_vel_.publish(turret_omega)
 
     # Used if we want to change parameter during runtime
@@ -270,15 +311,6 @@ class HamrControlNode(Node):
             elif p.name in config_name_map:
                 self.hamr_config[p.name] = p.value
                 self.get_logger().info(f"{p.name} changed to {p.value}")
-            # elif p.name == "dt":
-            #     new_period = float(p.value)
-            #     if new_period <= 0.0:
-            #         self.get_logger().warn("spawn_period must be > 0")
-            #         continue
-            #     self.dt = new_period
-            #     self.timer_.cancel()
-            #     self.timer_ = self.create_timer(self.dt, self.publish_cmd)
-            #     self.get_logger().info(f"{p.name} changed to {p.value}")
 
 def main(args=None):
     rclpy.init(args=args)
@@ -286,7 +318,6 @@ def main(args=None):
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-    
     
 if __name__ == "__main__":
     main()
