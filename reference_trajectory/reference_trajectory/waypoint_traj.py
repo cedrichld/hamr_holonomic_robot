@@ -76,7 +76,7 @@ class TrajectoryNode(Node):
 
 
 class WaypointTraj(object):
-    def __init__(self, points, speed=1.5):
+    def __init__(self, points, speed=1.0):
         """
         Inputs: points, (N, 2) array of N waypoint coordinates in 2D
         """

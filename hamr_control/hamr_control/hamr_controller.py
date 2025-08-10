@@ -21,13 +21,18 @@ from hamr_interfaces.msg import LiveGains
     # Integrating using fixed dt but call from odom callback which 
         # has its own rate (I/D will be way off)
     # Fix: compute dt from msg.header.stamp or run timer
+    
 ### TODO: 
+## Cap velocities in x,y and yaw as well as joint velocities 
+    # Cap PID?
 ## Fix alternating yaw (not working outside of 0)
-## 
+## Fix odom graph showing the wrong values (oscilating)??
+## Add odom graph desired position
+## Add odom graph live gains
+## I gains not getting activated
 
 
 ''' Smaller issues '''
-## TODO: Cap velocities in x,y and yaw as well as joint velocities 
 
 ### - - UTILITIES - - ###
 def wrap_angle(a):
@@ -136,13 +141,17 @@ class HamrControlNode(Node):
         self.d_alpha = 0.15 # 0 < alpha < 1 (lower stronger smoothing)
 
         ## - - Integral Accumulators - - ##
-        self.I_x = PIAccumulator(limit=0.2)
-        self.I_y = PIAccumulator(limit=0.2)
-        self.I_yaw = PIAccumulator(limit=0.2)
+        self.I_x = PIAccumulator(limit=5.0)
+        self.I_y = PIAccumulator(limit=5.0)
+        self.I_yaw = PIAccumulator(limit=2.0)
 
-        ## - - thresholds - - ##
+        ## - - Thresholds - - ##
         self.threshold_x_y = 0.01
         self.threshold_yaw = 0.01
+
+        ## - - Velocity Limits (Magnitude) - - ##
+        self.xy_dot_limit = 5.0
+        self.yaw_dot_limit = 2.0
 
         self.get_logger().info("HAMR Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
                                ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
@@ -162,15 +171,17 @@ class HamrControlNode(Node):
             yaw_base_w = quat_to_angle(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
             yaw_turret_b = quat_to_angle(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
             
-            psi_drive = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
-            err_yaw = wrap_angle(yaw_des - psi_drive)
+            yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
+            err_yaw = wrap_angle(yaw_des - yaw_turret_w)
 
-            return err_x, err_y, err_yaw, yaw_turret_b # yaw_curr_t_b passed to jacobian later
+            return err_x, err_y, err_yaw, yaw_turret_b # yaw_turret_b passed to jacobian later
         
-        err_x, err_y, err_yaw, psi_drive = compute_errors()
+        err_x, err_y, err_yaw, yaw_turret_b = compute_errors()
         
         # For debugging and publishing gains
-        P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        P_x = D_x = I_x_term = 0.0
+        P_y = D_y = I_y_term = 0.0
+        P_yaw = D_yaw = I_yaw_term = 0.0
 
         ## x, y loop
         if math.hypot(err_x, err_y) < self.threshold_x_y:
@@ -190,6 +201,7 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_x_filt)
             D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
+            # Cap desired velocity
             desired_x_dot = P_x + I_x_term + D_x
             self.err_x_prev = err_x
 
@@ -204,7 +216,13 @@ class HamrControlNode(Node):
 
             desired_y_dot = P_y + I_y_term + D_y
             self.err_y_prev = err_y
-            
+
+            desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
+            if desired_xy_dot_norm > self.xy_dot_limit:
+                self.get_logger().warn("CAPPING x,y velocity from " + str(desired_xy_dot_norm) + " to " + str(self.xy_dot_limit))
+                desired_x_dot = (desired_x_dot / desired_xy_dot_norm) * self.xy_dot_limit
+                desired_y_dot = (desired_y_dot / desired_xy_dot_norm) * self.xy_dot_limit
+        
         ## yaw loop
         if abs(err_yaw) < self.threshold_yaw:
             ## Check if at target
@@ -220,12 +238,13 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_yaw_filt)
             D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
 
-            desired_yaw_dot = P_yaw + I_yaw_term + D_yaw
+            desired_yaw_dot = max(-self.yaw_dot_limit, min(P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
+
             self.err_yaw_prev = err_yaw
         
-        self.publish_live_gains(P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw)
+        self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
-                                        desired_yaw_dot]), psi_drive) # desired vel
+                                        desired_yaw_dot]), yaw_turret_b) # desired vel
 
     def publish_live_gains(self, P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw):
         gains = LiveGains()
