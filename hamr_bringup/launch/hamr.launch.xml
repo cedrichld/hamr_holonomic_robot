@@ -17,7 +17,8 @@
   <!-- Gazebo + bridge (optional) -->
   <group if="$(var start_gz)">
     <include file="$(find-pkg-share ros_gz_sim)/launch/gz_sim.launch.py">
-      <arg name="gz_args" value="$(find-pkg-share hamr_bringup)/worlds/empty_world.sdf -r" />
+        <!-- <arg name="gz_args" value="empty.sdf -r" /> -->
+        <arg name="gz_args" value="$(find-pkg-share hamr_bringup)/worlds/cones_and_cubes_world.sdf -r" />
     </include>
 
     <!-- Spawn from robot_description into Gazebo -->
