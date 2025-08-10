@@ -9,4 +9,11 @@
 
     <!-- Launch odom graph -->
     <node pkg="hamr_control" exec="hamr_odom_graph" />
+
+    <!-- Path tracer (publishes /hamr/path and /hamr/path_marker) -->
+    <node pkg="hamr_control" exec="hamr_path_tracer">
+        <!-- Optional params -->
+        <param name="max_points" value="4000"/>
+        <param name="publish_rate_hz" value="10.0"/>
+    </node>
 </launch>

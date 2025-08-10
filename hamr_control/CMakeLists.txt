@@ -9,6 +9,7 @@ find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(visualization_msgs)
 find_package(tf2_msgs REQUIRED)
 find_package(hamr_interfaces REQUIRED)
 
@@ -27,6 +28,17 @@ add_executable(hamr_controller
   src/hamr_controller.cpp
   src/hamr_control_node.cpp
 )
+
+add_executable(hamr_path_tracer 
+src/hamr_path_tracer.cpp)
+
+ament_target_dependencies(hamr_path_tracer 
+rclcpp 
+nav_msgs 
+visualization_msgs 
+geometry_msgs
+)
+
 ament_target_dependencies(hamr_controller
   rclcpp
   std_msgs
@@ -44,6 +56,8 @@ target_include_directories(hamr_controller
 install(TARGETS hamr_controller
   DESTINATION lib/${PROJECT_NAME}
 )
+install(TARGETS hamr_path_tracer 
+  DESTINATION lib/${PROJECT_NAME})
 
 
 install(DIRECTORY launch/
