@@ -1,0 +1,12 @@
+<launch>
+    <let name="pid_config_path"
+        value="$(find-pkg-share hamr_bringup)/config/hamr_pid_params.yaml" />
+
+    <!-- Launch HAMR Controller -->
+    <node pkg="hamr_control" exec="hamr_controller">
+        <param from="$(var pid_config_path)" />
+    </node>
+
+    <!-- Launch odom graph -->
+    <node pkg="hamr_control" exec="hamr_odom_graph" />
+</launch>

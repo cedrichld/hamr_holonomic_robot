@@ -8,15 +8,22 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!-- C++ deps -->
+  <!-- C++ dependencies -->
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>Eigen3</depend>
+  <depend>tf2_msgs</depend>
   <depend>hamr_interfaces</depend>
 
-  <!-- Keep if you still want to ship the Python node too -->
+  <!-- Eigen as a CMake module -->
+  <build_depend>eigen3_cmake_module</build_depend>
+  <exec_depend>eigen3_cmake_module</exec_depend>
+
+  <!-- Python dependencies (if you keep Python node) -->
   <depend>rclpy</depend>
-  <depend>tf2_msgs</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
