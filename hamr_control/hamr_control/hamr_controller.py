@@ -12,6 +12,7 @@ from geometry_msgs.msg import Quaternion # for the turret relative
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
 
 from hamr_interfaces.msg import LiveGains
+from hamr_interfaces.msg import ReferenceTraj
 
 ''' Main issues '''
 ## FIXED: Using wrong yaw in Jacobian (and in pid_controller?)
@@ -23,14 +24,9 @@ from hamr_interfaces.msg import LiveGains
     # Fix: compute dt from msg.header.stamp or run timer
     
 ### TODO: 
-## Cap velocities in x,y and yaw as well as joint velocities 
-    # Cap PID?
+## Velocity caps (gains, joint velocities and joint commands)
 ## Fix alternating yaw (not working outside of 0)
-## Fix odom graph showing the wrong values (oscilating)??
-## Add odom graph desired position
-## Add odom graph live gains
-## I gains not getting activated
-
+## Add second live graph with gains / joint commands
 
 ''' Smaller issues '''
 
@@ -111,7 +107,7 @@ class HamrControlNode(Node):
         self.odom_sub_ = self.create_subscription(Odometry, "/hamr/odom", self.callback_odom, 1)
         self.tf_sub_ = self.create_subscription(TFMessage, "/tf", self.callback_tf, 1)
 
-        self.reference_sub_ = self.create_subscription(PoseWithCovariance, "/reference_trajectory", 
+        self.reference_sub_ = self.create_subscription(ReferenceTraj, "/reference_trajectory", 
                                     self.callback_reference, 1)
         
         # For debugging
@@ -127,7 +123,7 @@ class HamrControlNode(Node):
 
         ## - - State Variables - - ##        
         self.pose_base_: PoseWithCovariance = None # interested in x, y, yaw
-        self.reference_: PoseWithCovariance = None # interested in x, y, yaw
+        self.reference_: ReferenceTraj = None # interested in x, y, yaw
         self.turret_to_base_orientation_: Quaternion = None # interested in relative yaw of turret
 
         self.err_x_prev = 0.0
@@ -161,13 +157,17 @@ class HamrControlNode(Node):
                                 str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
 
     def pid_step(self):
-        ''' Compute velocities based on PID Controller Logic '''
+        ''' Compute velocities based on PID Controller Logic:
+            - Compute errors based on pose
+            - Compute desired velocities based on (a) feed-forward (b) PID corrections from pose errors
+            - Feed desired velocities to jacobian (to get joint commands)
+        '''
         def compute_errors():
             ''' Find the distance error to target '''
-            err_x = self.reference_.pose.position.x - self.pose_base_.pose.position.x
-            err_y = self.reference_.pose.position.y - self.pose_base_.pose.position.y
+            err_x = self.reference_.x - self.pose_base_.pose.position.x
+            err_y = self.reference_.y - self.pose_base_.pose.position.y
 
-            yaw_des = quat_to_angle(self.reference_.pose.orientation) # desired yaw for the turret wrt to world frame (used for error)
+            yaw_des = self.reference_.yaw # desired yaw for the turret wrt to world frame (used for error)
             yaw_base_w = quat_to_angle(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
             yaw_turret_b = quat_to_angle(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
             
@@ -202,7 +202,7 @@ class HamrControlNode(Node):
             D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
             # Cap desired velocity
-            desired_x_dot = P_x + I_x_term + D_x
+            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x # x_dot + P_x + I_x_term + D_x
             self.err_x_prev = err_x
 
             # - for y - #
@@ -214,7 +214,7 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_y_filt)
             D_y = self.gains["y"]["D"] * self.d_err_y_filt
 
-            desired_y_dot = P_y + I_y_term + D_y
+            desired_y_dot = self.reference_.y_dot + P_y + I_y_term + D_y
             self.err_y_prev = err_y
 
             desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
@@ -238,7 +238,7 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_yaw_filt)
             D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
 
-            desired_yaw_dot = max(-self.yaw_dot_limit, min(P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
+            desired_yaw_dot = max(-self.yaw_dot_limit, min(self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
 
             self.err_yaw_prev = err_yaw
         
@@ -280,12 +280,12 @@ class HamrControlNode(Node):
                 self.turret_to_base_orientation_ = t.transform.rotation # Quaternion
                 break
 
-    def callback_reference(self, msg: PoseWithCovariance):
+    def callback_reference(self, msg: ReferenceTraj):
         self.reference_ = msg
         self.I_x.reset()
         self.I_y.reset()
         self.I_yaw.reset()
-        self.get_logger().info("Going to target: " + str((msg.pose.position.x, msg.pose.position.y)))
+        self.get_logger().info("Going to target: " + str((msg.x, msg.y, msg.yaw)))
 
     def compute_velocities(self, desired_velocity, yaw):
         ''' Derived Jacobian based on dynamics - returns angular velocities for:
