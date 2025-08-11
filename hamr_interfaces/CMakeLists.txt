@@ -13,6 +13,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/StateError.msg"
   "msg/LiveGains.msg"
+  "msg/ReferenceTraj.msg"
 )
 
 # Add any additional runtime dependencies

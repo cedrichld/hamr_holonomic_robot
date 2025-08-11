@@ -3,7 +3,8 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
-from geometry_msgs.msg import PoseWithCovariance
+
+from hamr_interfaces.msg import ReferenceTraj
 
 import math
 import matplotlib.pyplot as plt
@@ -27,7 +28,7 @@ class OdomGraphNode(Node):
         self.tf_sub_ = self.create_subscription(
             TFMessage, "/tf", self.callback_tf, 1)
         self.reference_sub_ = self.create_subscription(
-            PoseWithCovariance, "/reference_trajectory", self.callback_reference, 1)
+            ReferenceTraj, "/reference_trajectory", self.callback_reference, 1)
         
         self.get_logger().info("OdomGraphNode started.")
         
@@ -46,20 +47,16 @@ class OdomGraphNode(Node):
         self.curr_y = msg.pose.pose.position.y
         self.curr_yaw_b_w = quat_to_angle(msg.pose.pose.orientation)
     
-    def callback_reference(self, msg: PoseWithCovariance):
-        self.reference_x = msg.pose.position.x
-        self.reference_y = msg.pose.position.y
-        self.reference_yaw = quat_to_angle(msg.pose.orientation)
+    def callback_reference(self, msg: ReferenceTraj):
+        self.reference_x = msg.x
+        self.reference_y = msg.y
+        self.reference_yaw = msg.yaw
 
     def callback_tf(self, msg: TFMessage):
         ''' Look through all TFs and find turret_link to get it's Quaternion '''
         for t in msg.transforms:
             if t.child_frame_id == "turret_link" and t.header.frame_id  == "base_link":
-                q = t.transform.rotation # Quaternion
-                self.curr_yaw_t_b = math.atan2(
-                    2.0 * (q.w * q.z + q.x * q.y),
-                    1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-                )
+                self.curr_yaw_t_b = quat_to_angle(t.transform.rotation)
                 break
 
 def main(args=None):
@@ -95,10 +92,10 @@ def main(args=None):
             t_buf.append(t)
             x_buf.append(node.curr_x)
             y_buf.append(node.curr_y)
-            yaw_buf.append(node.curr_yaw_b_w + node.curr_yaw_t_b)
+            yaw_buf.append(wrap_angle(node.curr_yaw_b_w + node.curr_yaw_t_b))
             x_buf_ref.append(node.reference_x)
             y_buf_ref.append(node.reference_y)
-            yaw_buf_ref.append(node.reference_yaw)
+            yaw_buf_ref.append(wrap_angle(node.reference_yaw))
 
             # update lines
             line_x.set_data(t_buf, x_buf)
