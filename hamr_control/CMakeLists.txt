@@ -59,10 +59,4 @@ install(TARGETS hamr_controller
 install(TARGETS hamr_path_tracer 
   DESTINATION lib/${PROJECT_NAME})
 
-
-install(DIRECTORY launch/
-  DESTINATION share/${PROJECT_NAME}/launch
-)
-
-
 ament_package()
