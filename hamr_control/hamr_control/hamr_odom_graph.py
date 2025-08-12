@@ -62,24 +62,34 @@ def main(args=None):
     rclpy.init(args=args)
     node = OdomGraphNode()
 
-    # Set up live plot  
+    ### Fig 1: Odometry
     plt.ion()
-    fig, ax = plt.subplots()
-    ax.set_xlabel('Time (s)')
-    ax.set_ylabel('Value')
-    ax.set_title('Odometry: x, y, yaw')
-    line_x,   = ax.plot([], [], label='x', color='blue', linewidth=2)
-    line_y,   = ax.plot([], [], label='y', color='green', linewidth=2)
-    line_yaw, = ax.plot([], [], label='yaw', color='red', linewidth=2)
-    line_x_ref,   = ax.plot([], [], label='x_ref', color='blue', linewidth=1, linestyle='dashed')
-    line_y_ref,   = ax.plot([], [], label='y_ref', color='green', linewidth=1, linestyle='dashed')
-    line_yaw_ref, = ax.plot([], [], label='yaw_ref', color='red', linewidth=1, linestyle='dashed')
-    ax.legend()
+    fig1, ax1 = plt.subplots()
+    ax1.set_xlabel('Time (s)')
+    ax1.set_ylabel('Value')
+    ax1.set_title('Odometry: x, y, yaw')
+    line_x,   = ax1.plot([], [], label='x', color='blue', linewidth=2)
+    line_y,   = ax1.plot([], [], label='y', color='green', linewidth=2)
+    line_yaw, = ax1.plot([], [], label='yaw', color='red', linewidth=2)
+    line_x_ref,   = ax1.plot([], [], label='x_ref', color='blue', linewidth=1, linestyle='dashed')
+    line_y_ref,   = ax1.plot([], [], label='y_ref', color='green', linewidth=1, linestyle='dashed')
+    line_yaw_ref, = ax1.plot([], [], label='yaw_ref', color='red', linewidth=1, linestyle='dashed')
+    ax1.legend()
 
     # data buffers
     t_buf, x_buf, y_buf, yaw_buf = [], [], [], []
     x_buf_ref, y_buf_ref, yaw_buf_ref = [], [], []
     t0 = time.time()
+
+    # Limit history
+    MAX_N = 300  # 30s at 10 Hz
+
+    def trim(*lists):
+        if MAX_N is None:
+            return
+        for L in lists:
+            if len(L) > MAX_N:
+                del L[:len(L) - MAX_N]
 
     try:
         while rclpy.ok():
@@ -96,20 +106,18 @@ def main(args=None):
             y_buf_ref.append(node.reference_y)
             yaw_buf_ref.append(wrap_angle(node.reference_yaw))
 
-            # update lines
+            # trim history
+            trim(t_buf, x_buf, y_buf, yaw_buf, x_buf_ref, y_buf_ref, yaw_buf_ref)
+
+            # update ODOM lines
             line_x.set_data(t_buf, x_buf)
             line_y.set_data(t_buf, y_buf)
             line_yaw.set_data(t_buf, yaw_buf)
-
             line_x_ref.set_data(t_buf, x_buf_ref)
             line_y_ref.set_data(t_buf, y_buf_ref)
             line_yaw_ref.set_data(t_buf, yaw_buf_ref)
+            ax1.relim(); ax1.autoscale_view()
 
-            # autoscale axes
-            ax.relim()
-            ax.autoscale_view()
-
-            plt.draw()
             plt.pause(0.001)
 
     except KeyboardInterrupt:

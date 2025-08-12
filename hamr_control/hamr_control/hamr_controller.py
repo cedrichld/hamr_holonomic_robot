@@ -11,24 +11,17 @@ from geometry_msgs.msg import PoseWithCovariance # used for reference and curren
 from geometry_msgs.msg import Quaternion # for the turret relative 
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
 
-from hamr_interfaces.msg import LiveGains
-from hamr_interfaces.msg import ReferenceTraj
+from hamr_interfaces.msg import LiveGains, ReferenceTraj
 
 ''' Main issues '''
-## FIXED: Using wrong yaw in Jacobian (and in pid_controller?)
-    # Fix1: Subscribe to JointState (or TF) to read the turret joint angle
-    # Fix2: Use yaw_drive = yaw_base + turret_angle in the Jacobian
-## FIXED: Controller timing (dt)
-    # Integrating using fixed dt but call from odom callback which 
-        # has its own rate (I/D will be way off)
-    # Fix: compute dt from msg.header.stamp or run timer
-    
 ### TODO: 
-## Velocity caps (gains, joint velocities and joint commands)
+## Tune parameters
+## Integrator windup issue?
 ## Fix alternating yaw (not working outside of 0)
-## Add second live graph with gains / joint commands
+## Velocity caps (gains, joint velocities and joint commands)
 
 ''' Smaller issues '''
+## Add second live graph with gains / joint commands
 
 ### - - UTILITIES - - ###
 def wrap_angle(a):
@@ -96,6 +89,7 @@ class HamrControlNode(Node):
         }
 
         self.declare_parameter("control_rate_hz", 100.0)
+        self.declare_parameter("d_alpha", 0.4)
 
         self.add_post_set_parameters_callback(self.parameters_callback)
 
@@ -117,7 +111,7 @@ class HamrControlNode(Node):
         self.control_rate_hz = self.get_parameter("control_rate_hz").value
         self.last_control_time = self.get_clock().now()
         self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
-        self.dt = 0
+        self.dt = 0.0
 
         ### - - Variables - - ###
 
@@ -134,7 +128,7 @@ class HamrControlNode(Node):
         self.d_err_x_filt = 0.0
         self.d_err_y_filt = 0.0
         self.d_err_yaw_filt = 0.0
-        self.d_alpha = 0.15 # 0 < alpha < 1 (lower stronger smoothing)
+        self.d_alpha = self.get_parameter("d_alpha").value # 0 < alpha < 1 (lower stronger smoothing)
 
         ## - - Integral Accumulators - - ##
         self.I_x = PIAccumulator(limit=5.0)
@@ -152,7 +146,7 @@ class HamrControlNode(Node):
         self.get_logger().info("HAMR Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
                                ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
                                 + "; P_y: " + str(self.gains["y"]["P"]) + 
-                               ", I_y: " + str(self.gains["y"]["I"]) + ", D_x: " + str(self.gains["y"]["D"])
+                               ", I_y: " + str(self.gains["y"]["I"]) + ", D_y: " + str(self.gains["y"]["D"])
                                 + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
                                 str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
 
@@ -184,9 +178,10 @@ class HamrControlNode(Node):
         P_yaw = D_yaw = I_yaw_term = 0.0
 
         ## x, y loop
-        if math.hypot(err_x, err_y) < self.threshold_x_y:
+        if math.hypot(err_x, err_y) < self.threshold_x_y \
+            and math.hypot(self.reference_.x_dot, self.reference_.y_dot) <= self.threshold_x_y:
             ## Check if at target
-            desired_x_dot, desired_y_dot = 0, 0
+            desired_x_dot, desired_y_dot = self.reference_.x_dot, self.reference_.y_dot
             self.err_x_prev = 0
             self.err_y_prev = 0
             self.I_x.reset()
@@ -202,7 +197,7 @@ class HamrControlNode(Node):
             D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
             # Cap desired velocity
-            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x # x_dot + P_x + I_x_term + D_x
+            desired_x_dot = 0.0 * self.reference_.x_dot + P_x + I_x_term + D_x # x_dot + P_x + I_x_term + D_x
             self.err_x_prev = err_x
 
             # - for y - #
@@ -214,7 +209,7 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_y_filt)
             D_y = self.gains["y"]["D"] * self.d_err_y_filt
 
-            desired_y_dot = self.reference_.y_dot + P_y + I_y_term + D_y
+            desired_y_dot = 0.0 * self.reference_.y_dot + P_y + I_y_term + D_y
             self.err_y_prev = err_y
 
             desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
@@ -226,7 +221,7 @@ class HamrControlNode(Node):
         ## yaw loop
         if abs(err_yaw) < self.threshold_yaw:
             ## Check if at target
-            desired_yaw_dot = 0 
+            desired_yaw_dot = 0.0 * self.reference_.yaw_dot
             self.err_yaw_prev = 0
             self.I_yaw.reset()
         else:
@@ -238,7 +233,7 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_yaw_filt)
             D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
 
-            desired_yaw_dot = max(-self.yaw_dot_limit, min(self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
+            desired_yaw_dot = max(-self.yaw_dot_limit, min(0.0 * self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
 
             self.err_yaw_prev = err_yaw
         
@@ -246,7 +241,9 @@ class HamrControlNode(Node):
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
                                         desired_yaw_dot]), yaw_turret_b) # desired vel
 
-    def publish_live_gains(self, P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw):
+    def publish_live_gains(self, P_x, D_x, I_x, 
+                           P_y, D_y, I_y, 
+                           P_yaw, D_yaw, I_yaw):
         gains = LiveGains()
         gains.p_x, gains.d_x, gains.i_x = P_x, D_x, I_x
         gains.p_y, gains.d_y, gains.i_y = P_y, D_y, I_y
@@ -282,9 +279,9 @@ class HamrControlNode(Node):
 
     def callback_reference(self, msg: ReferenceTraj):
         self.reference_ = msg
-        self.I_x.reset()
-        self.I_y.reset()
-        self.I_yaw.reset()
+        # self.I_x.reset()
+        # self.I_y.reset()
+        # self.I_yaw.reset()
         self.get_logger().info("Going to target: " + str((msg.x, msg.y, msg.yaw)))
 
     def compute_velocities(self, desired_velocity, yaw):
@@ -327,7 +324,7 @@ class HamrControlNode(Node):
             "I_yaw":("yaw", "I"),
             "D_yaw":("yaw", "D"),
         }
-        config_name_map = ("r_wheel", "a_wheel", "b_wheel")
+        config_name_map = ("r_wheel", "a_wheel", "b_wheel", "control_rate_hz", "d_alpha")
         for p in params:
             if p.name in pid_name_map:
                 group, term = pid_name_map[p.name]
