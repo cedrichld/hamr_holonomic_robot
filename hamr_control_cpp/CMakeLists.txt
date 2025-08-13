@@ -9,6 +9,8 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(hamr_interfaces REQUIRED)
 
 # Controller
@@ -30,8 +32,15 @@ add_executable(hamr_path_tracer
   src/hamr_path_tracer.cpp
 )
 ament_target_dependencies(hamr_path_tracer
-  rclcpp nav_msgs visualization_msgs geometry_msgs
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_geometry_msgs
 )
+
+
 target_include_directories(hamr_path_tracer PRIVATE include)
 
 install(TARGETS
