@@ -11,18 +11,21 @@ import numpy as np
 ## This current configuration does not work well most-probably bc the points are way too close
     # to the robot. the robot had way better control when the points were a meter or 2 away.
 ## TODO:
-    # ?Line following with a set distance, following a trajectory (set of points that are more spread out?)
-    # ?Maybe more sophisticated trajectory generation (e.g. using splines)
+    # SPLINES or more sophisticated trajectory generation
+    # More spread out waypoints in turns (based on curvature) > Display waypoints and traj on rviz using marker or smth
 
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
-        self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100.).value
+        v_lin = self.declare_parameter("v_lin", 1.0).value
+        w_yaw = self.declare_parameter("w_yaw", 0.2).value
+
+        self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
         self.state_error_sub_ = self.create_subscription(
             StateError, "/state_error", self.callback_state_error, 1)
         self.reference_trajectory_pub_ = self.create_publisher(
-            ReferenceTraj, "/reference_trajectory", 5
+            ReferenceTraj, "/reference_trajectory", 1
         )
 
         self.last_reference_time = self.get_clock().now()
@@ -33,18 +36,19 @@ class TrajectoryNode(Node):
         self.err_yaw = math.inf
 
         points = np.array([ # x, y, yaw
-            # [0.0, 0.0], # SQUARE
-            # [5.0, 0.0],
-            # [5.0, 5.0],
-            # [0.0, 5.0],
-            # [0.0, 0.0],
+            [0.0, 0.0, 0.0], # SQUARE
+            [5.0, 0.0, 0.0],
+            [5.0, 5.0, 0.0],
+            [0.0, 5.0, 0.0],
+            [0.0, 0.0, 0.0],
 
-            [0.0, 0.0, 0.0], # TRIANGLE
-            [5.0, 2.5, -1.0],
-            [0.0, 5.0, -2.0],
-            [0.0, 0.0, 1.0],
+            # [0.0, 0.0, 0.0], # TRIANGLE
+            # [5.0, 2.5, 0.0],
+            # [0.0, 5.0, 0.0],
+            # [0.0, 0.0, 0.0],
         ])
-        self.trajectory = WaypointTraj(points)
+        
+        self.trajectory = WaypointTraj(points, v_lin=v_lin, w_yaw=w_yaw)
     
     def callback_state_error(self, msg: StateError):
         self.err_xy = math.hypot(msg.err_x, msg.err_y)
@@ -65,11 +69,11 @@ class TrajectoryNode(Node):
 
 
 class WaypointTraj(object):
-    def __init__(self, points, speed=0.5):
+    def __init__(self, points, v_lin=0.6, w_yaw=0.3):
         """
-        Inputs: points, (N, 2) array of N waypoint coordinates in 2D
+        Inputs: points, (N, 3) array of N waypoint coordinates in 2D with yaw
         """
-        points = np.array(points)
+        points = np.array(points, dtype=float)
 
         # Keep points properly shaped
         if points.ndim == 1:
@@ -80,23 +84,34 @@ class WaypointTraj(object):
             if points.shape[0] == 3:
                 points = points.T
             else:
-                raise ValueError("points.shape[0] != 3")
+                raise ValueError("points must be (N, 3) or (3, N)")
 
-        self.points = points.astype(float)
-        self.speed = float(speed)
+        self.points = points
+        self.v_lin = float(v_lin)
+        self.w_yaw = float(w_yaw)
         self.N = len(points)
 
         def wrap_angle(a):
             return np.arctan2(np.sin(a), np.cos(a))
 
-        d = np.diff(self.points, axis=0) # (N-1,3)
-        d[:, 2] = wrap_angle(d[:, 2]) # wrap yaw deltas
+        d = np.diff(self.points, axis=0) # (N-1, 3)
+        d_xy = d[:, :2] # (N-1,2)
+        d_yaw = wrap_angle(d[:, 2]) # (N-1,)
 
-        self.segment_lengths = np.linalg.norm(d, axis=1, keepdims=True) # (N -1, 1)
-        self.l_hat = d / (self.segment_lengths + 1e-8) # unit directions
-        
-        self.segment_times = self.segment_lengths.flatten() / self.speed
-        self.t_start = np.hstack(([0.0], np.cumsum(self.segment_times)))
+        # Durations with separate linear/yaw limits
+        eps = 1e-9
+        d_xy_norm = np.linalg.norm(d_xy, axis=1) # (N-1,)
+        T_lin = d_xy_norm / max(self.v_lin, eps)
+        T_yaw = np.abs(d_yaw) / max(self.w_yaw, eps)
+        T = np.maximum(T_lin, T_yaw)
+        T[T < eps] = eps # avoid zero-length segments
+
+        # Precompute per-segment constant velocities
+        self.v_xy = (d_xy / T[:, None]) # (N-1, 2)
+        self.w = (d_yaw / T) # (N-1,)
+
+        # Timing
+        self.t_start = np.hstack(([0.0], np.cumsum(T))) # (N,)
         self.total_time = float(self.t_start[-1])
         
 
@@ -109,6 +124,9 @@ class WaypointTraj(object):
             q, position
             yaw, turret
         """
+        def wrap_angle(a):
+            return np.arctan2(np.sin(a), np.cos(a))
+    
         if t >= self.total_time:
             x_last, y_last, yaw_last = self.points[-1]
             return float(x_last), float(y_last), float(yaw_last), 0.0, 0.0, 0.0
@@ -116,11 +134,22 @@ class WaypointTraj(object):
         seg = int(np.searchsorted(self.t_start, t, side='right') - 1)
         dt = t - self.t_start[seg]
 
-        q = self.points[seg] + self.l_hat[seg] * self.speed * dt # (3,)
-        q_dot = self.l_hat[seg] * self.speed # (3,)
+        # Clamp dt inside segment just in case of numerical edge
+        seg_end = self.t_start[seg + 1]
+        if dt < 0.0: dt = 0.0
+        if dt > (seg_end - self.t_start[seg]): dt = seg_end - self.t_start[seg]
 
-        #      x            y            yaw          x_dot            y_dot            yaw_dot
-        return float(q[0]), float(q[1]), float(q[2]), float(q_dot[0]), float(q_dot[1]), float(q_dot[2])
+        # Integrate with constant per-segment velocities
+        x0, y0, yaw0 = self.points[seg]
+        vx, vy = self.v_xy[seg]
+        wyaw = self.w[seg]
+
+        x = x0 + vx * dt
+        y = y0 + vy * dt
+        yaw = wrap_angle(yaw0 + wyaw * dt)
+
+        #      x         y         yaw         x_dot      y_dot      yaw_dot
+        return float(x), float(y), float(yaw), float(vx), float(vy), float(wyaw)
 
 def main(args=None):
     rclpy.init(args=args)

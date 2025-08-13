@@ -40,7 +40,8 @@
 #   gz_topic_name: "/model/hamr/cmd_vel"
 #   ros_type_name: "geometry_msgs/msg/Twist"
 #   gz_type_name: "gz.msgs.Twist"
-#   direction: ROS_TO_GZ
+  # direction: ROS_TO_GZ
+
 - ros_topic_name: "/left_wheel/cmd_vel"
   gz_topic_name: "/model/hamr/joint/base_left_wheel_joint/cmd_vel"
   ros_type_name: "std_msgs/msg/Float64"
