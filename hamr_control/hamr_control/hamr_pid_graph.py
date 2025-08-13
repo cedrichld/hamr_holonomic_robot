@@ -27,30 +27,11 @@ def quat_to_angle(q):
 class OdomGraphNode(Node):
     def __init__(self):
         super().__init__("hamr_live_graph_node")
-        # self.odom_sub_ = self.create_subscription(
-            # Odometry, "/hamr/odom", self.callback_odom, 10
-        # )
-        # self.tf_sub_ = self.create_subscription(
-            # TFMessage, "/tf", self.callback_tf, 10
-        # )
-        # self.reference_sub_ = self.create_subscription(
-            # ReferenceTraj, "/reference_trajectory", self.callback_reference, 10
-        # )
         self.gains_sub_ = self.create_subscription(
             LiveGains, "/live_gains", self.callback_gains, 10
         )
         
         self.get_logger().info("HamrLiveGraphNode started.")
-        
-        # current values
-        # self.curr_x = 0.0
-        # self.curr_y = 0.0
-        # self.curr_yaw_b_w = 0.0
-        # self.curr_yaw_t_b = 0.0
-
-        # self.reference_x = 0.0
-        # self.reference_y = 0.0
-        # self.reference_yaw = 0.0
 
         self.live_gains = dict(
             p_x=0.0, i_x=0.0, d_x=0.0,
@@ -92,17 +73,6 @@ def main(args=None):
 
     ### Fig 1: Odometry
     plt.ion()
-    # fig1, ax1 = plt.subplots()
-    # ax1.set_xlabel('Time (s)')
-    # ax1.set_ylabel('Value')
-    # ax1.set_title('Odometry: x, y, yaw')
-    # line_x,   = ax1.plot([], [], label='x', color='blue', linewidth=2)
-    # line_y,   = ax1.plot([], [], label='y', color='green', linewidth=2)
-    # line_yaw, = ax1.plot([], [], label='yaw', color='red', linewidth=2)
-    # line_x_ref,   = ax1.plot([], [], label='x_ref', color='blue', linewidth=1, linestyle='dashed')
-    # line_y_ref,   = ax1.plot([], [], label='y_ref', color='green', linewidth=1, linestyle='dashed')
-    # line_yaw_ref, = ax1.plot([], [], label='yaw_ref', color='red', linewidth=1, linestyle='dashed')
-    # ax1.legend()
 
     ### Fig 2: Live PID Terms
     fig2, (axx, axy, axyaw) = plt.subplots(3, 1, sharex=True)
@@ -164,12 +134,6 @@ def main(args=None):
             # record timestamp and values
             t = time.time() - t0
             t_buf.append(t)
-            # x_buf.append(node.curr_x)
-            # y_buf.append(node.curr_y)
-            # yaw_buf.append(wrap_angle(node.curr_yaw_b_w + node.curr_yaw_t_b))
-            # x_buf_ref.append(node.reference_x)
-            # y_buf_ref.append(node.reference_y)
-            # yaw_buf_ref.append(wrap_angle(node.reference_yaw))
 
             # live PID terms
             px_buf.append(node.live_gains["p_x"]);   ix_buf.append(node.live_gains["i_x"]);   dx_buf.append(node.live_gains["d_x"])
@@ -179,15 +143,6 @@ def main(args=None):
             # trim history if needed
             trim(t_buf, #x_buf, y_buf, yaw_buf, x_buf_ref, y_buf_ref, yaw_buf_ref,
                  px_buf, ix_buf, dx_buf, py_buf, iy_buf, dy_buf, pyaw_buf, iyaw_buf, dyaw_buf)
-
-            # update ODOM lines
-            # line_x.set_data(t_buf, x_buf)
-            # line_y.set_data(t_buf, y_buf)
-            # line_yaw.set_data(t_buf, yaw_buf)
-            # line_x_ref.set_data(t_buf, x_buf_ref)
-            # line_y_ref.set_data(t_buf, y_buf_ref)
-            # line_yaw_ref.set_data(t_buf, yaw_buf_ref)
-            # ax1.relim(); ax1.autoscale_view()
 
             # --- update GAINS lines ---
             zeros = [0.0] * len(t_buf)
@@ -220,7 +175,6 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
-    
     
 if __name__ == "__main__":
     main()

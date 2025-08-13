@@ -17,11 +17,10 @@ import numpy as np
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
-        # inside TrajectoryNode.__init__
-        v_lin = self.declare_parameter("v_lin", 0.6).value
+        v_lin = self.declare_parameter("v_lin", 1.0).value
         w_yaw = self.declare_parameter("w_yaw", 0.2).value
 
-        self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 0.5).value
+        self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
         self.state_error_sub_ = self.create_subscription(
             StateError, "/state_error", self.callback_state_error, 1)
@@ -37,16 +36,16 @@ class TrajectoryNode(Node):
         self.err_yaw = math.inf
 
         points = np.array([ # x, y, yaw
-            # [0.0, 0.0], # SQUARE
-            # [5.0, 0.0],
-            # [5.0, 5.0],
-            # [0.0, 5.0],
-            # [0.0, 0.0],
-
-            [0.0, 0.0, 0.0], # TRIANGLE
-            [5.0, 2.5, 0.0],
+            [0.0, 0.0, 0.0], # SQUARE
+            [5.0, 0.0, 0.0],
+            [5.0, 5.0, 0.0],
             [0.0, 5.0, 0.0],
             [0.0, 0.0, 0.0],
+
+            # [0.0, 0.0, 0.0], # TRIANGLE
+            # [5.0, 2.5, 0.0],
+            # [0.0, 5.0, 0.0],
+            # [0.0, 0.0, 0.0],
         ])
         
         self.trajectory = WaypointTraj(points, v_lin=v_lin, w_yaw=w_yaw)

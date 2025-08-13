@@ -136,8 +136,8 @@ class HamrControlNode(Node):
         self.I_yaw = PIAccumulator(limit=2.0)
 
         ## - - Thresholds - - ##
-        self.threshold_x_y = 0.01
-        self.threshold_yaw = 0.01
+        self.threshold_x_y = 0.05 # 5cm 
+        self.threshold_yaw = 0.05 # 3 degrees
 
         ## - - Velocity Limits (Magnitude) - - ##
         self.xy_dot_limit = 5.0
@@ -186,6 +186,7 @@ class HamrControlNode(Node):
             self.err_y_prev = 0
             self.I_x.reset()
             self.I_y.reset()
+            self.get_logger().warn("RESET I_xy At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
         else:
             # - for x - #
             P_x = self.gains["x"]["P"] * err_x
@@ -197,7 +198,7 @@ class HamrControlNode(Node):
             D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
             # Cap desired velocity
-            desired_x_dot = 0.0 * self.reference_.x_dot + P_x + I_x_term + D_x # x_dot + P_x + I_x_term + D_x
+            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x # x_dot + P_x + I_x_term + D_x
             self.err_x_prev = err_x
 
             # - for y - #
@@ -209,7 +210,7 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_y_filt)
             D_y = self.gains["y"]["D"] * self.d_err_y_filt
 
-            desired_y_dot = 0.0 * self.reference_.y_dot + P_y + I_y_term + D_y
+            desired_y_dot = self.reference_.y_dot + P_y + I_y_term + D_y
             self.err_y_prev = err_y
 
             desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
@@ -221,9 +222,10 @@ class HamrControlNode(Node):
         ## yaw loop
         if abs(err_yaw) < self.threshold_yaw:
             ## Check if at target
-            desired_yaw_dot = 0.0 * self.reference_.yaw_dot
+            desired_yaw_dot = self.reference_.yaw_dot
             self.err_yaw_prev = 0
             self.I_yaw.reset()
+            self.get_logger().warn("RESET I_yaw At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
         else:
             P_yaw = self.gains["yaw"]["P"] * err_yaw
             I_yaw_term = self.gains["yaw"]["I"] * self.I_yaw.update(err_yaw, self.dt)
@@ -233,7 +235,7 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_yaw_filt)
             D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
 
-            desired_yaw_dot = max(-self.yaw_dot_limit, min(0.0 * self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
+            desired_yaw_dot = max(-self.yaw_dot_limit, min(self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
 
             self.err_yaw_prev = err_yaw
         
@@ -282,7 +284,7 @@ class HamrControlNode(Node):
         # self.I_x.reset()
         # self.I_y.reset()
         # self.I_yaw.reset()
-        self.get_logger().info("Going to target: " + str((msg.x, msg.y, msg.yaw)))
+        # self.get_logger().info("Going to target: " + str((msg.x, msg.y, msg.yaw)))
 
     def compute_velocities(self, desired_velocity, yaw):
         ''' Derived Jacobian based on dynamics - returns angular velocities for:
