@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from hamr_interfaces.msg import StateError
 from hamr_interfaces.msg import ReferenceTraj
 
@@ -67,7 +68,22 @@ class TrajectoryNode(Node):
             self.get_logger().info("Resetting traj")
             self.last_reference_time = self.get_clock().now()
 
-
+    # Used if we want to change parameter during runtime
+    def parameters_callback(self, params: list[Parameter]): 
+        for p in params:
+            if p.name == "v_lin":
+                self.trajectory.v_lin = p.value
+                self.get_logger().info(f"{p.name} changed to {p.value}")
+            elif p.name == "w_yaw":
+                self.trajectory.w_yaw = p.value
+                self.get_logger().info(f"{p.name} changed to {p.value}")
+            elif p.name == "reference_timer_hz":
+                self.reference_timer_hz = p.value
+                self.reference_timer_.cancel()
+                self.reference_timer_ = self.create_timer(
+                    1 / self.reference_timer_hz, self.reference_udpdate)
+                self.get_logger().info(f"{p.name} changed to {p.value}")
+            
 class WaypointTraj(object):
     def __init__(self, points, v_lin=0.6, w_yaw=0.3):
         """
