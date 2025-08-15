@@ -34,10 +34,10 @@
     <!-- <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" /> -->
 
     <!-- Launch HAMR Controller -->
-    <node pkg="hamr_control" exec="hamr_controller" >
+    <!-- <node pkg="hamr_control" exec="hamr_controller" >
         <param from="$(var pid_config_path)" />
     </node>
     <node pkg="hamr_control" exec="hamr_pid_graph" />
-    <node pkg="hamr_control" exec="hamr_odom_graph" />
+    <node pkg="hamr_control" exec="hamr_odom_graph" /> -->
 
 </launch>

@@ -1,0 +1,5 @@
+hamr_uros_bridge:
+  ros__parameters:
+    serial_port: /dev/ttyUSB0      # or a udev symlink like /dev/hamr_esp
+    baud: 460800
+    tx_rate_hz: 100.0

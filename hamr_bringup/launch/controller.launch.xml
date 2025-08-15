@@ -2,6 +2,9 @@
     <let name="pid_config_path"
         value="$(find-pkg-share hamr_bringup)/config/hamr_pid_params.yaml" />
 
+    <let name="bridge_params"
+     value="$(find-pkg-share hamr_bringup)/config/hamr_uros_bridge.yaml" />
+
     <!-- Launch HAMR Controller -->
     <node pkg="hamr_control_cpp" exec="hamr_controller">
         <param from="$(var pid_config_path)" />
@@ -15,5 +18,9 @@
         <!-- Optional params -->
         <param name="max_points" value="40000"/>
         <param name="publish_rate_hz" value="10.0"/>
+    </node>
+     <!-- === NEW: UART relay (PC -> ESP) === -->
+    <node pkg="hamr_uros_bridge" exec="relay_node" name="relay_node">
+        <param from="$(var bridge_params)"/>
     </node>
 </launch>
