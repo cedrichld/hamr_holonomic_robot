@@ -12,6 +12,7 @@ import numpy as np
 ## This current configuration does not work well most-probably bc the points are way too close
     # to the robot. the robot had way better control when the points were a meter or 2 away.
 ## TODO:
+    # Implement server call when new waypoint -> reset I terms
     # SPLINES or more sophisticated trajectory generation
     # More spread out waypoints in turns (based on curvature) > Display waypoints and traj on rviz using marker or smth
 
@@ -19,7 +20,7 @@ class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
         v_lin = self.declare_parameter("v_lin", 1.0).value
-        w_yaw = self.declare_parameter("w_yaw", 0.2).value
+        w_yaw = self.declare_parameter("w_yaw", 0.1).value
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
@@ -38,10 +39,22 @@ class TrajectoryNode(Node):
 
         points = np.array([ # x, y, yaw
             [0.0, 0.0, 0.0], # SQUARE
-            [5.0, 0.0, 0.0],
+            [5.0, 0.0, -0.0],
             [5.0, 5.0, 0.0],
             [0.0, 5.0, 0.0],
             [0.0, 0.0, 0.0],
+
+            # SQUARE
+            # [0.0, 0.0, 0.0], 
+            # [5.0, 0.0, -0.5],
+            # [5.0, 5.0, -1.0],
+            # [0.0, 5.0, -1.5],
+            # [0.0, 0.0, -2.0],
+            # SQUARE
+            # [5.0, 0.0, -2.5],
+            # [5.0, 5.0, -3.0],
+            # [0.0, 5.0, 0.0],
+            # [0.0, 0.0, 0.0],
 
             # [0.0, 0.0, 0.0], # TRIANGLE
             # [5.0, 2.5, 0.0],
@@ -129,6 +142,8 @@ class WaypointTraj(object):
         # Timing
         self.t_start = np.hstack(([0.0], np.cumsum(T))) # (N,)
         self.total_time = float(self.t_start[-1])
+
+        self.last_seg = 0
         
 
     def update(self, t: float):
@@ -148,6 +163,8 @@ class WaypointTraj(object):
             return float(x_last), float(y_last), float(yaw_last), 0.0, 0.0, 0.0
 
         seg = int(np.searchsorted(self.t_start, t, side='right') - 1)
+        if seg > self.last_seg:
+            self.last_seg = seg
         dt = t - self.t_start[seg]
 
         # Clamp dt inside segment just in case of numerical edge
