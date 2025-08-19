@@ -64,3 +64,8 @@ points = np.array([
     [0.0, 0.0, 0.0]
 ])
 ```
+### To start Micro ROS Bridge
+Run your controller (publishing the topics as it is), just one more extra step, in a separate terminal (or add to your launch file) run the bridge:
+```bash
+ros2 run hamr_uros_bridge relay_node
+```
