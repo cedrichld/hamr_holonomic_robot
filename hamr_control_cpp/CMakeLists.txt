@@ -12,6 +12,8 @@ find_package(tf2_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(hamr_interfaces REQUIRED)
+find_package(yaml-cpp REQUIRED)
+find_path(NANOFALN_INCLUDE_DIR nanoflann.hpp)
 
 # Controller
 add_executable(hamr_controller
@@ -40,13 +42,49 @@ ament_target_dependencies(hamr_path_tracer
   tf2_geometry_msgs
 )
 
+add_executable(map_publisher 
+  src/map_publisher.cpp
+)
+ament_target_dependencies(map_publisher
+  rclcpp 
+  nav_msgs
+)
+target_link_libraries(map_publisher yaml-cpp)
+
+add_executable(prm_builder
+  src/prm_builder.cpp
+)
+ament_target_dependencies(prm_builder
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+)
+
+add_executable(astar_search
+  src/astar_search.cpp
+)
+ament_target_dependencies(astar_search
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+)
 
 target_include_directories(hamr_path_tracer PRIVATE include)
+
+if(NANOFLANN_INCLUDE_DIR)
+  target_include_directories(prm_builder PRIVATE ${NANOFLANN_INCLUDE_DIR})
+endif()
 
 install(TARGETS
   hamr_controller
   hamr_path_tracer
+  map_publisher
+  prm_builder
+  astar_search
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
 
 ament_package()

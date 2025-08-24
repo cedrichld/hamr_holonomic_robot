@@ -31,6 +31,10 @@
     <node pkg="rviz2" exec="rviz2" output="screen"
           args="-d $(var rviz_config_path)" />
 
+    <node pkg="tf2_ros" exec="static_transform_publisher"
+        name="static_map_to_odom" output="screen"
+        args="0 0 0 0 0 0 map odom"/>
+
     <!-- <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" /> -->
 
     <!-- Launch HAMR Controller -->
