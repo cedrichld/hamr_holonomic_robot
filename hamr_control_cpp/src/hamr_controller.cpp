@@ -1,300 +1,218 @@
-#include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/float64.hpp"
-#include "nav_msgs/msg/odometry.hpp"
-#include "nav_msgs/msg/path.hpp"
-#include "geometry_msgs/msg/twist.hpp"
-#include <chrono>
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+#include <std_msgs/msg/float64.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <cmath>
-#include <algorithm>
-#include <vector>
+#include <memory>
 
-using namespace std;
-using namespace std::chrono_literals;
-
-enum class State { WAITING_FOR_PATH, FOLLOWING_PATH, GOAL_REACHED, STOPPED };
-
-struct Point {
-    double x, y;
-    Point(double x = 0, double y = 0) : x(x), y(y) {}
-    
-    double distance_to(const Point& other) const {
-        return std::hypot(x - other.x, y - other.y);
-    }
-};
-
-static double normalize_angle(double a) {
-    while (a > M_PI) a -= 2.0 * M_PI;
-    while (a <= -M_PI) a += 2.0 * M_PI;
-    return a;
-}
-
-static double deg2rad(double d) { return d * M_PI / 180.0; }
-
-class HamrPathFollower : public rclcpp::Node {
+class HamrPointToPoint : public rclcpp::Node {
 public:
-    HamrPathFollower()
-    : Node("hamr_path_follower"),
-      max_linear_speed_(declare_parameter("max_linear_speed", 2.0)),      
-      max_angular_speed_(declare_parameter("max_angular_speed", 4.0)),    
-      wheel_base_(declare_parameter("wheel_base_m", 0.16)),               
-      lookahead_distance_(declare_parameter("lookahead_distance_m", 0.8)),
-      position_tolerance_(declare_parameter("position_tolerance_m", 0.3)),
-      angle_tolerance_(deg2rad(declare_parameter("angle_tolerance_deg", 10.0))),
-      k_linear_(declare_parameter("k_linear", 1.5)),                      
-      k_angular_(declare_parameter("k_angular", 3.0)),
-      goal_timeout_s_(declare_parameter("goal_timeout_s", 2.0)),
-      use_pure_pursuit_(declare_parameter("use_pure_pursuit", true))
-    {
-        left_pub_ = create_publisher<std_msgs::msg::Float64>("/left_wheel/cmd_vel", 1);
-        right_pub_ = create_publisher<std_msgs::msg::Float64>("/right_wheel/cmd_vel", 1);
-        cmd_vel_pub_ = create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 1);
+  HamrPointToPoint()
+  : rclcpp::Node("hamr_point_to_point"),
+    tf_buffer_(this->get_clock()),
+    tf_listener_(tf_buffer_) {
 
-        odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
-            "/hamr/odom", 40,
-            [this](const nav_msgs::msg::Odometry::SharedPtr m){ this->onOdometry(m); });
+    // pubs
+    left_pub_  = create_publisher<std_msgs::msg::Float64>("/left_wheel/cmd_vel", 10);
+    right_pub_ = create_publisher<std_msgs::msg::Float64>("/right_wheel/cmd_vel", 10);
+    turret_pub_= create_publisher<std_msgs::msg::Float64>("/turret/cmd_vel", 10);
 
-        path_sub_ = create_subscription<nav_msgs::msg::Path>(
-            "/astar/path", 10,
-            [this](const nav_msgs::msg::Path::SharedPtr p){ this->onPath(p); });
+    // subs
+    path_sub_ = create_subscription<nav_msgs::msg::Path>(
+      "/astar/path", 10, std::bind(&HamrPointToPoint::onPath, this, std::placeholders::_1));
+    odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
+      "/hamr/odom", 20, std::bind(&HamrPointToPoint::onOdom, this, std::placeholders::_1));
 
-        timer_ = create_wall_timer(20ms, [this]{ this->tick(); });
+    // params
+    wheel_base_         = declare_parameter("wheel_base_m", 0.19682);
+    linear_speed_       = declare_parameter("linear_speed_mps", 0.30);     // fixed v
+    angular_speed_      = declare_parameter("angular_speed_rps", 0.50);    // fixed w
+    position_tolerance_ = declare_parameter("position_tolerance_m", 0.08); // “at WP”
+    align_tolerance_    = declare_parameter("align_tolerance_deg", 8.0) * M_PI/180.0; // face WP
+    settle_time_s_      = declare_parameter("settle_time_s", 0.25);
+    start_wp_idx_       = declare_parameter("start_waypoint_index", 1);    // 0-based; 1 == “waypoint 2”
 
-        state_ = State::WAITING_FOR_PATH;
-        RCLCPP_INFO(this->get_logger(), "HAMR Path Follower initialized. Waiting for path...");
-    }
+    timer_ = create_wall_timer(std::chrono::milliseconds(20), std::bind(&HamrPointToPoint::tick, this));
+
+    RCLCPP_INFO(get_logger(), "PTP follower: v=%.2f m/s, w=%.2f rad/s, start_wp=%zu",
+                linear_speed_, angular_speed_, start_wp_idx_);
+  }
 
 private:
-    void onOdometry(const nav_msgs::msg::Odometry::SharedPtr &msg) {
-        curr_x_ = msg->pose.pose.position.x;
-        curr_y_ = msg->pose.pose.position.y;
+  enum class Phase { IDLE, ALIGN, DRIVE, SETTLE, DONE };
 
-        const auto &q = msg->pose.pose.orientation;
-        const double s = 2.0 * (q.w * q.z + q.x * q.y);
-        const double c = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
-        curr_yaw_ = std::atan2(s, c);
+  // I/O
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr left_pub_, right_pub_, turret_pub_;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp::TimerBase::SharedPtr timer_;
 
-        have_odom_ = true;
+  // TF
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_listener_;
+
+  // params
+  double wheel_base_{};
+  double linear_speed_{};
+  double angular_speed_{};
+  double position_tolerance_{};
+  double align_tolerance_{};
+  double settle_time_s_{};
+  size_t start_wp_idx_{};
+
+  // state
+  nav_msgs::msg::Path::SharedPtr path_;
+  nav_msgs::msg::Odometry::SharedPtr odom_;
+  size_t wp_idx_{0};
+  Phase phase_{Phase::IDLE};
+  rclcpp::Time settle_start_;
+
+  // utils
+  static double yawOf(const geometry_msgs::msg::Quaternion& q) {
+    return std::atan2(2.0*(q.w*q.z + q.x*q.y), 1.0 - 2.0*(q.y*q.y + q.z*q.z));
+  }
+  static double angNorm(double a){
+    while (a >  M_PI) a -= 2*M_PI;
+    while (a <= -M_PI) a += 2*M_PI;
+    return a;
+  }
+  void wheels(double v, double w){
+    std_msgs::msg::Float64 L,R,T;
+    L.data = v - (w*wheel_base_)/2.0;
+    R.data = v + (w*wheel_base_)/2.0;
+    T.data = 0.0;
+    left_pub_->publish(L); right_pub_->publish(R); turret_pub_->publish(T);
+  }
+  void stop(){ wheels(0.0, 0.0); }
+
+  bool mapToOdom(const geometry_msgs::msg::PoseStamped& in_map, geometry_msgs::msg::PoseStamped& out_odom){
+    try {
+      auto tf = tf_buffer_.lookupTransform("odom", in_map.header.frame_id, tf2::TimePointZero);
+      tf2::doTransform(in_map, out_odom, tf);
+      return true;
+    } catch (const tf2::TransformException& ex) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Missing TF %s->odom: %s",
+                           in_map.header.frame_id.c_str(), ex.what());
+      return false;
+    }
+  }
+
+  // callbacks
+  void onPath(const nav_msgs::msg::Path::SharedPtr msg){
+    if (!msg || msg->poses.empty()) {
+      RCLCPP_WARN(get_logger(), "Empty path received");
+      return;
+    }
+    path_ = msg;
+    wp_idx_ = std::min(start_wp_idx_, msg->poses.size()-1);   // start at requested WP (e.g., #2)
+    phase_ = Phase::ALIGN;                                    // always align first
+    settle_start_ = now();
+    RCLCPP_INFO(get_logger(), "Path with %zu WPs (frame=%s). Starting at WP %zu.",
+                msg->poses.size(), msg->header.frame_id.c_str(), wp_idx_+1);
+  }
+
+  void onOdom(const nav_msgs::msg::Odometry::SharedPtr msg){ odom_ = msg; }
+
+  void tick(){
+    if (!path_ || !odom_) return;
+    if (wp_idx_ >= path_->poses.size()){
+      if (phase_ != Phase::DONE) { stop(); phase_ = Phase::DONE; RCLCPP_INFO(get_logger(), "Path done."); }
+      return;
     }
 
-    void onPath(const nav_msgs::msg::Path::SharedPtr &msg) {
-        if (msg->poses.empty()) {
-            RCLCPP_WARN(this->get_logger(), "Received empty path");
-            return;
-        }
+    // current robot pose (odom)
+    const double rx = odom_->pose.pose.position.x;
+    const double ry = odom_->pose.pose.position.y;
+    const double ryaw = yawOf(odom_->pose.pose.orientation);
 
-        path_waypoints_.clear();
-        for (const auto& pose : msg->poses) {
-            path_waypoints_.emplace_back(pose.pose.position.x, pose.pose.position.y);
-        }
+    // current waypoint in odom
+    const auto& wp_map = path_->poses[wp_idx_];
+    geometry_msgs::msg::PoseStamped wp_odom;
+    if (!mapToOdom(wp_map, wp_odom)) { stop(); return; }
 
-        current_waypoint_idx_ = 0;
-        state_ = State::FOLLOWING_PATH;
-        goal_timer_ = this->now();
+    const double tx = wp_odom.pose.position.x;
+    const double ty = wp_odom.pose.position.y;
 
-        RCLCPP_INFO(this->get_logger(), "Received new path with %zu waypoints", path_waypoints_.size());
-        RCLCPP_INFO(this->get_logger(), "Goal: (%.2f, %.2f)", 
-                   path_waypoints_.back().x, path_waypoints_.back().y);
+    const double dx = tx - rx;
+    const double dy = ty - ry;
+    const double dist = std::hypot(dx, dy);
+    const double yaw_des = std::atan2(dy, dx);
+    const double yaw_err = angNorm(yaw_des - ryaw);
+
+    // reached?
+    if (dist <= position_tolerance_) {
+      stop();
+      ++wp_idx_;
+      if (wp_idx_ >= path_->poses.size()) { phase_ = Phase::DONE; RCLCPP_INFO(get_logger(), "All waypoints reached."); return; }
+      phase_ = Phase::ALIGN;               // next waypoint: align then drive
+      settle_start_ = now();
+      RCLCPP_INFO(get_logger(), "Reached WP %zu. Next: WP %zu.", wp_idx_, wp_idx_+1);
+      return;
     }
 
-    void tick() {
-        if (!have_odom_) {
-            publishZero();
-            return;
-        }
+    // logs
+    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
+      "State:%s  WP %zu/%zu  Robot:(%.2f,%.2f,%.1f°)  Target:(%.2f,%.2f)  Dist:%.2fm  YawErr:%.1f°",
+      phaseName(phase_), wp_idx_+1, path_->poses.size(),
+      rx, ry, ryaw*180.0/M_PI, tx, ty, dist, yaw_err*180.0/M_PI);
 
-        switch (state_) {
-            case State::WAITING_FOR_PATH:
-                publishZero();
-                break;
-            case State::FOLLOWING_PATH:
-                followPath();
-                break;
-            case State::GOAL_REACHED:
-                publishZero();
-                checkForNewPath();
-                break;
-            case State::STOPPED:
-                publishZero();
-                break;
-        }
-    }
-
-    void followPath() {
-        if (path_waypoints_.empty()) {
-            state_ = State::WAITING_FOR_PATH;
-            return;
-        }
-
-        Point current_pos(curr_x_, curr_y_);
-        Point goal = path_waypoints_.back();
-        
-        // Check if we've reached the final goal
-        double goal_distance = current_pos.distance_to(goal);
-        if (goal_distance < position_tolerance_) {
-            state_ = State::GOAL_REACHED;
-            RCLCPP_INFO(this->get_logger(), "Goal reached! Distance: %.3f", goal_distance);
-            return;
-        }
-
-        // Check for timeout
-        if ((this->now() - goal_timer_).seconds() > goal_timeout_s_ * path_waypoints_.size()) {
-            RCLCPP_WARN(this->get_logger(), "Path following timeout");
-            state_ = State::STOPPED;
-            return;
-        }
-
-        Point target_point;
-        if (use_pure_pursuit_) {
-            target_point = findLookaheadPoint();
+    // FSM with fixed speeds
+    switch (phase_) {
+      case Phase::ALIGN:
+      {
+        if (std::fabs(yaw_err) > align_tolerance_) {
+          const double w = (yaw_err >= 0.0) ? +angular_speed_ : -angular_speed_;
+          wheels(0.0, w);                      // pure rotate
+          settle_start_ = now();               // refresh settle while moving
         } else {
-            target_point = findNextWaypoint();
+          stop();
+          if ((now() - settle_start_).seconds() >= settle_time_s_) {
+            phase_ = Phase::DRIVE;
+            RCLCPP_INFO(get_logger(), "Aligned to WP %zu. Driving straight...", wp_idx_+1);
+          }
         }
+        break;
+      }
 
-        // Calculate control commands
-        double dx = target_point.x - curr_x_;
-        double dy = target_point.y - curr_y_;
-        double distance = std::hypot(dx, dy);
-        
-        if (distance < 0.05) {
-            publishZero();
-            return;
-        }
+      case Phase::DRIVE:
+      {
+        // No drift check: just go straight
+        wheels(linear_speed_, 0.0);
+        // when dist <= position_tolerance_ we’ll stop/advance above
+        break;
+      }
 
-        // Calculate desired heading
-        double desired_heading = std::atan2(dy, dx);
-        double heading_error = normalize_angle(desired_heading - curr_yaw_);
-        
-        // Speed control based on heading error and distance to goal
-        double speed_factor = 1.0;
-        if (std::fabs(heading_error) > deg2rad(30.0)) {
-            speed_factor *= 0.5; // Slow down for sharp turns
-        }
-        if (goal_distance < 1.0) {
-            speed_factor *= std::max(0.3, goal_distance); // Slow down near goal
-        }
+      case Phase::SETTLE:   // (not used but kept for completeness)
+        if ((now() - settle_start_).seconds() >= settle_time_s_) phase_ = Phase::ALIGN;
+        break;
 
-        double linear_vel = std::min(max_linear_speed_ * speed_factor, k_linear_ * distance);
-        double angular_vel = k_angular_ * heading_error;
-        
-        // Clamp velocities
-        linear_vel = std::clamp(linear_vel, 0.0, max_linear_speed_);
-        angular_vel = std::clamp(angular_vel, -max_angular_speed_, max_angular_speed_);
-
-        // Apply minimum speeds to overcome friction
-        if (linear_vel > 0.0 && linear_vel < 0.1) linear_vel = 0.1;
-        if (std::fabs(angular_vel) > 0.0 && std::fabs(angular_vel) < 0.2) {
-            angular_vel = std::copysign(0.2, angular_vel);
-        }
-
-        convertToWheelSpeeds(linear_vel, angular_vel);
-        publishCmdVel(linear_vel, angular_vel);
+      case Phase::IDLE:
+      case Phase::DONE:
+      default:
+        stop();
+        break;
     }
+  }
 
-    Point findLookaheadPoint() {
-        Point current_pos(curr_x_, curr_y_);
-        
-        // Start from current waypoint and look ahead
-        for (size_t i = current_waypoint_idx_; i < path_waypoints_.size(); ++i) {
-            double dist = current_pos.distance_to(path_waypoints_[i]);
-            
-            if (dist >= lookahead_distance_) {
-                current_waypoint_idx_ = std::max(current_waypoint_idx_, i > 0 ? i - 1 : 0);
-                return path_waypoints_[i];
-            }
-        }
-        
-        // If no point is far enough, return the last waypoint
-        return path_waypoints_.back();
+  const char* phaseName(Phase p) const {
+    switch(p){
+      case Phase::IDLE: return "IDLE";
+      case Phase::ALIGN: return "ALIGN";
+      case Phase::DRIVE: return "MOVING";
+      case Phase::SETTLE: return "SETTLING";
+      case Phase::DONE: return "DONE";
     }
-
-    Point findNextWaypoint() {
-        Point current_pos(curr_x_, curr_y_);
-        
-        // Advance waypoint if we're close to the current one
-        while (current_waypoint_idx_ < path_waypoints_.size() - 1) {
-            double dist = current_pos.distance_to(path_waypoints_[current_waypoint_idx_]);
-            if (dist < lookahead_distance_ * 0.5) {
-                current_waypoint_idx_++;
-            } else {
-                break;
-            }
-        }
-        
-        return path_waypoints_[current_waypoint_idx_];
-    }
-
-    void checkForNewPath() {
-        // Stay in GOAL_REACHED state until a new path arrives
-        // This prevents the robot from moving if the goal is republished
-        static auto last_log_time = this->now();
-        if ((this->now() - last_log_time).seconds() > 5.0) {
-            RCLCPP_INFO(this->get_logger(), "At goal, waiting for new path...");
-            last_log_time = this->now();
-        }
-    }
-
-    void convertToWheelSpeeds(double linear_vel, double angular_vel) {
-        double wheel_vel_left = linear_vel - (angular_vel * wheel_base_) / 2.0;
-        double wheel_vel_right = linear_vel + (angular_vel * wheel_base_) / 2.0;
-
-        std_msgs::msg::Float64 L, R;
-        L.data = wheel_vel_left;
-        R.data = wheel_vel_right;
-        
-        left_pub_->publish(L);
-        right_pub_->publish(R);
-    }
-
-    void publishCmdVel(double linear, double angular) {
-        geometry_msgs::msg::Twist cmd;
-        cmd.linear.x = linear;
-        cmd.angular.z = angular;
-        cmd_vel_pub_->publish(cmd);
-    }
-
-    void publishZero() {
-        std_msgs::msg::Float64 L, R;
-        L.data = R.data = 0.0;
-        left_pub_->publish(L);
-        right_pub_->publish(R);
-        
-        geometry_msgs::msg::Twist cmd;
-        cmd_vel_pub_->publish(cmd);
-    }
-
-    // ROS I/O
-    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr left_pub_, right_pub_;
-    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-    rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
-    rclcpp::TimerBase::SharedPtr timer_;
-
-    // Parameters
-    double max_linear_speed_;
-    double max_angular_speed_;
-    double wheel_base_;
-    double lookahead_distance_;
-    double position_tolerance_;
-    double angle_tolerance_;
-    double k_linear_;
-    double k_angular_;
-    double goal_timeout_s_;
-    bool use_pure_pursuit_;
-
-    // State
-    State state_;
-    bool have_odom_{false};
-    std::vector<Point> path_waypoints_;
-    size_t current_waypoint_idx_{0};
-    rclcpp::Time goal_timer_;
-
-    // Current pose
-    double curr_x_{0.0}, curr_y_{0.0}, curr_yaw_{0.0};
+    return "?";
+  }
 };
 
 int main(int argc, char** argv) {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HamrPathFollower>());
-    rclcpp::shutdown();
-    return 0;
+  rclcpp::init(argc, argv);
+  rclcpp::spin(std::make_shared<HamrPointToPoint>());
+  rclcpp::shutdown();
+  return 0;
 }

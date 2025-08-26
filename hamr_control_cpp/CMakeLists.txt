@@ -10,6 +10,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(hamr_interfaces REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -21,7 +22,15 @@ add_executable(hamr_controller
   src/hamr_control_node.cpp
 )
 ament_target_dependencies(hamr_controller
-  rclcpp std_msgs nav_msgs geometry_msgs tf2_msgs hamr_interfaces
+  rclcpp 
+  std_msgs 
+  nav_msgs 
+  geometry_msgs 
+  tf2_msgs 
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  hamr_interfaces
 )
 target_include_directories(hamr_controller PRIVATE include)
 
@@ -69,6 +78,9 @@ ament_target_dependencies(astar_search
   nav_msgs
   geometry_msgs
   visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
 )
 
 target_include_directories(hamr_path_tracer PRIVATE include)

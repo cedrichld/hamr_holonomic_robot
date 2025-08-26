@@ -5,6 +5,9 @@
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <std_msgs/msg/int32_multi_array.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2/utils.h>
 
 #include <queue>
 #include <unordered_map>
@@ -21,6 +24,29 @@ public:
         heuristic_weight_ = declare_parameter<double>("heuristic_weight", 1.0);
         inflation_radius_m_ = declare_parameter<double>("inflation_radius_m", 0.2);
         allow_diagonal_ = declare_parameter<bool>("allow_diagonal", true);
+        
+        use_tf_start_ = declare_parameter<bool>("use_tf_start", true);
+        map_frame_    = declare_parameter<std::string>("map_frame",  "map");
+        base_frame_   = declare_parameter<std::string>("base_frame", "base_link");
+
+        tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+        tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+        tf_timer_ = create_wall_timer(std::chrono::milliseconds(100), [this](){
+            if(!use_tf_start_) return;
+            try{
+                auto tf = tf_buffer_->lookupTransform(map_frame_, base_frame_, tf2::TimePointZero);
+                start_pose_tf_.header = tf.header;
+                start_pose_tf_.pose.position.x = tf.transform.translation.x;
+                start_pose_tf_.pose.position.y = tf.transform.translation.y;
+                start_pose_tf_.pose.position.z = 0.0;
+                start_pose_tf_.pose.orientation = tf.transform.rotation;
+                have_start_tf_ = true;
+                // if(use_tf_start_ && have_map_ && have_goal_) planPath();
+            } catch (tf2::TransformException & ex) {
+                RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000, "Could not get transform: %s", ex.what());
+                have_start_tf_ = false;
+            }
+        });
 
         rclcpp::QoS latched(1); 
         latched.reliable().transient_local();
@@ -78,6 +104,29 @@ private:
     
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr explored_pub_;
+
+    // TF
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+
+    bool use_tf_start_{true};
+    std::string map_frame_{"map"};
+    std::string base_frame_{"base_link"};
+    geometry_msgs::msg::PoseStamped start_pose_tf_;
+    bool have_start_tf_{false}; 
+    rclcpp::TimerBase::SharedPtr tf_timer_;
+
+    bool getStartPose(geometry_msgs::msg::PoseStamped & out) {
+        if(use_tf_start_){
+            if(!have_start_tf_) return false;
+            out = start_pose_tf_;
+            return true;
+        } else {
+            if(!have_start_) return false;
+            out = start_;
+            return true;
+        }
+    }
 
     struct GridNode {
         int x, y;
@@ -280,8 +329,10 @@ private:
             return path;
         }
 
-        double start_x = start_.pose.position.x;
-        double start_y = start_.pose.position.y;
+        geometry_msgs::msg::PoseStamped start_pose;
+        if(!getStartPose(start_pose)) return path;
+        double start_x = start_pose.pose.position.x;
+        double start_y = start_pose.pose.position.y;
         double goal_x = goal_.pose.position.x;
         double goal_y = goal_.pose.position.y;
 
@@ -444,9 +495,20 @@ private:
     }
 
     void planPath() {
-        if (!have_map_ || !have_start_ || !have_goal_) {
-            RCLCPP_WARN(get_logger(), "Missing data: map=%s, start=%s, goal=%s", 
-                       have_map_ ? "✓" : "✗", have_start_ ? "✓" : "✗", have_goal_ ? "✓" : "✗");
+        // if (!have_map_ || !have_start_ || !have_goal_) {
+        //     RCLCPP_WARN(get_logger(), "Missing data: map=%s, start=%s, goal=%s", 
+        //                have_map_ ? "✓" : "✗", have_start_ ? "✓" : "✗", have_goal_ ? "✓" : "✗");
+        //     return;
+        // }
+
+        if (!have_map_ || !have_goal_) {
+            RCLCPP_WARN(get_logger(), "Missing data: map=%s, goal=%s", 
+                       have_map_ ? "✓" : "✗", have_goal_ ? "✓" : "✗");
+            return;
+        }
+        geometry_msgs::msg::PoseStamped start_pose;
+        if(!getStartPose(start_pose)){
+            RCLCPP_WARN(get_logger(), "Start pose not available yet");
             return;
         }
 
@@ -462,7 +524,7 @@ private:
             path = prmAStar();
         } else {
             int start_x, start_y, goal_x, goal_y;
-            if (!worldToMap(start_.pose.position.x, start_.pose.position.y, start_x, start_y) ||
+            if (!worldToMap(start_pose.pose.position.x, start_pose.pose.position.y, start_x, start_y) ||
                 !worldToMap(goal_.pose.position.x, goal_.pose.position.y, goal_x, goal_y)) {
                 RCLCPP_ERROR(get_logger(), "Start or goal outside map bounds");
                 return;
