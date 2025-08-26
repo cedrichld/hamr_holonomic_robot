@@ -1,0 +1,43 @@
+<launch>
+    <let name="pid_config_path"
+        value="$(find-pkg-share hamr_bringup)/config/hamr_pid_params.yaml" />
+
+    <let name="bridge_params"
+     value="$(find-pkg-share hamr_bringup)/config/hamr_uros_bridge.yaml" />
+
+    <!-- Launch HAMR Controller -->
+    <node pkg="hamr_control_cpp" exec="hamr_controller">
+        <param from="$(var pid_config_path)" />
+    </node>
+
+    <!-- Launch odom graph -->
+    <node pkg="hamr_control" exec="hamr_odom_graph" />
+
+    <!-- Path tracer (publishes /hamr/path and /hamr/path_marker) -->
+    <node pkg="hamr_control_cpp" exec="hamr_path_tracer">
+        <!-- Optional params -->
+        <param name="max_points" value="40000"/>
+        <param name="publish_rate_hz" value="10.0"/>
+    </node>
+
+    <!-- <node pkg="tf2_ros" exec="static_transform_publisher"
+        name="static_map_to_odom" output="screen"
+        args="0 0 0 0 0 0 map odom"/> -->
+
+     <!-- === NEW: UART relay (PC -> ESP) === -->
+    <node pkg="hamr_uros_bridge" exec="relay_node" name="relay_node">
+        <param from="$(var bridge_params)"/>
+    </node>
+
+    <!-- === NEW: Static TF map->odom (remove later if AMCL/SLAM publishes it) === -->
+    
+    <node pkg="hamr_control_cpp" exec="map_publisher" name="map_publisher" output="screen">
+        <param name="yaml_path" value="/home/kartik/hamr_ws/src/hamr_holonomic_robot/map/hamr_maze.yaml"/>
+        <param name="frame_id" value="map"/>
+        <param name="publish_rate_hz" value="2.0"/>
+    </node>
+
+    
+   
+
+</launch>
