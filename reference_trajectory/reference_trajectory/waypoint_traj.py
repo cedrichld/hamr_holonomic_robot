@@ -5,6 +5,8 @@ from rclpy.parameter import Parameter
 from hamr_interfaces.msg import StateError
 from hamr_interfaces.msg import ReferenceTraj
 
+from nav_msgs.msg import Path
+
 import math
 import numpy as np
 
@@ -16,16 +18,22 @@ import numpy as np
     # SPLINES or more sophisticated trajectory generation
     # More spread out waypoints in turns (based on curvature) > Display waypoints and traj on rviz using marker or smth
 
+def quat_to_angle(q):
+    return math.atan2(
+            2.0 * (q.w * q.z + q.x * q.y),
+            1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        )
+
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
-        v_lin = self.declare_parameter("v_lin", 1.0).value
-        w_yaw = self.declare_parameter("w_yaw", 0.1).value
+        self.v_lin = self.declare_parameter("v_lin", 0.2).value
+        self.w_yaw = self.declare_parameter("w_yaw", 0.1).value
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
-        self.state_error_sub_ = self.create_subscription(
-            StateError, "/state_error", self.callback_state_error, 1)
+        # self.state_error_sub_ = self.create_subscription(
+        #     StateError, "/state_error", self.callback_state_error, 1)
         self.reference_trajectory_pub_ = self.create_publisher(
             ReferenceTraj, "/reference_trajectory", 1
         )
@@ -33,7 +41,11 @@ class TrajectoryNode(Node):
         self.last_reference_time = self.get_clock().now()
         self.reference_timer_ = self.create_timer(
             1 / self.reference_timer_hz, self.reference_udpdate)
-        
+        self.reference_timer_.cancel()
+
+        self.points_goal_sub_ = self.create_subscription(
+            Path, "/astar/path", self.callback_points_goal, 1)
+
         self.err_xy = math.inf
         self.err_yaw = math.inf
 
@@ -61,13 +73,36 @@ class TrajectoryNode(Node):
             # [0.0, 5.0, 0.0],
             # [0.0, 0.0, 0.0],
         ])
+
+        self.astar_points = None
         
-        self.trajectory = WaypointTraj(points, v_lin=v_lin, w_yaw=w_yaw)
+        # self.trajectory = WaypointTraj(points, v_lin=v_lin, w_yaw=w_yaw)
     
-    def callback_state_error(self, msg: StateError):
-        self.err_xy = math.hypot(msg.err_x, msg.err_y)
-        self.err_yaw = msg.err_yaw
-    
+    # def callback_state_error(self, msg: StateError):
+    #     self.err_xy = math.hypot(msg.err_x, msg.err_y)
+    #     self.err_yaw = msg.err_yaw
+
+    def callback_points_goal(self, msg: Path):
+        self.reference_timer_.cancel()
+        pts = []
+        for ps in msg.poses:
+            x = ps.pose.position.x
+            y = ps.pose.position.y
+            yaw = quat_to_angle(ps.pose.orientation)
+            pts.append([x, y, yaw])
+
+        if len(pts) < 2:
+            self.get_logger().warn("Received <2 path points; ignoring.")
+            return
+
+        self.astar_points = np.asarray(pts, dtype=float)
+        # self.reference_timer_.cancel()
+        self.trajectory = WaypointTraj(self.astar_points, 
+                                       v_lin=self.v_lin, w_yaw=self.w_yaw)
+        self.last_reference_time = self.get_clock().now()
+        self.reference_timer_ = self.create_timer(
+            1 / self.reference_timer_hz, self.reference_udpdate)
+
     def reference_udpdate(self):
         now = self.get_clock().now()
         t = (now - self.last_reference_time).nanoseconds * 1e-9
@@ -77,18 +112,20 @@ class TrajectoryNode(Node):
         pose.x, pose.y, pose.yaw, pose.x_dot, pose.y_dot, pose.yaw_dot = float(x), float(y), float(yaw), float(x_dot), float(y_dot), float(yaw_dot)
         self.reference_trajectory_pub_.publish(pose)
         self.get_logger().info("pose: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
-        if t >= self.trajectory.total_time:
-            self.get_logger().info("Resetting traj")
-            self.last_reference_time = self.get_clock().now()
+        # if t >= self.trajectory.total_time:
+        #     self.get_logger().info("Resetting traj")
+        #     self.last_reference_time = self.get_clock().now()
 
     # Used if we want to change parameter during runtime
     def parameters_callback(self, params: list[Parameter]): 
         for p in params:
             if p.name == "v_lin":
                 self.trajectory.v_lin = p.value
+                self.v_lin = p.value
                 self.get_logger().info(f"{p.name} changed to {p.value}")
             elif p.name == "w_yaw":
                 self.trajectory.w_yaw = p.value
+                self.w_yaw = p.value
                 self.get_logger().info(f"{p.name} changed to {p.value}")
             elif p.name == "reference_timer_hz":
                 self.reference_timer_hz = p.value
@@ -105,23 +142,15 @@ class WaypointTraj(object):
         points = np.array(points, dtype=float)
 
         # Keep points properly shaped
-        if points.ndim == 1:
-            if points.size % 3 != 0:
-                raise ValueError("points.size % 3 != 0")
-            points = points.reshape(-1, 3)
-        elif points.ndim == 3 and points.shape[1] != 3:
-            if points.shape[0] == 3:
-                points = points.T
-            else:
-                raise ValueError("points must be (N, 3) or (3, N)")
-
+        if points.ndim != 2 or points.shape[1] != 3 or points.shape[0] < 2:
+            raise ValueError("points must be (N>=2, 3) array of [x,y,yaw].")
+        
         self.points = points
         self.v_lin = float(v_lin)
         self.w_yaw = float(w_yaw)
         self.N = len(points)
 
-        def wrap_angle(a):
-            return np.arctan2(np.sin(a), np.cos(a))
+        def wrap_angle(a): return np.arctan2(np.sin(a), np.cos(a))
 
         d = np.diff(self.points, axis=0) # (N-1, 3)
         d_xy = d[:, :2] # (N-1,2)
@@ -142,7 +171,6 @@ class WaypointTraj(object):
         # Timing
         self.t_start = np.hstack(([0.0], np.cumsum(T))) # (N,)
         self.total_time = float(self.t_start[-1])
-
         self.last_seg = 0
         
 

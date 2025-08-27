@@ -14,7 +14,8 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(hamr_interfaces REQUIRED)
 find_package(yaml-cpp REQUIRED)
-find_path(NANOFALN_INCLUDE_DIR nanoflann.hpp)
+find_package(ament_index_cpp REQUIRED)
+find_path(NANOFANN_INCLUDE_DIR nanoflann.hpp)
 
 # Controller
 add_executable(hamr_controller
@@ -57,6 +58,7 @@ add_executable(map_publisher
 ament_target_dependencies(map_publisher
   rclcpp 
   nav_msgs
+  ament_index_cpp
 )
 target_link_libraries(map_publisher yaml-cpp)
 
@@ -85,8 +87,8 @@ ament_target_dependencies(astar_search
 
 target_include_directories(hamr_path_tracer PRIVATE include)
 
-if(NANOFLANN_INCLUDE_DIR)
-  target_include_directories(prm_builder PRIVATE ${NANOFLANN_INCLUDE_DIR})
+if(NANOFANN_INCLUDE_DIR)
+  target_include_directories(prm_builder PRIVATE ${NANOFANN_INCLUDE_DIR})
 endif()
 
 install(TARGETS

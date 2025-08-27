@@ -23,6 +23,7 @@
   <build_depend>tf2_ros</build_depend> 
   <build_depend>tf2</build_depend> 
   <build_depend>tf2_geometry_msgs</build_depend> 
+  <build_depend>nanoflann</build_depend>
 
   <!-- Exec deps -->
   <exec_depend>rclcpp</exec_depend>
@@ -35,6 +36,8 @@
   <exec_depend>tf2_ros</exec_depend> 
   <exec_depend>tf2</exec_depend> 
   <exec_depend>tf2_geometry_msgs</exec_depend> 
+  <exec_depend>nanoflann</exec_depend>
+  <depend>ament_index_cpp</depend>
 
   <!-- Tests (optional) -->
   <test_depend>ament_lint_auto</test_depend>
