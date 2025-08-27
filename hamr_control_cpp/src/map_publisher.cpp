@@ -15,7 +15,7 @@ public:
     MazeRunner() : rclcpp::Node("maze_runner")
     {
         // Map Parameters
-        yaml_path_   = declare_parameter<std::string>("yaml_path", "/home/cedric/ros2_ws/hamr_ws/src/map/hamr_maze.yaml"); 
+        yaml_path_   = declare_parameter<std::string>("yaml_path", "/home/kartik/hamr_ws/src/hamr_holonomic_robot/map/hamr_maze.yaml"); 
         image_path_  = declare_parameter<std::string>("image", "");   
         resolution_  = declare_parameter<double>("resolution", 0.05);
         origin_xyz_  = declare_parameter<std::vector<double>>("origin", {0.0, 0.0, 0.0});
