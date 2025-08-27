@@ -25,7 +25,7 @@ class PrmBuilder : public rclcpp::Node {
     PrmBuilder() : rclcpp::Node("prm_builder") {
         RCLCPP_INFO(this->get_logger(), "PrmBuilder node has been initialized.");
 
-        samples_ = declare_parameter<int>("samples", 1500);
+        samples_ = declare_parameter<int>("samples", 5000);
         k_neighbors_ = declare_parameter<int>("k_neighbors", 6);
         inflattion_m_ = declare_parameter<double>("inflation_radius_m", 0.5);
         occ_threshold_ = declare_parameter<int>("occupied_threshold", 65);
