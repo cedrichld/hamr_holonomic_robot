@@ -2,43 +2,40 @@
 <robot name="hamr" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
     <gazebo reference="right_wheel_link">
-        <mu1 value="0.9" />
-        <mu2 value="0.9" />
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
     </gazebo>
 
     <gazebo reference="left_wheel_link">
-        <mu1 value="0.9" />
-        <mu2 value="0.9" />
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
     </gazebo>
 
     <gazebo reference="right_caster_link">
-        <mu1 value="0.000002" />
-        <mu2 value="0.000002" />
+        <mu1 value="0.2" />
+        <mu2 value="0.2" />
     </gazebo>
 
     <gazebo reference="left_caster_link">
-        <mu1 value="0.000002" />
-        <mu2 value="0.000002" />
+        <mu1 value="0.2" />
+        <mu2 value="0.2" />
     </gazebo>
 
 
     <gazebo reference="right_caster_wheel_link">
-        <mu1 value="0.9"/>  <!-- lateral -->
-        <mu2 value="0.2"/>   <!-- rolling -->
-        <fdir1 value="0 0 1" />
+        <mu1 value="0.8" />
+        <mu2 value="0.8" />
     </gazebo>
 
 
     <gazebo reference="left_caster_wheel_link">
-        <mu1 value="0.9"/>  <!-- lateral -->
-        <mu2 value="0.2"/>   <!-- rolling -->
-        <fdir1 value="0 0 1" />
+        <mu1 value="0.8" />
+        <mu2 value="0.8" />
     </gazebo>
 
     <gazebo reference="turret_link">
         <mu2 value="0.6" />
         <mu1 value="0.6" />
-        <fdir1 value="0 0 1" />
     </gazebo>
 
 
@@ -113,7 +110,7 @@
         name="gz::sim::systems::DiffDrive">
         <left_joint>base_left_wheel_joint</left_joint>
         <right_joint>base_right_wheel_joint</right_joint>
-        <wheel_separation>0.299</wheel_separation> 
+        <wheel_separation>0.308</wheel_separation> 
         <wheel_radius>0.0762</wheel_radius>
         <frame_id>odom</frame_id>
         <child_frame_id>dummy_link</child_frame_id>
