@@ -17,7 +17,7 @@ public:
     max_points_(declare_parameter("max_points", 20000)),
     publish_rate_hz_(declare_parameter("publish_rate_hz", 10.0)),
     offset_x_(declare_parameter("offset_x", 0.0)),  // forward in robot frame
-    offset_y_(declare_parameter("offset_y", 0.2)),  // left in robot frame
+    offset_y_(declare_parameter("offset_y", 0.0)),  // left in robot frame
     offset_z_(declare_parameter("offset_z", 0.0))   // up in robot frame
   {
     path_pub_   = create_publisher<nav_msgs::msg::Path>("/hamr/path", 1);

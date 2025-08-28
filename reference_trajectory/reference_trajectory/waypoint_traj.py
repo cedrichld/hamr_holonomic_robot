@@ -27,7 +27,7 @@ def quat_to_angle(q):
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
-        self.v_lin = self.declare_parameter("v_lin", 0.2).value
+        self.v_lin = self.declare_parameter("v_lin", 0.6).value
         self.w_yaw = self.declare_parameter("w_yaw", 0.1).value
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
@@ -90,6 +90,9 @@ class TrajectoryNode(Node):
             y = ps.pose.position.y
             yaw = quat_to_angle(ps.pose.orientation)
             pts.append([x, y, yaw])
+            self.get_logger().info("Received path point: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
+            self.get_logger().info("Orientation: w=%.2f, x=%.2f, y=%.2f, z=%.2f" % \
+                                   (ps.pose.orientation.w, ps.pose.orientation.x, ps.pose.orientation.y, ps.pose.orientation.z))
 
         if len(pts) < 2:
             self.get_logger().warn("Received <2 path points; ignoring.")
@@ -111,7 +114,7 @@ class TrajectoryNode(Node):
         pose = ReferenceTraj()
         pose.x, pose.y, pose.yaw, pose.x_dot, pose.y_dot, pose.yaw_dot = float(x), float(y), float(yaw), float(x_dot), float(y_dot), float(yaw_dot)
         self.reference_trajectory_pub_.publish(pose)
-        self.get_logger().info("pose: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
+        # self.get_logger().info("pose: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
         # if t >= self.trajectory.total_time:
         #     self.get_logger().info("Resetting traj")
         #     self.last_reference_time = self.get_clock().now()

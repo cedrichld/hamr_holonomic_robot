@@ -75,28 +75,33 @@ def main(args=None):
     plt.ion()
 
     ### Fig 2: Live PID Terms
-    fig2, (axx, axy, axyaw) = plt.subplots(3, 1, sharex=True)
-    fig2.canvas.manager.set_window_title('Live PID Terms')
+    # fig2, (axx, axy, axyaw) = plt.subplots(3, 1, sharex=True)
+    # fig2.canvas.manager.set_window_title('Live PID Terms')
+    fig1, axyaw = plt.subplots()
+    fig1.canvas.manager.set_window_title('Live PID Terms')
+    
     axyaw.set_xlabel('Time (s)')
 
-    for ax, title in zip((axx, axy, axyaw), ('PID terms: X', 'PID terms: Y', 'PID terms: Yaw')):
-        ax.set_ylabel('Value')
-        ax.set_title(title)
+    # for ax, title in zip((axx, axy, axyaw), ('PID terms: X', 'PID terms: Y', 'PID terms: Yaw')):
+        # ax.set_ylabel('Value')
+        # ax.set_title(title)
+    axyaw.set_ylabel('Value')
+    axyaw.set_title('PID terms: Yaw')
 
     ## P/I/D lines for each DOF
     # X
-    lx_px,   = axx.plot([], [], label='P_x', linewidth=2)
-    lx_ix,   = axx.plot([], [], label='I_x', linewidth=2)
-    lx_dx,   = axx.plot([], [], label='D_x', linewidth=2)
-    lx_zero, = axx.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')  # zero reference
-    axx.legend(loc='upper left')
+    # lx_px,   = axx.plot([], [], label='P_x', linewidth=2)
+    # lx_ix,   = axx.plot([], [], label='I_x', linewidth=2)
+    # lx_dx,   = axx.plot([], [], label='D_x', linewidth=2)
+    # lx_zero, = axx.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')  # zero reference
+    # axx.legend(loc='upper left')
 
-    # Y
-    ly_py,   = axy.plot([], [], label='P_y', linewidth=2)
-    ly_iy,   = axy.plot([], [], label='I_y', linewidth=2)
-    ly_dy,   = axy.plot([], [], label='D_y', linewidth=2)
-    ly_zero, = axy.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
-    axy.legend(loc='upper left')
+    # # Y
+    # ly_py,   = axy.plot([], [], label='P_y', linewidth=2)
+    # ly_iy,   = axy.plot([], [], label='I_y', linewidth=2)
+    # ly_dy,   = axy.plot([], [], label='D_y', linewidth=2)
+    # ly_zero, = axy.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
+    # axy.legend(loc='upper left')
 
     # Yaw
     lz_pyaw,   = axyaw.plot([], [], label='P_yaw', linewidth=2)
@@ -148,18 +153,18 @@ def main(args=None):
             zeros = [0.0] * len(t_buf)
 
             # X terms
-            lx_px.set_data(t_buf, px_buf)
-            lx_ix.set_data(t_buf, ix_buf)
-            lx_dx.set_data(t_buf, dx_buf)
-            lx_zero.set_data(t_buf, zeros)
-            axx.relim(); axx.autoscale_view()
+            # lx_px.set_data(t_buf, px_buf)
+            # lx_ix.set_data(t_buf, ix_buf)
+            # lx_dx.set_data(t_buf, dx_buf)
+            # lx_zero.set_data(t_buf, zeros)
+            # axx.relim(); axx.autoscale_view()
 
-            # Y terms
-            ly_py.set_data(t_buf, py_buf)
-            ly_iy.set_data(t_buf, iy_buf)
-            ly_dy.set_data(t_buf, dy_buf)
-            ly_zero.set_data(t_buf, zeros)
-            axy.relim(); axy.autoscale_view()
+            # # Y terms
+            # ly_py.set_data(t_buf, py_buf)
+            # ly_iy.set_data(t_buf, iy_buf)
+            # ly_dy.set_data(t_buf, dy_buf)
+            # ly_zero.set_data(t_buf, zeros)
+            # axy.relim(); axy.autoscale_view()
 
             # Yaw terms
             lz_pyaw.set_data(t_buf, pyaw_buf)

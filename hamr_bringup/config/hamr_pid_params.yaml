@@ -2,17 +2,13 @@
   ros__parameters:
     D_x: 0.25
     D_y: 0.25
-    D_yaw: 0.005
+    D_yaw: 0.1
     I_x: 0.0
     I_y: 0.0
     I_yaw: 0.0
-    P_x: 0.8
-    P_y: 0.8
-    P_yaw: 50.0
-    a_wheel: 0.149556
-    b_wheel: 0.19682
+    P_x: 1.2
+    P_y: 1.2
+    P_yaw: 30.0
     control_rate_hz: 100.0
-    r_wheel: 0.0762
-    start_type_description_service: true
     use_sim_time: true
 

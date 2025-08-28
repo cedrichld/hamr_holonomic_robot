@@ -178,66 +178,66 @@ class HamrControlNode(Node):
         P_yaw = D_yaw = I_yaw_term = 0.0
 
         ## x, y loop
-        if math.hypot(err_x, err_y) < self.threshold_x_y \
-            and math.hypot(self.reference_.x_dot, self.reference_.y_dot) <= self.threshold_x_y:
-            ## Check if at target
-            desired_x_dot, desired_y_dot = self.reference_.x_dot, self.reference_.y_dot
-            self.err_x_prev = 0
-            self.err_y_prev = 0
-            self.I_x.reset()
-            self.I_y.reset()
-            self.get_logger().warn("RESET I_xy At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
-        else:
-            # - for x - #
-            P_x = self.gains["x"]["P"] * err_x
-            I_x_term = self.gains["x"]["I"] * self.I_x.update(err_x, self.dt)
+        # if math.hypot(err_x, err_y) < self.threshold_x_y \
+        #     and math.hypot(self.reference_.x_dot, self.reference_.y_dot) <= self.threshold_x_y:
+        #     ## Check if at target
+        #     desired_x_dot, desired_y_dot = self.reference_.x_dot, self.reference_.y_dot
+        #     self.err_x_prev = 0
+        #     self.err_y_prev = 0
+        #     self.I_x.reset()
+        #     self.I_y.reset()
+        #     self.get_logger().warn("RESET I_xy At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
+        # else:
+        # - for x - #
+        P_x = self.gains["x"]["P"] * err_x
+        I_x_term = self.gains["x"]["I"] * self.I_x.update(err_x, self.dt)
 
-            d_raw_x = (err_x - self.err_x_prev) / self.dt
-            self.d_err_x_filt = (self.d_alpha * d_raw_x +
-                                (1.0 - self.d_alpha) * self.d_err_x_filt)
-            D_x = self.gains["x"]["D"] * self.d_err_x_filt
+        d_raw_x = (err_x - self.err_x_prev) / self.dt
+        self.d_err_x_filt = (self.d_alpha * d_raw_x +
+                            (1.0 - self.d_alpha) * self.d_err_x_filt)
+        D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
-            # Cap desired velocity
-            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x
-            self.err_x_prev = err_x
+        # Cap desired velocity
+        desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x
+        self.err_x_prev = err_x
 
-            # - for y - #
-            P_y = self.gains["y"]["P"] * err_y
-            I_y_term = self.gains["y"]["I"] * self.I_y.update(err_y, self.dt)
+        # - for y - #
+        P_y = self.gains["y"]["P"] * err_y
+        I_y_term = self.gains["y"]["I"] * self.I_y.update(err_y, self.dt)
 
-            d_raw_y = (err_y - self.err_y_prev) / self.dt
-            self.d_err_y_filt = (self.d_alpha * d_raw_y +
-                                (1.0 - self.d_alpha) * self.d_err_y_filt)
-            D_y = self.gains["y"]["D"] * self.d_err_y_filt
+        d_raw_y = (err_y - self.err_y_prev) / self.dt
+        self.d_err_y_filt = (self.d_alpha * d_raw_y +
+                            (1.0 - self.d_alpha) * self.d_err_y_filt)
+        D_y = self.gains["y"]["D"] * self.d_err_y_filt
 
-            desired_y_dot = self.reference_.y_dot + P_y + I_y_term + D_y
-            self.err_y_prev = err_y
+        desired_y_dot = self.reference_.y_dot + P_y + I_y_term + D_y
+        self.err_y_prev = err_y
 
-            desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
-            if desired_xy_dot_norm > self.xy_dot_limit:
-                self.get_logger().warn("CAPPING x,y velocity from " + str(desired_xy_dot_norm) + " to " + str(self.xy_dot_limit))
-                desired_x_dot = (desired_x_dot / desired_xy_dot_norm) * self.xy_dot_limit
-                desired_y_dot = (desired_y_dot / desired_xy_dot_norm) * self.xy_dot_limit
+        desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
+        if desired_xy_dot_norm > self.xy_dot_limit:
+            self.get_logger().warn("CAPPING x,y velocity from " + str(desired_xy_dot_norm) + " to " + str(self.xy_dot_limit))
+            desired_x_dot = (desired_x_dot / desired_xy_dot_norm) * self.xy_dot_limit
+            desired_y_dot = (desired_y_dot / desired_xy_dot_norm) * self.xy_dot_limit
         
         ## yaw loop
-        if abs(err_yaw) < self.threshold_yaw:
-            ## Check if at target
-            desired_yaw_dot = self.reference_.yaw_dot
-            self.err_yaw_prev = 0
-            self.I_yaw.reset()
-            self.get_logger().warn("RESET I_yaw At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
-        else:
-            P_yaw = self.gains["yaw"]["P"] * err_yaw
-            I_yaw_term = self.gains["yaw"]["I"] * self.I_yaw.update(err_yaw, self.dt)
+        # if abs(err_yaw) < self.threshold_yaw:
+        #     ## Check if at target
+        #     desired_yaw_dot = self.reference_.yaw_dot
+        #     self.err_yaw_prev = 0
+        #     self.I_yaw.reset()
+        #     self.get_logger().warn("RESET I_yaw At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
+        # else:
+        P_yaw = self.gains["yaw"]["P"] * err_yaw
+        I_yaw_term = self.gains["yaw"]["I"] * self.I_yaw.update(err_yaw, self.dt)
 
-            d_raw_yaw = (err_yaw - self.err_yaw_prev) / self.dt
-            self.d_err_yaw_filt = (self.d_alpha * d_raw_yaw +
-                                (1.0 - self.d_alpha) * self.d_err_yaw_filt)
-            D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
+        d_raw_yaw = (err_yaw - self.err_yaw_prev) / self.dt
+        self.d_err_yaw_filt = (self.d_alpha * d_raw_yaw +
+                            (1.0 - self.d_alpha) * self.d_err_yaw_filt)
+        D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
 
-            desired_yaw_dot = max(-self.yaw_dot_limit, min(self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
+        desired_yaw_dot = max(-self.yaw_dot_limit, min(self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
 
-            self.err_yaw_prev = err_yaw
+        self.err_yaw_prev = err_yaw
         
         self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
