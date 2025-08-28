@@ -135,7 +135,7 @@ class TrajectoryNode(Node):
                 self.get_logger().info(f"{p.name} changed to {p.value}")
             
 class WaypointTraj(object):
-    def __init__(self, points, v_lin=0.6, w_yaw=0.3):
+    def __init__(self, points, speed=0.5):
         """
         Inputs: points, (N, 3) array of N waypoint coordinates in 2D with yaw
         """
