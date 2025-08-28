@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hamr_control_cpp</name>
+  <version>0.0.1</version>
+  <description>C++ controllers and tools for HAMR (controller + path tracer).</description>
+
+  <maintainer email="kartik8virmani@gmail.com">kartik</maintainer>
+  <license>MIT</license>
+
+  <!-- Build tool -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Build deps -->
+  <build_depend>rclcpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>tf2_msgs</build_depend>
+  <build_depend>hamr_interfaces</build_depend>
+  <!-- If you include TF2 headers / use tf2_ros in code, uncomment: -->
+  <build_depend>tf2_ros</build_depend> 
+  <build_depend>tf2</build_depend> 
+  <build_depend>tf2_geometry_msgs</build_depend> 
+  <build_depend>nanoflann</build_depend>
+
+  <!-- Exec deps -->
+  <exec_depend>rclcpp</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>tf2_msgs</exec_depend>
+  <exec_depend>hamr_interfaces</exec_depend>
+  <exec_depend>tf2_ros</exec_depend> 
+  <exec_depend>tf2</exec_depend> 
+  <exec_depend>tf2_geometry_msgs</exec_depend> 
+  <exec_depend>nanoflann</exec_depend>
+  <depend>ament_index_cpp</depend>
+
+  <!-- Tests (optional) -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

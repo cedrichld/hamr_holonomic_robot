@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            "hamr_pid_graph = hamr_control.hamr_pid_graph:main",
             "hamr_odom_graph = hamr_control.hamr_odom_graph:main",
             "hamr_controller = hamr_control.hamr_controller:main",
         ],
