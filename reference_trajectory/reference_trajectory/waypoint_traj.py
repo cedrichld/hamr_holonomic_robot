@@ -33,16 +33,31 @@ class TrajectoryNode(Node):
         self.err_yaw = math.inf
 
         points = np.array([ # x, y, yaw
-            # [0.0, 0.0], # SQUARE
-            # [5.0, 0.0],
-            # [5.0, 5.0],
-            # [0.0, 5.0],
-            # [0.0, 0.0],
+            [0.0, 0.0, 0.0], # SQUARE
+            [5.0, 0.0, 1.0],
+            [5.0, 5.0, 2.0],
+            [0.0, 5.0, 1.0],
+            [0.0, 0.0, 0.0],
 
-            [0.0, 0.0, 0.0], # TRIANGLE
-            [5.0, 2.5, -1.0],
-            [0.0, 5.0, -1.0],
-            [0.0, 0.0, 1.0],
+            # [0.0, 0.0, 0.0], # TRIANGLE
+            # [5.0, 2.5, 0.0],
+            # [0.0, 5.0, 0.0],
+            # [0.0, 0.0, 0.0],
+
+            # [0.0, 0.0, 0.0], # TRIANGLE
+            # [5.0, 2.5, 0.5],
+            # [0.0, 5.0, 1.0],
+
+            # [0.0, 0.0, 1.5],
+            # [5.0, 2.5, 2.0],
+            # [0.0, 5.0, 2.5],
+
+            # [0.0, 0.0, 2.0],
+            # [5.0, 2.5, 1.5],
+            # [0.0, 5.0, 1.0],
+
+            # [0.0, 0.0, 0.5],
+
         ])
         self.trajectory = WaypointTraj(points)
     
@@ -65,7 +80,7 @@ class TrajectoryNode(Node):
 
 
 class WaypointTraj(object):
-    def __init__(self, points, speed=0.5):
+    def __init__(self, points, speed=0.2):
         """
         Inputs: points, (N, 2) array of N waypoint coordinates in 2D
         """
