@@ -198,7 +198,7 @@ class HamrControlNode(Node):
             D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
             # Cap desired velocity
-            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x # x_dot + P_x + I_x_term + D_x
+            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x
             self.err_x_prev = err_x
 
             # - for y - #
