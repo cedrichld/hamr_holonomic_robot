@@ -174,9 +174,9 @@ class HamrControlNode(Node):
             yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
             err_yaw = wrap_angle(yaw_des - yaw_turret_w)
 
-            return err_x, err_y, err_yaw, yaw_turret_b # yaw_turret_b passed to jacobian later
+            return err_x, err_y, err_yaw, yaw_base_w # yaw_base_w passed to jacobian later
         
-        err_x, err_y, err_yaw, yaw_turret_b = compute_errors()
+        err_x, err_y, err_yaw, yaw_base_w = compute_errors()
         
         # For debugging and publishing gains
         P_x = D_x = I_x_term = 0.0
@@ -244,7 +244,7 @@ class HamrControlNode(Node):
         
         self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
-                                        desired_yaw_dot]), yaw_turret_b) # desired vel
+                                        desired_yaw_dot]), yaw_base_w) # desired vel
 
     def publish_live_gains(self, P_x, D_x, I_x, P_y, D_y, I_y, P_yaw, D_yaw, I_yaw):
         gains = LiveGains()
@@ -297,9 +297,15 @@ class HamrControlNode(Node):
             self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
         c, s = np.cos(yaw), np.sin(yaw)
         
+        # J = np.array([
+        #     [r_w/2 * (c + s*b/a), r_w/2 * (c - s*b/a), 0],
+        #     [r_w/2 * (-s + c*b/a), r_w/2 * (-s - c*b/a), 0],
+        #     [r_w/(2*a), -r_w/(2*a), 1]
+        # ])
+
         J = np.array([
-            [r_w/2 * (c + s*b/a), r_w/2 * (c - s*b/a), 0],
-            [r_w/2 * (-s + c*b/a), r_w/2 * (-s - c*b/a), 0],
+            [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0],
+            [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0],
             [r_w/(2*a), -r_w/(2*a), 1]
         ])
 

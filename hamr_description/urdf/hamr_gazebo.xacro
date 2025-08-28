@@ -97,7 +97,7 @@
             <tf_topic>/model/hamr/tf</tf_topic>
             <!-- 2D odometry -->
             <dimensions>2</dimensions>
-            <xyz_offset>0.284843388017437 0.203598611982565 0</xyz_offset>
+            <!-- <xyz_offset>0.284843388017437 0.203598611982565 0</xyz_offset> -->
         </plugin>
     </gazebo>
 
