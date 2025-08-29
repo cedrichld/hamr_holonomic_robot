@@ -71,115 +71,219 @@ def main(args=None):
     rclpy.init(args=args)
     node = OdomGraphNode()
 
-    ### Fig 1: Odometry
-    plt.ion()
+    only_yaw = False
+    if only_yaw:
+        ### Fig 1: Odometry
+        plt.ion()
 
-    ### Fig 2: Live PID Terms
-    # fig2, (axx, axy, axyaw) = plt.subplots(3, 1, sharex=True)
-    # fig2.canvas.manager.set_window_title('Live PID Terms')
-    fig1, axyaw = plt.subplots()
-    fig1.canvas.manager.set_window_title('Live PID Terms')
-    
-    axyaw.set_xlabel('Time (s)')
+        ### Fig 2: Live PID Terms
+        # fig2, (axx, axy, axyaw) = plt.subplots(3, 1, sharex=True)
+        # fig2.canvas.manager.set_window_title('Live PID Terms')
+        fig1, axyaw = plt.subplots()
+        fig1.canvas.manager.set_window_title('Live PID Terms')
+        
+        axyaw.set_xlabel('Time (s)')
 
-    # for ax, title in zip((axx, axy, axyaw), ('PID terms: X', 'PID terms: Y', 'PID terms: Yaw')):
-        # ax.set_ylabel('Value')
-        # ax.set_title(title)
-    axyaw.set_ylabel('Value')
-    axyaw.set_title('PID terms: Yaw')
+        # for ax, title in zip((axx, axy, axyaw), ('PID terms: X', 'PID terms: Y', 'PID terms: Yaw')):
+            # ax.set_ylabel('Value')
+            # ax.set_title(title)
+        axyaw.set_ylabel('Value')
+        axyaw.set_title('PID terms: Yaw')
 
-    ## P/I/D lines for each DOF
-    # X
-    # lx_px,   = axx.plot([], [], label='P_x', linewidth=2)
-    # lx_ix,   = axx.plot([], [], label='I_x', linewidth=2)
-    # lx_dx,   = axx.plot([], [], label='D_x', linewidth=2)
-    # lx_zero, = axx.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')  # zero reference
-    # axx.legend(loc='upper left')
+        ## P/I/D lines for each DOF
+        # X
+        # lx_px,   = axx.plot([], [], label='P_x', linewidth=2)
+        # lx_ix,   = axx.plot([], [], label='I_x', linewidth=2)
+        # lx_dx,   = axx.plot([], [], label='D_x', linewidth=2)
+        # lx_zero, = axx.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')  # zero reference
+        # axx.legend(loc='upper left')
 
-    # # Y
-    # ly_py,   = axy.plot([], [], label='P_y', linewidth=2)
-    # ly_iy,   = axy.plot([], [], label='I_y', linewidth=2)
-    # ly_dy,   = axy.plot([], [], label='D_y', linewidth=2)
-    # ly_zero, = axy.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
-    # axy.legend(loc='upper left')
+        # # Y
+        # ly_py,   = axy.plot([], [], label='P_y', linewidth=2)
+        # ly_iy,   = axy.plot([], [], label='I_y', linewidth=2)
+        # ly_dy,   = axy.plot([], [], label='D_y', linewidth=2)
+        # ly_zero, = axy.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
+        # axy.legend(loc='upper left')
 
-    # Yaw
-    lz_pyaw,   = axyaw.plot([], [], label='P_yaw', linewidth=2)
-    lz_iyaw,   = axyaw.plot([], [], label='I_yaw', linewidth=2)
-    lz_dyaw,   = axyaw.plot([], [], label='D_yaw', linewidth=2)
-    lz_zero,   = axyaw.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
-    axyaw.legend(loc='upper left')
+        # Yaw
+        lz_pyaw,   = axyaw.plot([], [], label='P_yaw', linewidth=2)
+        lz_iyaw,   = axyaw.plot([], [], label='I_yaw', linewidth=2)
+        lz_dyaw,   = axyaw.plot([], [], label='D_yaw', linewidth=2)
+        lz_zero,   = axyaw.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
+        axyaw.legend(loc='upper left')
 
-    # data buffers
-    t_buf, x_buf, y_buf, yaw_buf = [], [], [], []
-    # x_buf_ref, y_buf_ref, yaw_buf_ref = [], [], []
+        # data buffers
+        t_buf, x_buf, y_buf, yaw_buf = [], [], [], []
 
-    # buffers for PID terms
-    px_buf, ix_buf, dx_buf = [], [], []
-    py_buf, iy_buf, dy_buf = [], [], []
-    pyaw_buf, iyaw_buf, dyaw_buf = [], [], []
+        # buffers for PID terms
+        px_buf, ix_buf, dx_buf = [], [], []
+        py_buf, iy_buf, dy_buf = [], [], []
+        pyaw_buf, iyaw_buf, dyaw_buf = [], [], []
 
-    t0 = time.time()
+        t0 = time.time()
 
-    # Limit history
-    MAX_N = 300  # 30s at 10 Hz
+        # Limit history
+        MAX_N = 300  # 30s at 10 Hz
 
-    def trim(*lists):
-        if MAX_N is None:
-            return
-        for L in lists:
-            if len(L) > MAX_N:
-                del L[:len(L) - MAX_N]
+        def trim(*lists):
+            if MAX_N is None:
+                return
+            for L in lists:
+                if len(L) > MAX_N:
+                    del L[:len(L) - MAX_N]
 
-    try:
-        while rclpy.ok():
-            # pump ROS callbacks
-            rclpy.spin_once(node, timeout_sec=0.1)
+        try:
+            while rclpy.ok():
+                # pump ROS callbacks
+                rclpy.spin_once(node, timeout_sec=0.1)
 
-            # record timestamp and values
-            t = time.time() - t0
-            t_buf.append(t)
+                # record timestamp and values
+                t = time.time() - t0
+                t_buf.append(t)
 
-            # live PID terms
-            px_buf.append(node.live_gains["p_x"]);   ix_buf.append(node.live_gains["i_x"]);   dx_buf.append(node.live_gains["d_x"])
-            py_buf.append(node.live_gains["p_y"]);   iy_buf.append(node.live_gains["i_y"]);   dy_buf.append(node.live_gains["d_y"])
-            pyaw_buf.append(node.live_gains["p_yaw"]); iyaw_buf.append(node.live_gains["i_yaw"]); dyaw_buf.append(node.live_gains["d_yaw"])
+                # live PID terms
+                px_buf.append(node.live_gains["p_x"]);   ix_buf.append(node.live_gains["i_x"]);   dx_buf.append(node.live_gains["d_x"])
+                py_buf.append(node.live_gains["p_y"]);   iy_buf.append(node.live_gains["i_y"]);   dy_buf.append(node.live_gains["d_y"])
+                pyaw_buf.append(node.live_gains["p_yaw"]); iyaw_buf.append(node.live_gains["i_yaw"]); dyaw_buf.append(node.live_gains["d_yaw"])
 
-            # trim history if needed
-            trim(t_buf, #x_buf, y_buf, yaw_buf, x_buf_ref, y_buf_ref, yaw_buf_ref,
-                 px_buf, ix_buf, dx_buf, py_buf, iy_buf, dy_buf, pyaw_buf, iyaw_buf, dyaw_buf)
+                # trim history if needed
+                trim(t_buf, px_buf, ix_buf, dx_buf, py_buf, iy_buf, dy_buf, pyaw_buf, iyaw_buf, dyaw_buf)
 
-            # --- update GAINS lines ---
-            zeros = [0.0] * len(t_buf)
+                # --- update GAINS lines ---
+                zeros = [0.0] * len(t_buf)
 
-            # X terms
-            # lx_px.set_data(t_buf, px_buf)
-            # lx_ix.set_data(t_buf, ix_buf)
-            # lx_dx.set_data(t_buf, dx_buf)
-            # lx_zero.set_data(t_buf, zeros)
-            # axx.relim(); axx.autoscale_view()
+                # X terms
+                # lx_px.set_data(t_buf, px_buf)
+                # lx_ix.set_data(t_buf, ix_buf)
+                # lx_dx.set_data(t_buf, dx_buf)
+                # lx_zero.set_data(t_buf, zeros)
+                # axx.relim(); axx.autoscale_view()
 
-            # # Y terms
-            # ly_py.set_data(t_buf, py_buf)
-            # ly_iy.set_data(t_buf, iy_buf)
-            # ly_dy.set_data(t_buf, dy_buf)
-            # ly_zero.set_data(t_buf, zeros)
-            # axy.relim(); axy.autoscale_view()
+                # # Y terms
+                # ly_py.set_data(t_buf, py_buf)
+                # ly_iy.set_data(t_buf, iy_buf)
+                # ly_dy.set_data(t_buf, dy_buf)
+                # ly_zero.set_data(t_buf, zeros)
+                # axy.relim(); axy.autoscale_view()
 
-            # Yaw terms
-            lz_pyaw.set_data(t_buf, pyaw_buf)
-            lz_iyaw.set_data(t_buf, iyaw_buf)
-            lz_dyaw.set_data(t_buf, dyaw_buf)
-            lz_zero.set_data(t_buf, zeros)
-            axyaw.relim(); axyaw.autoscale_view()
+                # Yaw terms
+                lz_pyaw.set_data(t_buf, pyaw_buf)
+                lz_iyaw.set_data(t_buf, iyaw_buf)
+                lz_dyaw.set_data(t_buf, dyaw_buf)
+                lz_zero.set_data(t_buf, zeros)
+                axyaw.relim(); axyaw.autoscale_view()
 
-            plt.pause(0.001)
+                plt.pause(0.001)
 
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            node.destroy_node()
+            rclpy.shutdown()
+    else:
+        ### Fig 1: Odometry
+        plt.ion()
+
+        ### Fig 2: Live PID Terms
+        fig2, (axx, axy, axyaw) = plt.subplots(3, 1, sharex=True)
+        fig2.canvas.manager.set_window_title('Live PID Terms')
+        
+        axyaw.set_xlabel('Time (s)')
+
+        for ax, title in zip((axx, axy, axyaw), ('PID terms: X', 'PID terms: Y', 'PID terms: Yaw')):
+            ax.set_ylabel('Value')
+            ax.set_title(title)
+
+        ## P/I/D lines for each DOF
+        # X
+        lx_px,   = axx.plot([], [], label='P_x', linewidth=2)
+        lx_ix,   = axx.plot([], [], label='I_x', linewidth=2)
+        lx_dx,   = axx.plot([], [], label='D_x', linewidth=2)
+        lx_zero, = axx.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')  # zero reference
+        axx.legend(loc='upper left')
+
+        # # Y
+        ly_py,   = axy.plot([], [], label='P_y', linewidth=2)
+        ly_iy,   = axy.plot([], [], label='I_y', linewidth=2)
+        ly_dy,   = axy.plot([], [], label='D_y', linewidth=2)
+        ly_zero, = axy.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
+        axy.legend(loc='upper left')
+
+        # Yaw
+        lz_pyaw,   = axyaw.plot([], [], label='P_yaw', linewidth=2)
+        lz_iyaw,   = axyaw.plot([], [], label='I_yaw', linewidth=2)
+        lz_dyaw,   = axyaw.plot([], [], label='D_yaw', linewidth=2)
+        lz_zero,   = axyaw.plot([], [], linestyle='dashed', linewidth=1, label='ref=0')
+        axyaw.legend(loc='upper left')
+
+        # data buffers
+        t_buf, x_buf, y_buf, yaw_buf = [], [], [], []
+
+        # buffers for PID terms
+        px_buf, ix_buf, dx_buf = [], [], []
+        py_buf, iy_buf, dy_buf = [], [], []
+        pyaw_buf, iyaw_buf, dyaw_buf = [], [], []
+
+        t0 = time.time()
+
+        # Limit history
+        MAX_N = 300 # 30s at 10 Hz
+
+        def trim(*lists):
+            if MAX_N is None:
+                return
+            for L in lists:
+                if len(L) > MAX_N:
+                    del L[:len(L) - MAX_N]
+
+        try:
+            while rclpy.ok():
+                # pump ROS callbacks
+                rclpy.spin_once(node, timeout_sec=0.1)
+
+                # record timestamp and values
+                t = time.time() - t0
+                t_buf.append(t)
+
+                # live PID terms
+                px_buf.append(node.live_gains["p_x"]);   ix_buf.append(node.live_gains["i_x"]);   dx_buf.append(node.live_gains["d_x"])
+                py_buf.append(node.live_gains["p_y"]);   iy_buf.append(node.live_gains["i_y"]);   dy_buf.append(node.live_gains["d_y"])
+                pyaw_buf.append(node.live_gains["p_yaw"]); iyaw_buf.append(node.live_gains["i_yaw"]); dyaw_buf.append(node.live_gains["d_yaw"])
+
+                # trim history if needed
+                trim(t_buf, px_buf, ix_buf, dx_buf, py_buf, iy_buf, dy_buf, pyaw_buf, iyaw_buf, dyaw_buf)
+
+                # --- update GAINS lines ---
+                zeros = [0.0] * len(t_buf)
+
+                # X terms
+                lx_px.set_data(t_buf, px_buf)
+                lx_ix.set_data(t_buf, ix_buf)
+                lx_dx.set_data(t_buf, dx_buf)
+                lx_zero.set_data(t_buf, zeros)
+                axx.relim(); axx.autoscale_view()
+
+                # # Y terms
+                ly_py.set_data(t_buf, py_buf)
+                ly_iy.set_data(t_buf, iy_buf)
+                ly_dy.set_data(t_buf, dy_buf)
+                ly_zero.set_data(t_buf, zeros)
+                axy.relim(); axy.autoscale_view()
+
+                # Yaw terms
+                lz_pyaw.set_data(t_buf, pyaw_buf)
+                lz_iyaw.set_data(t_buf, iyaw_buf)
+                lz_dyaw.set_data(t_buf, dyaw_buf)
+                lz_zero.set_data(t_buf, zeros)
+                axyaw.relim(); axyaw.autoscale_view()
+
+                plt.pause(0.001)
+
+        except KeyboardInterrupt:
+            pass
+        finally:
+            node.destroy_node()
+            rclpy.shutdown()
     
 if __name__ == "__main__":
     main()
