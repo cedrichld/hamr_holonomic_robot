@@ -18,7 +18,7 @@
 
     <!-- To launch the URDF Robot State Publisher -->
     <node pkg="robot_state_publisher" exec="robot_state_publisher">
-        <param name= "robot_description" 
+        <param name="robot_description" 
             value="$(command 'xacro $(var urdf_path)')" />
     </node> 
 
@@ -38,10 +38,12 @@
     <!-- <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" /> -->
 
     <!-- Launch HAMR Controller -->
-    <!-- <node pkg="hamr_control" exec="hamr_controller" >
+    <node pkg="hamr_control" exec="hamr_controller" >
         <param from="$(var pid_config_path)" />
     </node>
     <node pkg="hamr_control" exec="hamr_pid_graph" />
-    <node pkg="hamr_control" exec="hamr_odom_graph" /> -->
+    <node pkg="hamr_control" exec="hamr_odom_graph">
+        <param name="use_sim_time" value="true" />
+    </node>
 
 </launch>

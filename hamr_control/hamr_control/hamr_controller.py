@@ -131,13 +131,13 @@ class HamrControlNode(Node):
         self.d_alpha = self.get_parameter("d_alpha").value # 0 < alpha < 1 (lower stronger smoothing)
 
         ## - - Integral Accumulators - - ##
-        self.I_x = PIAccumulator(limit=5.0)
-        self.I_y = PIAccumulator(limit=5.0)
-        self.I_yaw = PIAccumulator(limit=2.0)
+        self.I_x = PIAccumulator(limit=.5)
+        self.I_y = PIAccumulator(limit=.5)
+        self.I_yaw = PIAccumulator(limit=1.0)
 
         ## - - Thresholds - - ##
-        self.threshold_x_y = 0.05 # 5cm 
-        self.threshold_yaw = 0.05 # 3 degrees
+        self.threshold_x_y = 0.01 # 1cm
+        self.threshold_yaw = 0.02 # 1.14 deg
 
         ## - - Velocity Limits (Magnitude) - - ##
         self.xy_dot_limit = 5.0
@@ -168,27 +168,24 @@ class HamrControlNode(Node):
             yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
             err_yaw = wrap_angle(yaw_des - yaw_turret_w)
 
-            return err_x, err_y, err_yaw, yaw_turret_b # yaw_turret_b passed to jacobian later
+            return err_x, err_y, err_yaw, yaw_base_w # yaw_base_w passed to jacobian later
         
-        err_x, err_y, err_yaw, yaw_turret_b = compute_errors()
+        err_x, err_y, err_yaw, yaw_base_w = compute_errors()
         
         # For debugging and publishing gains
         P_x = D_x = I_x_term = 0.0
         P_y = D_y = I_y_term = 0.0
         P_yaw = D_yaw = I_yaw_term = 0.0
 
-        ## x, y loop
-        if math.hypot(err_x, err_y) < self.threshold_x_y \
-            and math.hypot(self.reference_.x_dot, self.reference_.y_dot) <= self.threshold_x_y:
+        ## X loop
+        if abs(err_x) < self.threshold_x_y:
             ## Check if at target
-            desired_x_dot, desired_y_dot = self.reference_.x_dot, self.reference_.y_dot
+            desired_x_dot = self.reference_.x_dot
             self.err_x_prev = 0
-            self.err_y_prev = 0
             self.I_x.reset()
-            self.I_y.reset()
-            self.get_logger().warn("RESET I_xy At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
+            self.get_logger().warn("RESET I_x At target: " + str(self.reference_.x))
         else:
-            # - for x - #
+            self.get_logger().warn("X not at target: " + str(err_x))
             P_x = self.gains["x"]["P"] * err_x
             I_x_term = self.gains["x"]["I"] * self.I_x.update(err_x, self.dt)
 
@@ -198,10 +195,18 @@ class HamrControlNode(Node):
             D_x = self.gains["x"]["D"] * self.d_err_x_filt
 
             # Cap desired velocity
-            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x # x_dot + P_x + I_x_term + D_x
+            desired_x_dot = self.reference_.x_dot + P_x + I_x_term + D_x
             self.err_x_prev = err_x
-
-            # - for y - #
+        
+        ## Y loop
+        if abs(err_y) < self.threshold_x_y:
+            ## Check if at target
+            desired_y_dot = self.reference_.y_dot
+            self.err_y_prev = 0
+            self.I_y.reset()
+            self.get_logger().warn("RESET I_y At target: " + str(self.reference_.y))
+        else:
+            self.get_logger().warn("Y not at target: " + str(err_y))
             P_y = self.gains["y"]["P"] * err_y
             I_y_term = self.gains["y"]["I"] * self.I_y.update(err_y, self.dt)
 
@@ -213,19 +218,20 @@ class HamrControlNode(Node):
             desired_y_dot = self.reference_.y_dot + P_y + I_y_term + D_y
             self.err_y_prev = err_y
 
-            desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
-            if desired_xy_dot_norm > self.xy_dot_limit:
-                self.get_logger().warn("CAPPING x,y velocity from " + str(desired_xy_dot_norm) + " to " + str(self.xy_dot_limit))
-                desired_x_dot = (desired_x_dot / desired_xy_dot_norm) * self.xy_dot_limit
-                desired_y_dot = (desired_y_dot / desired_xy_dot_norm) * self.xy_dot_limit
+        ## Control the XY dot NORM
+        desired_xy_dot_norm = math.hypot(desired_x_dot, desired_y_dot)
+        if desired_xy_dot_norm > self.xy_dot_limit:
+            self.get_logger().warn("CAPPING x,y velocity from " + str(desired_xy_dot_norm) + " to " + str(self.xy_dot_limit))
+            desired_x_dot = (desired_x_dot / desired_xy_dot_norm) * self.xy_dot_limit
+            desired_y_dot = (desired_y_dot / desired_xy_dot_norm) * self.xy_dot_limit
         
-        ## yaw loop
+        ## Yaw loop
         if abs(err_yaw) < self.threshold_yaw:
             ## Check if at target
             desired_yaw_dot = self.reference_.yaw_dot
             self.err_yaw_prev = 0
             self.I_yaw.reset()
-            self.get_logger().warn("RESET I_yaw At target: " + str((self.reference_.x, self.reference_.y, self.reference_.yaw)))
+            # self.get_logger().warn("RESET I_yaw At target: " + str(self.reference_.yaw))
         else:
             P_yaw = self.gains["yaw"]["P"] * err_yaw
             I_yaw_term = self.gains["yaw"]["I"] * self.I_yaw.update(err_yaw, self.dt)
@@ -241,7 +247,7 @@ class HamrControlNode(Node):
         
         self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
-                                        desired_yaw_dot]), yaw_turret_b) # desired vel
+                                        desired_yaw_dot]), yaw_base_w) # desired vel
 
     def publish_live_gains(self, P_x, D_x, I_x, 
                            P_y, D_y, I_y, 
@@ -295,10 +301,10 @@ class HamrControlNode(Node):
         r_w, b, a = self.hamr_config["r_wheel"], \
             self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
         c, s = np.cos(yaw), np.sin(yaw)
-        
+
         J = np.array([
-            [r_w/2 * (c + s*b/a), r_w/2 * (c - s*b/a), 0],
-            [r_w/2 * (-s + c*b/a), r_w/2 * (-s - c*b/a), 0],
+            [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0],
+            [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0],
             [r_w/(2*a), -r_w/(2*a), 1]
         ])
 

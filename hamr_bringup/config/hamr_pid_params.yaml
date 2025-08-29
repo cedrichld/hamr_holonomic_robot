@@ -1,18 +1,18 @@
 /hamr_controller_node:
   ros__parameters:
-    D_x: -0.1
-    D_y: -0.1
-    D_yaw: -0.05
-    I_x: 0.0
-    I_y: 0.0
-    I_yaw: 0.01
-    P_x: 0.5
-    P_y: 0.5
-    P_yaw: 2.0
+    D_x: 0.25
+    D_y: 0.25
+    D_yaw: 0.1
+    I_x: 0.4
+    I_y: 0.4
+    I_yaw: 0.4
+    P_x: 1.0
+    P_y: 1.0
+    P_yaw: 8.0
     a_wheel: 0.149556
     b_wheel: 0.19682
     control_rate_hz: 100.0
-    d_alpha: 0.8
+    d_alpha: 0.4
     r_wheel: 0.0762
     start_type_description_service: true
     use_sim_time: true
