@@ -140,7 +140,7 @@ class HamrControlNode(Node):
         self.threshold_yaw = 0.02 # 1.14 deg
 
         ## - - Velocity Limits (Magnitude) - - ##
-        self.xy_dot_limit = 5.0
+        self.xy_dot_limit = 0.2
         self.yaw_dot_limit = 2.0
 
         self.get_logger().info("HAMR Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 

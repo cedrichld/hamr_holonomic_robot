@@ -1,218 +1,375 @@
-#include <rclcpp/rclcpp.hpp>
-#include <nav_msgs/msg/path.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <std_msgs/msg/float64.hpp>
-#include <geometry_msgs/msg/pose_stamped.hpp>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <cmath>
+#include <string>
+#include <vector>
+#include <algorithm>
 #include <memory>
 
-class HamrPointToPoint : public rclcpp::Node {
+#include "rclcpp/rclcpp.hpp"
+#include "rcl_interfaces/msg/set_parameters_result.hpp"
+
+#include "std_msgs/msg/float64.hpp"
+#include "nav_msgs/msg/odometry.hpp"
+#include "tf2_msgs/msg/tf_message.hpp"
+#include "geometry_msgs/msg/pose_with_covariance.hpp"
+#include "geometry_msgs/msg/quaternion.hpp"
+
+#include "hamr_interfaces/msg/live_gains.hpp"
+#include "hamr_interfaces/msg/reference_traj.hpp"
+
+#include <Eigen/Dense>
+
+using std::placeholders::_1;
+
+static inline double wrapAngle(double a) {
+  double b = std::fmod(a + M_PI, 2.0 * M_PI);
+  if (b < 0.0) b += 2.0 * M_PI;
+  return b - M_PI;
+}
+
+static inline double quatToYaw(const geometry_msgs::msg::Quaternion &q) {
+  const double siny_cosp = 2.0 * (q.w * q.z + q.x * q.y);
+  const double cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
+  return std::atan2(siny_cosp, cosy_cosp);
+}
+
+struct PIDGains {
+  double P{0.0}, I{0.0}, D{0.0};
+};
+
+class PIAccumulator {
 public:
-  HamrPointToPoint()
-  : rclcpp::Node("hamr_point_to_point"),
-    tf_buffer_(this->get_clock()),
-    tf_listener_(tf_buffer_) {
+  explicit PIAccumulator(double limit) : limit_(std::abs(limit)) {}
+  double update(double error, double dt) {
+    sum_ += error * dt;
+    sum_ = std::clamp(sum_, -limit_, limit_);
+    return sum_;
+  }
+  void reset() { sum_ = 0.0; }
+private:
+  double sum_{0.0};
+  double limit_{0.0};
+};
 
-    // pubs
-    left_pub_  = create_publisher<std_msgs::msg::Float64>("/left_wheel/cmd_vel", 10);
-    right_pub_ = create_publisher<std_msgs::msg::Float64>("/right_wheel/cmd_vel", 10);
-    turret_pub_= create_publisher<std_msgs::msg::Float64>("/turret/cmd_vel", 10);
+class HamrControlNode : public rclcpp::Node {
+public:
+  HamrControlNode() : rclcpp::Node("hamr_controller_node") {
+    // --- Parameters ---
+    r_wheel_ = this->declare_parameter<double>("r_wheel", 0.0762);
+    a_wheel_ = this->declare_parameter<double>("a_wheel", 0.149556);
+    b_wheel_ = this->declare_parameter<double>("b_wheel", 0.19682);
 
-    // subs
-    path_sub_ = create_subscription<nav_msgs::msg::Path>(
-      "/astar/path", 10, std::bind(&HamrPointToPoint::onPath, this, std::placeholders::_1));
-    odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
-      "/hamr/odom", 20, std::bind(&HamrPointToPoint::onOdom, this, std::placeholders::_1));
+    gains_x_.P   = this->declare_parameter<double>("P_x",   0.1);
+    gains_x_.I   = this->declare_parameter<double>("I_x",   0.005);
+    gains_x_.D   = this->declare_parameter<double>("D_x",   0.001);
+    gains_y_.P   = this->declare_parameter<double>("P_y",   0.1);
+    gains_y_.I   = this->declare_parameter<double>("I_y",   0.005);
+    gains_y_.D   = this->declare_parameter<double>("D_y",   0.001);
+    gains_yaw_.P = this->declare_parameter<double>("P_yaw", 0.5);
+    gains_yaw_.I = this->declare_parameter<double>("I_yaw", 0.001);
+    gains_yaw_.D = this->declare_parameter<double>("D_yaw", 0.001);
 
-    // params
-    wheel_base_         = declare_parameter("wheel_base_m", 0.19682);
-    linear_speed_       = declare_parameter("linear_speed_mps", 0.30);     // fixed v
-    angular_speed_      = declare_parameter("angular_speed_rps", 0.50);    // fixed w
-    position_tolerance_ = declare_parameter("position_tolerance_m", 0.08); // “at WP”
-    align_tolerance_    = declare_parameter("align_tolerance_deg", 8.0) * M_PI/180.0; // face WP
-    settle_time_s_      = declare_parameter("settle_time_s", 0.25);
-    start_wp_idx_       = declare_parameter("start_waypoint_index", 1);    // 0-based; 1 == “waypoint 2”
+    control_rate_hz_ = this->declare_parameter<double>("control_rate_hz", 100.0);
+    d_alpha_         = this->declare_parameter<double>("d_alpha", 0.4);
 
-    timer_ = create_wall_timer(std::chrono::milliseconds(20), std::bind(&HamrPointToPoint::tick, this));
+    param_cb_handle_ = this->add_on_set_parameters_callback(
+      std::bind(&HamrControlNode::onParametersSet, this, _1));
 
-    RCLCPP_INFO(get_logger(), "PTP follower: v=%.2f m/s, w=%.2f rad/s, start_wp=%zu",
-                linear_speed_, angular_speed_, start_wp_idx_);
+    // --- Pub/Sub ---
+    left_pub_   = this->create_publisher<std_msgs::msg::Float64>("/left_wheel/cmd_vel", 1);
+    right_pub_  = this->create_publisher<std_msgs::msg::Float64>("/right_wheel/cmd_vel", 1);
+    turret_pub_ = this->create_publisher<std_msgs::msg::Float64>("/turret/cmd_vel", 1);
+
+    gains_pub_  = this->create_publisher<hamr_interfaces::msg::LiveGains>("/live_gains", 10);
+
+    odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+      "/hamr/odom", 1, std::bind(&HamrControlNode::odomCallback, this, _1));
+    tf_sub_ = this->create_subscription<tf2_msgs::msg::TFMessage>(
+      "/tf", 10, std::bind(&HamrControlNode::tfCallback, this, _1));
+    ref_sub_ = this->create_subscription<hamr_interfaces::msg::ReferenceTraj>(
+      "/reference_trajectory", 1, std::bind(&HamrControlNode::referenceCallback, this, _1));
+
+    // --- Timer ---
+    last_control_time_ = this->now();
+    const double period = 1.0 / std::max(1e-3, control_rate_hz_);
+    control_timer_ = this->create_wall_timer(
+      std::chrono::duration<double>(period),
+      std::bind(&HamrControlNode::controlTick, this));
+
+    // Integrators and thresholds
+    I_x_   = std::make_unique<PIAccumulator>(0.5);
+    I_y_   = std::make_unique<PIAccumulator>(0.5);
+    I_yaw_ = std::make_unique<PIAccumulator>(1.0);
+
+    threshold_xy_  = 0.01;  // m
+    threshold_yaw_ = 0.02;  // rad
+
+    xy_dot_limit_  = 5.0;
+    yaw_dot_limit_ = 2.0;
+
+    RCLCPP_INFO(this->get_logger(),
+      "HAMR Controller started: Px=%.3f Ix=%.3f Dx=%.3f; "
+      "Py=%.3f Iy=%.3f Dy=%.3f; "
+      "Pyaw=%.3f Iyaw=%.3f Dyaw=%.3f",
+      gains_x_.P, gains_x_.I, gains_x_.D,
+      gains_y_.P, gains_y_.I, gains_y_.D,
+      gains_yaw_.P, gains_yaw_.I, gains_yaw_.D);
   }
 
 private:
-  enum class Phase { IDLE, ALIGN, DRIVE, SETTLE, DONE };
+  // --- Callbacks ---
+  void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+    pose_base_ = *msg;   // store full odom (we use pose)
+    have_pose_ = true;
+  }
 
-  // I/O
+  void tfCallback(const tf2_msgs::msg::TFMessage::SharedPtr msg) {
+    for (const auto &t : msg->transforms) {
+      if (t.child_frame_id == "turret_link" && t.header.frame_id == "base_link") {
+        turret_to_base_q_ = t.transform.rotation;
+        have_turret_q_ = true;
+        break;
+      }
+    }
+  }
+
+  void referenceCallback(const hamr_interfaces::msg::ReferenceTraj::SharedPtr msg) {
+    reference_ = *msg;
+    have_reference_ = true;
+  }
+
+  void controlTick() {
+    const rclcpp::Time now = this->now();
+    const double dt = std::max(1e-4, std::min((now - last_control_time_).seconds(), 0.1));
+    last_control_time_ = now;
+
+    if (!have_pose_ || !have_reference_ || !have_turret_q_) return;
+
+    pidStep(dt);
+  }
+
+  // --- Core control ---
+  void pidStep(double dt) {
+    // Errors
+    double err_x, err_y, err_yaw, yaw_base_w;
+    std::tie(err_x, err_y, err_yaw, yaw_base_w) = computeErrors();
+
+    // For /live_gains debug
+    double P_x=0, I_x_term=0, D_x=0;
+    double P_y=0, I_y_term=0, D_y=0;
+    double P_yaw=0, I_yaw_term=0, D_yaw=0;
+
+    // X loop
+    double desired_x_dot = reference_.x_dot;
+    if (std::abs(err_x) < threshold_xy_) {
+      err_x_prev_ = 0.0;
+      I_x_->reset();
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "RESET I_x at target x=%.3f", reference_.x);
+    } else {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 500, "X not at target: err=%.4f", err_x);
+      P_x = gains_x_.P * err_x;
+      I_x_term = gains_x_.I * I_x_->update(err_x, dt);
+
+      const double d_raw_x = (err_x - err_x_prev_) / dt;
+      d_err_x_filt_ = d_alpha_ * d_raw_x + (1.0 - d_alpha_) * d_err_x_filt_;
+      D_x = gains_x_.D * d_err_x_filt_;
+
+      desired_x_dot = reference_.x_dot + P_x + I_x_term + D_x;
+      err_x_prev_ = err_x;
+    }
+
+    // Y loop
+    double desired_y_dot = reference_.y_dot;
+    if (std::abs(err_y) < threshold_xy_) {
+      err_y_prev_ = 0.0;
+      I_y_->reset();
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "RESET I_y at target y=%.3f", reference_.y);
+    } else {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 500, "Y not at target: err=%.4f", err_y);
+      P_y = gains_y_.P * err_y;
+      I_y_term = gains_y_.I * I_y_->update(err_y, dt);
+
+      const double d_raw_y = (err_y - err_y_prev_) / dt;
+      d_err_y_filt_ = d_alpha_ * d_raw_y + (1.0 - d_alpha_) * d_err_y_filt_;
+      D_y = gains_y_.D * d_err_y_filt_;
+
+      desired_y_dot = reference_.y_dot + P_y + I_y_term + D_y;
+      err_y_prev_ = err_y;
+    }
+
+    // Cap XY speed norm
+    double desired_xy_norm = std::hypot(desired_x_dot, desired_y_dot);
+    if (desired_xy_norm > xy_dot_limit_) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 500,
+                           "CAPPING x,y velocity from %.3f to %.3f", desired_xy_norm, xy_dot_limit_);
+      const double scale = xy_dot_limit_ / desired_xy_norm;
+      desired_x_dot *= scale;
+      desired_y_dot *= scale;
+    }
+
+    // Yaw loop
+    double desired_yaw_dot = reference_.yaw_dot;
+    if (std::abs(err_yaw) < threshold_yaw_) {
+      err_yaw_prev_ = 0.0;
+      I_yaw_->reset();
+    } else {
+      P_yaw = gains_yaw_.P * err_yaw;
+      I_yaw_term = gains_yaw_.I * I_yaw_->update(err_yaw, dt);
+
+      const double d_raw_yaw = (err_yaw - err_yaw_prev_) / dt;
+      d_err_yaw_filt_ = d_alpha_ * d_raw_yaw + (1.0 - d_alpha_) * d_err_yaw_filt_;
+      D_yaw = gains_yaw_.D * d_err_yaw_filt_;
+
+      desired_yaw_dot = std::clamp(reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw,
+                                   -yaw_dot_limit_, yaw_dot_limit_);
+      err_yaw_prev_ = err_yaw;
+    }
+
+    publishLiveGains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term);
+
+    Eigen::Vector3d v;
+    v << desired_x_dot, desired_y_dot, desired_yaw_dot;
+    publishJointCmd(v, yaw_base_w);
+  }
+
+  std::tuple<double,double,double,double> computeErrors() {
+    // Desired pose
+    const double x_des = reference_.x;
+    const double y_des = reference_.y;
+    const double yaw_des = reference_.yaw;
+
+    // Current base pose
+    const auto &pose = pose_base_.pose.pose; // PoseWithCovariance → Pose
+    const double x = pose.position.x;
+    const double y = pose.position.y;
+    const double yaw_base_w = quatToYaw(pose.orientation);
+
+    // Turret orientation (base frame)
+    const double yaw_turret_b = quatToYaw(turret_to_base_q_);
+    const double yaw_turret_w = wrapAngle(yaw_base_w + yaw_turret_b);
+
+    const double err_x = x_des - x;
+    const double err_y = y_des - y;
+    const double err_yaw = wrapAngle(yaw_des - yaw_turret_w);
+
+    return {err_x, err_y, err_yaw, yaw_base_w};
+  }
+
+  void publishLiveGains(double Px, double Dx, double Ix,
+                        double Py, double Dy, double Iy,
+                        double Pyaw, double Dyaw, double Iyaw) {
+    hamr_interfaces::msg::LiveGains g;
+    g.p_x = Px; g.d_x = Dx; g.i_x = Ix;
+    g.p_y = Py; g.d_y = Dy; g.i_y = Iy;
+    g.p_yaw = Pyaw; g.d_yaw = Dyaw; g.i_yaw = Iyaw;
+    gains_pub_->publish(g);
+  }
+
+  Eigen::Vector3d computeJointOmegas(const Eigen::Vector3d &desired_velocity, double yaw) const {
+    const double r = r_wheel_, a = a_wheel_, b = b_wheel_;
+    const double c = std::cos(yaw), s = std::sin(yaw);
+
+    Eigen::Matrix3d J;
+    // Matches your Python:
+    // [ r/2*(c - s*b/a), r/2*(c + s*b/a), 0 ]
+    // [ r/2*(s + c*b/a), r/2*(s - c*b/a), 0 ]
+    // [ r/(2*a),        -r/(2*a),         1 ]
+    J(0,0) = r * 0.5 * (c - s * b / a);
+    J(0,1) = r * 0.5 * (c + s * b / a);
+    J(0,2) = 0.0;
+
+    J(1,0) = r * 0.5 * (s + c * b / a);
+    J(1,1) = r * 0.5 * (s - c * b / a);
+    J(1,2) = 0.0;
+
+    J(2,0) =  r / (2.0 * a);
+    J(2,1) = -r / (2.0 * a);
+    J(2,2) =  1.0;
+
+    // Solve J * omega = desired_velocity
+    return J.colPivHouseholderQr().solve(desired_velocity);
+  }
+
+  void publishJointCmd(const Eigen::Vector3d &desired_velocity, double yaw) {
+    const Eigen::Vector3d omegas = computeJointOmegas(desired_velocity, yaw);
+
+    std_msgs::msg::Float64 right_msg, left_msg, turret_msg;
+    right_msg.data  = omegas(0);
+    left_msg.data   = omegas(1);
+    turret_msg.data = omegas(2);
+
+    right_pub_->publish(right_msg);
+    left_pub_->publish(left_msg);
+    turret_pub_->publish(turret_msg);
+  }
+
+  // --- Parameters callback ---
+  rcl_interfaces::msg::SetParametersResult
+  onParametersSet(const std::vector<rclcpp::Parameter> &params) {
+    for (const auto &p : params) {
+      const std::string &name = p.get_name();
+      if      (name == "P_x")    gains_x_.P = p.as_double();
+      else if (name == "I_x")    gains_x_.I = p.as_double();
+      else if (name == "D_x")    gains_x_.D = p.as_double();
+      else if (name == "P_y")    gains_y_.P = p.as_double();
+      else if (name == "I_y")    gains_y_.I = p.as_double();
+      else if (name == "D_y")    gains_y_.D = p.as_double();
+      else if (name == "P_yaw")  gains_yaw_.P = p.as_double();
+      else if (name == "I_yaw")  gains_yaw_.I = p.as_double();
+      else if (name == "D_yaw")  gains_yaw_.D = p.as_double();
+      else if (name == "r_wheel")   r_wheel_ = p.as_double();
+      else if (name == "a_wheel")   a_wheel_ = p.as_double();
+      else if (name == "b_wheel")   b_wheel_ = p.as_double();
+      else if (name == "control_rate_hz") {
+        control_rate_hz_ = p.as_double();
+        const double period = 1.0 / std::max(1e-3, control_rate_hz_);
+        control_timer_->cancel();
+        control_timer_ = this->create_wall_timer(
+          std::chrono::duration<double>(period),
+          std::bind(&HamrControlNode::controlTick, this));
+      }
+      else if (name == "d_alpha")   d_alpha_ = p.as_double();
+    }
+    rcl_interfaces::msg::SetParametersResult res;
+    res.successful = true;
+    return res;
+  }
+
+private:
+  // Params
+  double r_wheel_{0.0762}, a_wheel_{0.149556}, b_wheel_{0.19682};
+  PIDGains gains_x_, gains_y_, gains_yaw_;
+  double control_rate_hz_{100.0}, d_alpha_{0.4};
+
+  // Pub/Sub
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr left_pub_, right_pub_, turret_pub_;
-  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
+  rclcpp::Publisher<hamr_interfaces::msg::LiveGains>::SharedPtr gains_pub_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf_sub_;
+  rclcpp::Subscription<hamr_interfaces::msg::ReferenceTraj>::SharedPtr ref_sub_;
 
-  // TF
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
+  // Timer/Timing
+  rclcpp::TimerBase::SharedPtr control_timer_;
+  rclcpp::Time last_control_time_;
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
 
-  // params
-  double wheel_base_{};
-  double linear_speed_{};
-  double angular_speed_{};
-  double position_tolerance_{};
-  double align_tolerance_{};
-  double settle_time_s_{};
-  size_t start_wp_idx_{};
+  // State
+  nav_msgs::msg::Odometry pose_base_;
+  geometry_msgs::msg::Quaternion turret_to_base_q_;
+  hamr_interfaces::msg::ReferenceTraj reference_;
+  bool have_pose_{false}, have_turret_q_{false}, have_reference_{false};
 
-  // state
-  nav_msgs::msg::Path::SharedPtr path_;
-  nav_msgs::msg::Odometry::SharedPtr odom_;
-  size_t wp_idx_{0};
-  Phase phase_{Phase::IDLE};
-  rclcpp::Time settle_start_;
-
-  // utils
-  static double yawOf(const geometry_msgs::msg::Quaternion& q) {
-    return std::atan2(2.0*(q.w*q.z + q.x*q.y), 1.0 - 2.0*(q.y*q.y + q.z*q.z));
-  }
-  static double angNorm(double a){
-    while (a >  M_PI) a -= 2*M_PI;
-    while (a <= -M_PI) a += 2*M_PI;
-    return a;
-  }
-  void wheels(double v, double w){
-    std_msgs::msg::Float64 L,R,T;
-    L.data = v - (w*wheel_base_)/2.0;
-    R.data = v + (w*wheel_base_)/2.0;
-    T.data = 0.0;
-    left_pub_->publish(L); right_pub_->publish(R); turret_pub_->publish(T);
-  }
-  void stop(){ wheels(0.0, 0.0); }
-
-  bool mapToOdom(const geometry_msgs::msg::PoseStamped& in_map, geometry_msgs::msg::PoseStamped& out_odom){
-    try {
-      auto tf = tf_buffer_.lookupTransform("odom", in_map.header.frame_id, tf2::TimePointZero);
-      tf2::doTransform(in_map, out_odom, tf);
-      return true;
-    } catch (const tf2::TransformException& ex) {
-      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Missing TF %s->odom: %s",
-                           in_map.header.frame_id.c_str(), ex.what());
-      return false;
-    }
-  }
-
-  // callbacks
-  void onPath(const nav_msgs::msg::Path::SharedPtr msg){
-    if (!msg || msg->poses.empty()) {
-      RCLCPP_WARN(get_logger(), "Empty path received");
-      return;
-    }
-    path_ = msg;
-    wp_idx_ = std::min(start_wp_idx_, msg->poses.size()-1);   // start at requested WP (e.g., #2)
-    phase_ = Phase::ALIGN;                                    // always align first
-    settle_start_ = now();
-    RCLCPP_INFO(get_logger(), "Path with %zu WPs (frame=%s). Starting at WP %zu.",
-                msg->poses.size(), msg->header.frame_id.c_str(), wp_idx_+1);
-  }
-
-  void onOdom(const nav_msgs::msg::Odometry::SharedPtr msg){ odom_ = msg; }
-
-  void tick(){
-    if (!path_ || !odom_) return;
-    if (wp_idx_ >= path_->poses.size()){
-      if (phase_ != Phase::DONE) { stop(); phase_ = Phase::DONE; RCLCPP_INFO(get_logger(), "Path done."); }
-      return;
-    }
-
-    // current robot pose (odom)
-    const double rx = odom_->pose.pose.position.x;
-    const double ry = odom_->pose.pose.position.y;
-    const double ryaw = yawOf(odom_->pose.pose.orientation);
-
-    // current waypoint in odom
-    const auto& wp_map = path_->poses[wp_idx_];
-    geometry_msgs::msg::PoseStamped wp_odom;
-    if (!mapToOdom(wp_map, wp_odom)) { stop(); return; }
-
-    const double tx = wp_odom.pose.position.x;
-    const double ty = wp_odom.pose.position.y;
-
-    const double dx = tx - rx;
-    const double dy = ty - ry;
-    const double dist = std::hypot(dx, dy);
-    const double yaw_des = std::atan2(dy, dx);
-    const double yaw_err = angNorm(yaw_des - ryaw);
-
-    // reached?
-    if (dist <= position_tolerance_) {
-      stop();
-      ++wp_idx_;
-      if (wp_idx_ >= path_->poses.size()) { phase_ = Phase::DONE; RCLCPP_INFO(get_logger(), "All waypoints reached."); return; }
-      phase_ = Phase::ALIGN;               // next waypoint: align then drive
-      settle_start_ = now();
-      RCLCPP_INFO(get_logger(), "Reached WP %zu. Next: WP %zu.", wp_idx_, wp_idx_+1);
-      return;
-    }
-
-    // logs
-    RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 500,
-      "State:%s  WP %zu/%zu  Robot:(%.2f,%.2f,%.1f°)  Target:(%.2f,%.2f)  Dist:%.2fm  YawErr:%.1f°",
-      phaseName(phase_), wp_idx_+1, path_->poses.size(),
-      rx, ry, ryaw*180.0/M_PI, tx, ty, dist, yaw_err*180.0/M_PI);
-
-    // FSM with fixed speeds
-    switch (phase_) {
-      case Phase::ALIGN:
-      {
-        if (std::fabs(yaw_err) > align_tolerance_) {
-          const double w = (yaw_err >= 0.0) ? +angular_speed_ : -angular_speed_;
-          wheels(0.0, w);                      // pure rotate
-          settle_start_ = now();               // refresh settle while moving
-        } else {
-          stop();
-          if ((now() - settle_start_).seconds() >= settle_time_s_) {
-            phase_ = Phase::DRIVE;
-            RCLCPP_INFO(get_logger(), "Aligned to WP %zu. Driving straight...", wp_idx_+1);
-          }
-        }
-        break;
-      }
-
-      case Phase::DRIVE:
-      {
-        // No drift check: just go straight
-        wheels(linear_speed_, 0.0);
-        // when dist <= position_tolerance_ we’ll stop/advance above
-        break;
-      }
-
-      case Phase::SETTLE:   // (not used but kept for completeness)
-        if ((now() - settle_start_).seconds() >= settle_time_s_) phase_ = Phase::ALIGN;
-        break;
-
-      case Phase::IDLE:
-      case Phase::DONE:
-      default:
-        stop();
-        break;
-    }
-  }
-
-  const char* phaseName(Phase p) const {
-    switch(p){
-      case Phase::IDLE: return "IDLE";
-      case Phase::ALIGN: return "ALIGN";
-      case Phase::DRIVE: return "MOVING";
-      case Phase::SETTLE: return "SETTLING";
-      case Phase::DONE: return "DONE";
-    }
-    return "?";
-  }
+  // PID state
+  std::unique_ptr<PIAccumulator> I_x_, I_y_, I_yaw_;
+  double err_x_prev_{0.0}, err_y_prev_{0.0}, err_yaw_prev_{0.0};
+  double d_err_x_filt_{0.0}, d_err_y_filt_{0.0}, d_err_yaw_filt_{0.0};
+  double threshold_xy_{0.01}, threshold_yaw_{0.02};
+  double xy_dot_limit_{5.0}, yaw_dot_limit_{2.0};
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<HamrPointToPoint>());
+  auto node = std::make_shared<HamrControlNode>();
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }
