@@ -1,0 +1,107 @@
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 2.5.4 (/opt/ros/jazzy/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+-- Configuring done (0.7s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/build/hamr_bringup
+-- Install configuration: ""
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//launch
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//launch/controller.launch.xml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//launch/hamr.launch.xml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//launch/hamr_rough_terrain.launch.xml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//launch/bringup.launch.py
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//launch/hamr_py.launch.xml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//config
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//config/gazebo_bridge.yaml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//config/hamr_uros_bridge.yaml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//config/hamr_pid_params_sparse_points.yaml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//config/hamr_pid_params.yaml
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//worlds
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//worlds/empty_world.sdf
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//worlds/GMU_verti_arena_2.5D.sdf
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//worlds/emptyrr_world.sdf
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//worlds/2.5D_world.sdf
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//worlds/cones_and_cubes_world.sdf
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/world_256.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/volcano_terrain_512.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/mountain_512.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/terrain_512.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/verti_1024.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/verti_arena_512.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/verti_128.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/terrain_64.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/world.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/verti_32.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/terrain_512_blurred.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/terrain_256.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/volcano_terrain_64.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/volcano_terrain_128.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/terrain_128.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/verti_arena_1024.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/volcano_terrain_1024.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/verti_16.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/ramp_512.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/volcano_terrain_32.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/heightmaps/terrain_32.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/lines
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/lines/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/sand
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/sand/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/albedo_out_rgba.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/checker.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/water
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/water/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/gravel
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/gravel/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/stone_dust
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/stone_dust/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/pebble
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/pebble/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/wood
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/wood/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/concrete
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/concrete/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/boulder
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/boulder/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/albedo_out.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/flagstone
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/flagstone/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/asphalt
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/asphalt/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/foam
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/foam/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/grass
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/grass/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/tree
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/textures/tree/albedo.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/semantic
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup//terrain_assets/semantic/labels.png
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/ament_index/resource_index/package_run_dependencies/hamr_bringup
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/ament_index/resource_index/parent_prefix_path/hamr_bringup
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/environment/ament_prefix_path.sh
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/environment/ament_prefix_path.dsv
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/environment/path.sh
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/environment/path.dsv
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/local_setup.bash
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/local_setup.sh
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/local_setup.zsh
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/local_setup.dsv
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/package.dsv
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/ament_index/resource_index/packages/hamr_bringup
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/cmake/hamr_bringupConfig.cmake
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/cmake/hamr_bringupConfig-version.cmake
+-- Installing: /home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/install/hamr_bringup/share/hamr_bringup/package.xml

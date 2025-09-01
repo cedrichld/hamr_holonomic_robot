@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <world name="default">
+
+    <!-- brighter ambient so terrain isn't dark -->
+    <scene>
+      <ambient>0.6 0.6 0.6 1</ambient>
+      <background>0.55 0.65 0.8 1</background>
+    </scene>
+
+    <light type="directional" name="sun">
+      <pose>0 0 10 0.4 0.6 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <cast_shadows>false</cast_shadows>
+    </light>
+
+    <model name="semantic_terrain">
+    <static>true</static>
+    <link name="terrain">
+        <visual name="terrain_visual">
+        <geometry>
+            <heightmap>
+            <uri>file://hamr_bringup/terrain_assets/heightmaps/verti_arena_512.png</uri>
+            <!-- (x,y,z) in meters; z = max elevation delta -->
+            <size>8 8 0.70</size>
+            <pos>0 0 0</pos>
+            </heightmap>
+        </geometry>
+        <material>
+            <pbr>
+                <metal>
+                    <albedo_map>file://hamr_bringup/terrain_assets/texture/albedo_out_rgba.png</albedo_map>
+                    <!-- optional if you generated it -->
+                    <!-- <normal_map>file://assets/texture/normal_out.png</normal_map> -->
+                    <roughness>0.9</roughness>
+                    <metalness>0.0</metalness>
+                </metal>
+            </pbr>
+        </material>
+        </visual>
+        <collision name="terrain_collision">
+        <geometry>
+            <heightmap>
+            <uri>file://hamr_bringup/terrain_assets/heightmaps/verti_arena_512.png</uri>
+            <size>8 8 0.70</size>
+            <pos>0 0 0</pos>
+            </heightmap>
+        </geometry>
+        </collision>
+    </link>
+    </model>
+
+
+  </world>
+</sdf>
+

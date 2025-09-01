@@ -52,11 +52,12 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0.198549611345678 -0.271316507443243 0.0289830936800706"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://hamr_description/meshes/base_link.stl" />
+        <!-- <mesh
+          filename="package://hamr_description/meshes/base_link.stl" /> -->
+        <cylinder radius="0.225" length="0.1" />
       </geometry>
     </collision>
   </link>
@@ -94,10 +95,11 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 1.5707963267949 0" />
+        rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://hamr_description/meshes/right_wheel_link.stl" />
+        <!-- <mesh
+          filename="package://hamr_description/meshes/right_wheel_link.stl" /> -->
+        <cylinder radius="0.0762" length="0.0254" />
       </geometry>
     </collision>
   </link>
@@ -148,8 +150,9 @@
         xyz="0 0 0"
         rpy="0 ${pi} 0" />
       <geometry>
-        <mesh
-          filename="package://hamr_description/meshes/left_wheel_link.stl" />
+        <!-- <mesh
+          filename="package://hamr_description/meshes/left_wheel_link.stl" /> -->
+        <cylinder radius="0.0762" length="0.0254" />
       </geometry>
     </collision>
   </link>
@@ -253,8 +256,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://hamr_description/meshes/right_caster_wheel_link.stl" />
+        <!-- <mesh
+          filename="package://hamr_description/meshes/right_caster_wheel_link.stl" /> -->
+        <cylinder radius="0.0508" length="0.0222" />
       </geometry>
     </collision>
   </link>
@@ -305,8 +309,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://hamr_description/meshes/left_caster_link.stl" />
+        <!-- <mesh
+          filename="package://hamr_description/meshes/left_caster_link.stl" /> -->
+        <cylinder radius="0.0508" length="0.0222" />
       </geometry>
     </collision>
   </link>
@@ -357,8 +362,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://hamr_description/meshes/left_caster_wheel_link.stl" />
+        <!-- <mesh
+          filename="package://hamr_description/meshes/left_caster_wheel_link.stl" /> -->
+        <cylinder radius="0.0508" length="0.0222" />
       </geometry>
     </collision>
   </link>
@@ -409,8 +415,9 @@
         xyz="0 0 0"
         rpy="-3.14159265358979 0 0" />
       <geometry>
-        <mesh
-          filename="package://hamr_description/meshes/turret_link.stl" />
+        <!-- <mesh
+          filename="package://hamr_description/meshes/turret_link.stl" /> -->
+        <cylinder radius="0.225" length="0.05" />
       </geometry>
     </collision>
   </link>

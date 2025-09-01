@@ -30,11 +30,13 @@ source ~/ros2_ws/install/setup.bash
 # Optional: add to ~/.bashrc
 echo 'source ~/ros2_ws/install/setup.bash' >> ~/.bashrc
 ```
-### 4) Resources for meshes/STLs (required)
+### 4) Resources for meshes/STLs and worlds (required)
 ```bash
 export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_description)/share":$GZ_SIM_RESOURCE_PATH 
+export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_bringup)/share":$GZ_SIM_RESOURCE_PATH
 # Optional: add to ~/.bashrc
 echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_description)/share":$GZ_SIM_RESOURCE_PATH"' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_bringup)/share":$GZ_SIM_RESOURCE_PATH"' >> ~/.bashrc
 ```
 
 ### Run the simulation
