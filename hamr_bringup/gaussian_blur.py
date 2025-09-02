@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # Load an image
-image = cv2.imread('terrain_assets/heightmaps/volcano_terrain_64_pre_blurred.png') 
+image = cv2.imread('terrain_assets/heightmaps/terrain_512.png') 
 
 # Check if the image was loaded successfully
 if image is None:
@@ -15,7 +15,7 @@ else:
     # 3. sigmaX: Gaussian kernel standard deviation in X direction.
     # 4. sigmaY: Gaussian kernel standard deviation in Y direction. If 0, it is taken as sigmaX.
     # 5. borderType: Pixel extrapolation method (optional, default is BORDER_DEFAULT).
-    blurred_image = cv2.GaussianBlur(image, (15, 15), 0)
+    blurred_image = cv2.GaussianBlur(image, (1, 1), 0)
 
     # Display the original and blurred images (optional)
     cv2.imshow('Original Image', image)
@@ -24,4 +24,4 @@ else:
     cv2.destroyAllWindows()
 
     # Save the blurred image (optional)
-    cv2.imwrite('terrain_assets/heightmaps/volcano_terrain_64_post_blurred.png', blurred_image)
+    cv2.imwrite('terrain_assets/heightmaps/terrain_512_new_blurr.png', blurred_image)

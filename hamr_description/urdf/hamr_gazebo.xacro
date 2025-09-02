@@ -12,25 +12,25 @@
     </gazebo>
 
     <gazebo reference="right_caster_link">
-        <mu1 value="0.2" />
-        <mu2 value="0.2" />
+        <mu1 value="0.9" />
+        <mu2 value="0.9" />
     </gazebo>
 
     <gazebo reference="left_caster_link">
-        <mu1 value="0.2" />
-        <mu2 value="0.2" />
+        <mu1 value="0.9" />
+        <mu2 value="0.9" />
     </gazebo>
 
 
     <gazebo reference="right_caster_wheel_link">
-        <mu1 value="0.8" />
-        <mu2 value="0.8" />
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
     </gazebo>
 
 
     <gazebo reference="left_caster_wheel_link">
-        <mu1 value="0.8" />
-        <mu2 value="0.8" />
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
     </gazebo>
 
     <gazebo reference="turret_link">
@@ -87,17 +87,14 @@
             name="gz::sim::systems::OdometryPublisher">
             <!-- world-fixed frame for odom -->
             <odom_frame>odom</odom_frame>
-            <!-- body-fixed frame on your robot -->
             <robot_base_frame>base_footprint</robot_base_frame>
-            <!-- publish rate (Hz) -->
             <odom_publish_frequency>50</odom_publish_frequency>
             <!-- ROS2 topics -->
             <odom_topic>/model/hamr/odometry</odom_topic>
-            <!-- publish the TF on the standard /tf topic -->
             <tf_topic>/model/hamr/tf</tf_topic>
             <!-- 2D odometry -->
             <dimensions>2</dimensions>
-            <!-- <xyz_offset>0.284843388017437 0.203598611982565 0</xyz_offset> -->
+            <!-- <xyz_offset>0.284843388017437 0.203598611982565 0</xyz_offset> didnt work well - rviz bugs -->
         </plugin>
     </gazebo>
 
