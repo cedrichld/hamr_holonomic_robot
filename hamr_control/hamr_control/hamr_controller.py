@@ -136,8 +136,8 @@ class HamrControlNode(Node):
         self.I_yaw = PIAccumulator(limit=1.0)
 
         ## - - Thresholds - - ##
-        self.threshold_x_y = 0.01 # 1cm
-        self.threshold_yaw = 0.02 # 1.14 deg
+        self.threshold_x_y = 0.02 # 2cm
+        self.threshold_yaw = 0.05 # 2.86 deg
 
         ## - - Velocity Limits (Magnitude) - - ##
         self.xy_dot_limit = 0.2
@@ -183,9 +183,9 @@ class HamrControlNode(Node):
             desired_x_dot = self.reference_.x_dot
             self.err_x_prev = 0
             self.I_x.reset()
-            self.get_logger().warn("RESET I_x At target: " + str(self.reference_.x))
+            # self.get_logger().warn("RESET I_x At target: " + str(self.reference_.x))
         else:
-            self.get_logger().warn("X not at target: " + str(err_x))
+            # self.get_logger().warn("X not at target: " + str(err_x))
             P_x = self.gains["x"]["P"] * err_x
             I_x_term = self.gains["x"]["I"] * self.I_x.update(err_x, self.dt)
 
@@ -204,9 +204,9 @@ class HamrControlNode(Node):
             desired_y_dot = self.reference_.y_dot
             self.err_y_prev = 0
             self.I_y.reset()
-            self.get_logger().warn("RESET I_y At target: " + str(self.reference_.y))
+            # self.get_logger().warn("RESET I_y At target: " + str(self.reference_.y))
         else:
-            self.get_logger().warn("Y not at target: " + str(err_y))
+            # self.get_logger().warn("Y not at target: " + str(err_y))
             P_y = self.gains["y"]["P"] * err_y
             I_y_term = self.gains["y"]["I"] * self.I_y.update(err_y, self.dt)
 

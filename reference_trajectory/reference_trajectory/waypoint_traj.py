@@ -27,13 +27,11 @@ def quat_to_angle(q):
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
-        self.v_lin = self.declare_parameter("v_lin", 1.0).value
-        self.w_yaw = self.declare_parameter("w_yaw", 0.1).value
+        self.v_lin = self.declare_parameter("v_lin", 0.2).value # 0.2 m/s is the max our current HW can do
+        self.w_yaw = self.declare_parameter("w_yaw", 0.5).value # 0.5 rad/s
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
-        # self.state_error_sub_ = self.create_subscription(
-        #     StateError, "/state_error", self.callback_state_error, 1)
         self.reference_trajectory_pub_ = self.create_publisher(
             ReferenceTraj, "/reference_trajectory", 1
         )
@@ -49,38 +47,7 @@ class TrajectoryNode(Node):
         self.err_xy = math.inf
         self.err_yaw = math.inf
 
-        points = np.array([ # x, y, yaw
-            [0.0, 0.0, 0.0], # SQUARE
-            [5.0, 0.0, -0.0],
-            [5.0, 5.0, 0.0],
-            [0.0, 5.0, 0.0],
-            [0.0, 0.0, 0.0],
-
-            # SQUARE
-            # [0.0, 0.0, 0.0], 
-            # [5.0, 0.0, -0.5],
-            # [5.0, 5.0, -1.0],
-            # [0.0, 5.0, -1.5],
-            # [0.0, 0.0, -2.0],
-            # SQUARE
-            # [5.0, 0.0, -2.5],
-            # [5.0, 5.0, -3.0],
-            # [0.0, 5.0, 0.0],
-            # [0.0, 0.0, 0.0],
-
-            # [0.0, 0.0, 0.0], # TRIANGLE
-            # [5.0, 2.5, 0.0],
-            # [0.0, 5.0, 0.0],
-            # [0.0, 0.0, 0.0],
-        ])
-
         self.astar_points = None
-        
-        # self.trajectory = WaypointTraj(points, v_lin=v_lin, w_yaw=w_yaw)
-    
-    # def callback_state_error(self, msg: StateError):
-    #     self.err_xy = math.hypot(msg.err_x, msg.err_y)
-    #     self.err_yaw = msg.err_yaw
 
     def callback_points_goal(self, msg: Path):
         self.reference_timer_.cancel()
