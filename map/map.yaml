@@ -1,7 +1,0 @@
-image: map.pgm	         # or map.pgm
-resolution: 0.05         # meters/pixel
-origin: [-10.0, -10.0, 0]  # [x, y, yaw] of pixel (0,0) in "map" frame
-negate: 0                # 0: black=occupied, 1: white=occupied
-occupied_thresh: 0.65
-free_thresh: 0.196
-mode: trinary
