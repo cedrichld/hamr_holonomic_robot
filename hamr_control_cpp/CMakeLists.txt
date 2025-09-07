@@ -65,17 +65,6 @@ ament_target_dependencies(map_publisher
 )
 target_link_libraries(map_publisher yaml-cpp)
 
-add_executable(point_cloud_publisher 
-  src/point_cloud_publisher.cpp
-)
-ament_target_dependencies(point_cloud_publisher
-  rclcpp 
-  nav_msgs
-  ament_index_cpp
-  sensor_msgs
-)
-target_link_libraries(point_cloud_publisher yaml-cpp)
-
 add_executable(prm_builder
   src/prm_builder.cpp
 )
@@ -111,7 +100,6 @@ install(TARGETS
   map_publisher
   prm_builder
   astar_search
-  point_cloud_publisher
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 

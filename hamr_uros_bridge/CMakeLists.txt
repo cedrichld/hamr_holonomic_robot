@@ -8,9 +8,16 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 add_executable(relay_node src/relay_node.cpp)
-ament_target_dependencies(relay_node rclcpp std_msgs)
+ament_target_dependencies(relay_node 
+rclcpp 
+std_msgs
+geometry_msgs
+nav_msgs
+)
 
 install(TARGETS relay_node
   DESTINATION lib/${PROJECT_NAME})
