@@ -3,6 +3,7 @@
 #include <nav_msgs/msg/path.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <std_msgs/msg/int32_multi_array.hpp>
 #include <tf2_ros/transform_listener.h>
@@ -14,6 +15,33 @@
 #include <unordered_set>
 #include <cmath>
 #include <algorithm>
+
+
+// quat -> yaw (radians)
+double quat_to_yaw(const geometry_msgs::msg::Quaternion& q_in) {
+    const double n = std::sqrt(q_in.x*q_in.x + q_in.y*q_in.y +
+                               q_in.z*q_in.z + q_in.w*q_in.w);
+    if (n == 0.0) return 0.0; // fallback
+    const double x = q_in.x / n;
+    const double y = q_in.y / n;
+    const double z = q_in.z / n;
+    const double w = q_in.w / n;
+
+    const double siny_cosp = 2.0 * (w*z + x*y);
+    const double cosy_cosp = 1.0 - 2.0 * (y*y + z*z);
+    return std::atan2(siny_cosp, cosy_cosp); // in [-pi, pi]
+}
+
+// yaw -> quat
+geometry_msgs::msg::Quaternion yaw_to_quat(double yaw) {
+    geometry_msgs::msg::Quaternion q;
+    const double h = 0.5 * yaw;
+    q.x = 0.0;
+    q.y = 0.0;
+    q.z = std::sin(h);
+    q.w = std::cos(h);
+    return q;
+}
 
 class AStarPlanner : public rclcpp::Node {
 public:
@@ -130,6 +158,7 @@ private:
 
     struct GridNode {
         int x, y;
+        double yaw;
         double g_cost, h_cost;
         int parent_idx;
         
@@ -220,7 +249,7 @@ private:
         return neighbors;
     }
 
-    nav_msgs::msg::Path gridAStar(int start_x, int start_y, int goal_x, int goal_y) {
+    nav_msgs::msg::Path gridAStar(int start_x, int start_y, double start_yaw, int goal_x, int goal_y, double goal_yaw) {
         nav_msgs::msg::Path path;
         path.header.frame_id = map_.header.frame_id;
         path.header.stamp = now();
@@ -236,6 +265,7 @@ private:
         GridNode start_node;
         start_node.x = start_x;
         start_node.y = start_y;
+        start_node.yaw = start_yaw;
         start_node.g_cost = 0.0;
         start_node.h_cost = heuristic(start_x, start_y, goal_x, goal_y);
         start_node.parent_idx = -1;
@@ -245,6 +275,7 @@ private:
 
         while (!open_set.empty()) {
             GridNode current = open_set.top();
+            // current.yaw = goal_yaw; // !!! compute specific yaw if needed
             open_set.pop();
             
             int current_idx = coordToIndex(current.x, current.y);
@@ -273,8 +304,7 @@ private:
                     geometry_msgs::msg::PoseStamped pose;
                     pose.header = path.header;
                     mapToWorld(coord.first, coord.second, pose.pose.position.x, pose.pose.position.y);
-                    pose.pose.position.z = 0.0;
-                    pose.pose.orientation.w = 1.0;
+                    pose.pose.orientation = yaw_to_quat(current.yaw);
                     path.poses.push_back(pose);
                 }
                 
@@ -304,6 +334,7 @@ private:
                     GridNode neighbor_node;
                     neighbor_node.x = nx;
                     neighbor_node.y = ny;
+                    // neighbor_node.yaw = goal_yaw; // !!! compute specific yaw if needed
                     neighbor_node.g_cost = tentative_g;
                     neighbor_node.h_cost = heuristic(nx, ny, goal_x, goal_y);
                     neighbor_node.parent_idx = current_idx;
@@ -333,8 +364,10 @@ private:
         if(!getStartPose(start_pose)) return path;
         double start_x = start_pose.pose.position.x;
         double start_y = start_pose.pose.position.y;
+        double start_yaw = quat_to_yaw(start_pose.pose.orientation);
         double goal_x = goal_.pose.position.x;
         double goal_y = goal_.pose.position.y;
+        double goal_yaw = quat_to_yaw(goal_.pose.orientation);
 
         int start_node = findNearestNode(start_x, start_y);
         int goal_node = findNearestNode(goal_x, goal_y);
@@ -348,6 +381,7 @@ private:
             int idx;
             double g_cost, h_cost;
             int parent;
+            double yaw;
             
             double f_cost() const { return g_cost + h_cost; }
             bool operator>(const PrmAStarNode& other) const {
@@ -360,6 +394,7 @@ private:
         std::unordered_set<int> closed_set;
 
         PrmAStarNode start_astar;
+        start_astar.yaw = start_yaw;
         start_astar.idx = start_node;
         start_astar.g_cost = 0.0;
         start_astar.h_cost = euclideanDistance(prm_nodes_[start_node].x, prm_nodes_[start_node].y,
@@ -371,6 +406,7 @@ private:
 
         while (!open_set.empty()) {
             PrmAStarNode current = open_set.top();
+            current.yaw = goal_yaw; // !!! compute specific yaw if needed
             open_set.pop();
 
             if (closed_set.find(current.idx) != closed_set.end()) {
@@ -394,8 +430,7 @@ private:
                 start_pose.header = path.header;
                 start_pose.pose.position.x = start_x;
                 start_pose.pose.position.y = start_y;
-                start_pose.pose.position.z = 0.0;
-                start_pose.pose.orientation.w = 1.0;
+                start_pose.pose.orientation = goal_.pose.orientation; // !!! or compute specific yaw if needed
                 path.poses.push_back(start_pose);
 
                 for (int idx : path_indices) {
@@ -403,8 +438,7 @@ private:
                     pose.header = path.header;
                     pose.pose.position.x = prm_nodes_[idx].x;
                     pose.pose.position.y = prm_nodes_[idx].y;
-                    pose.pose.position.z = 0.0;
-                    pose.pose.orientation.w = 1.0;
+                    pose.pose.orientation = goal_.pose.orientation; // !!! or compute specific yaw if needed
                     path.poses.push_back(pose);
                 }
 
@@ -412,8 +446,7 @@ private:
                 goal_pose.header = path.header;
                 goal_pose.pose.position.x = goal_x;
                 goal_pose.pose.position.y = goal_y;
-                goal_pose.pose.position.z = 0.0;
-                goal_pose.pose.orientation.w = 1.0;
+                goal_pose.pose.orientation = goal_.pose.orientation;
                 path.poses.push_back(goal_pose);
 
                 RCLCPP_INFO(get_logger(), "PRM A* found path with %zu waypoints, explored %zu nodes", 
@@ -524,6 +557,8 @@ private:
             path = prmAStar();
         } else {
             int start_x, start_y, goal_x, goal_y;
+            double start_yaw = quat_to_yaw(start_pose.pose.orientation);
+            double goal_yaw = quat_to_yaw(goal_.pose.orientation);
             if (!worldToMap(start_pose.pose.position.x, start_pose.pose.position.y, start_x, start_y) ||
                 !worldToMap(goal_.pose.position.x, goal_.pose.position.y, goal_x, goal_y)) {
                 RCLCPP_ERROR(get_logger(), "Start or goal outside map bounds");
@@ -535,7 +570,7 @@ private:
                 return;
             }
             
-            path = gridAStar(start_x, start_y, goal_x, goal_y);
+            path = gridAStar(start_x, start_y, start_yaw, goal_x, goal_y, goal_yaw);
         }
 
         auto end_time = now();
@@ -571,8 +606,8 @@ private:
     void onGoal(geometry_msgs::msg::PoseStamped::SharedPtr g) {
         goal_ = *g;
         have_goal_ = true;
-        RCLCPP_INFO(get_logger(), "Goal pose set: (%.2f, %.2f)", 
-                   goal_.pose.position.x, goal_.pose.position.y);
+        RCLCPP_INFO(get_logger(), "Goal pose set: (%.2f, %.2f, %.2f)", 
+                   goal_.pose.position.x, goal_.pose.position.y, quat_to_yaw(goal_.pose.orientation));
         planPath();
     }
 
