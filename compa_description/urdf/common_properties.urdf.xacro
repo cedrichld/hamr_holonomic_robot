@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:macro name="ball_joint" params="parent child joint_prefix 
+        x_offset:=0 y_offset:=0 z_offset:=0 
+        roll_offset:=0 pitch_offset:=0 yaw_offset:=0 
+        mass:=0.001 r:=0.01 lim:=1.57">
+
+        <!-- Isotropic inertia for a solid sphere: I = (2/5) m r^2  -->
+        <xacro:property name="I_diag" value="${0.4*mass*(r**2)}"/>
+
+        <link name="${joint_prefix}_t1">
+            <inertial>
+            <mass value="${mass}"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="${I_diag}" ixy="0" ixz="0" iyy="${I_diag}" iyz="0" izz="${I_diag}"/>
+            </inertial>
+        </link>
+
+        <link name="${joint_prefix}_t2">
+            <inertial>
+            <mass value="${mass}"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="${I_diag}" ixy="0" ixz="0" iyy="${I_diag}" iyz="0" izz="${I_diag}"/>
+            </inertial>
+        </link>
+
+        <link name="${joint_prefix}_t3">
+            <inertial>
+            <mass value="${mass}"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="${I_diag}" ixy="0" ixz="0" iyy="${I_diag}" iyz="0" izz="${I_diag}"/>
+            </inertial>
+        </link>
+
+        <joint name="${joint_prefix}_rev_x" type="revolute">
+            <parent link="${parent}"/><child link="${joint_prefix}_t1"/>
+            <origin xyz="${x_offset} ${y_offset} ${z_offset}" rpy="${roll_offset} 0 0"/><axis xyz="1 0 0"/>
+            <limit lower="-${lim}" upper="${lim}" effort="1" velocity="1"/>
+        </joint>
+
+        <joint name="${joint_prefix}_rev_y" type="revolute">
+            <parent link="${joint_prefix}_t1"/><child link="${joint_prefix}_t2"/>
+            <origin xyz="0 0 0" rpy="0 ${pitch_offset} 0"/><axis xyz="0 1 0"/>
+            <limit lower="-${lim}" upper="${lim}" effort="1" velocity="1"/>
+        </joint>
+
+        <joint name="${joint_prefix}_rev_z" type="revolute">
+            <parent link="${joint_prefix}_t2"/><child link="${joint_prefix}_t3"/>
+            <origin xyz="0 0 0" rpy="0 0 ${yaw_offset}"/><axis xyz="0 0 1"/>
+            <limit lower="-${lim}" upper="${lim}" effort="1" velocity="1"/>
+        </joint>
+
+        <joint name="${joint_prefix}_fixed" type="fixed">
+            <parent link="${joint_prefix}_t3"/><child link="${child}"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+        </joint>
+    </xacro:macro>
+
+    <xacro:macro name="box_inertia" params="m x y z o_xyz o_rpy">
+        <inertial>
+            <mass value="${m}" />
+            <origin xyz="${o_xyz}" rpy="${o_rpy}" />
+            <inertia ixx="${(m/12) * (y*y + z*z)}" ixy="0" ixz="0"
+                     iyy="${(m/12) * (x*x + z*z)}" iyz="0"
+                     izz="${(m/12) * (y*y + x*x)}" />
+        </inertial>
+    </xacro:macro>
+
+</robot>
