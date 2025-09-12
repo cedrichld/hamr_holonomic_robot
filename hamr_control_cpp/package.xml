@@ -24,6 +24,14 @@
   <build_depend>tf2</build_depend> 
   <build_depend>tf2_geometry_msgs</build_depend> 
   <build_depend>nanoflann</build_depend>
+  <build_depend>opencv4</build_depend>
+  <build_depend>OpenCV</build_depend>
+  <build_depend>opencv</build_depend>
+  <depend>cv_bridge</depend> 
+  <depend>sensor_msgs</depend> 
+  <depend>grid_map_core</depend>
+  <depend>grid_map_ros</depend>
+  <depend>grid_map_msgs</depend>
 
   <!-- Exec deps -->
   <exec_depend>rclcpp</exec_depend>
@@ -37,7 +45,10 @@
   <exec_depend>tf2</exec_depend> 
   <exec_depend>tf2_geometry_msgs</exec_depend> 
   <exec_depend>nanoflann</exec_depend>
+  <exec_depend>opencv4</exec_depend>
+  <exec_depend>OpenCV</exec_depend>
   <depend>ament_index_cpp</depend>
+  <exec_depend>opencv</exec_depend>
 
   <!-- Tests (optional) -->
   <test_depend>ament_lint_auto</test_depend>
