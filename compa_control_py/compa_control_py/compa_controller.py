@@ -10,15 +10,16 @@ from nav_msgs.msg import Odometry # used to get the base current state (position
 from geometry_msgs.msg import PoseWithCovariance # used for reference and current pose - not using covariance rn
 from geometry_msgs.msg import Quaternion # for the turret relative 
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
+import tf_transformations # for quaternion operations
 
-from hamr_interfaces.msg import LiveGains, ReferenceTraj
+from hamr_interfaces.msg import LiveGains, ReferenceTraj # could create a compa interface later
 
 
 ### - - UTILITIES - - ###
 def wrap_angle(a):
     return (a + math.pi) % (2.0 * math.pi) - math.pi
 
-def quat_to_angle(q):
+def quat_to_yaw(q):
     return math.atan2(
             2.0 * (q.w * q.z + q.x * q.y),
             1.0 - 2.0 * (q.y * q.y + q.z * q.z)
@@ -35,19 +36,19 @@ class PIAccumulator:
         return self.sum
 
     def reset(self):
-        self.sum = 0.0        
+        self.sum = 0.0
 
-class HamrControlNode(Node):
+class CompaControlNode(Node):
     def __init__(self):
-        super().__init__("hamr_controller_node")
+        super().__init__("compa_controller_node")
 
-        ### - - HAMR Config params (m) - - ###
-        default_hamr_config = {"r_wheel": 0.0762,
-                               "a_wheel": 0.149556,
-                               "b_wheel": 0.19682}
-        for a, b in default_hamr_config.items():
+        ### - - COMPA Config params (m) - - ###
+        default_compa_config = {"r_wheel": 0.1075,
+                               "a_wheel": 0.331643,
+                               "b_wheel": -0.274986} # negative value since wheels in front
+        for a, b in default_compa_config.items():
             self.declare_parameter(a, b)
-        self.hamr_config = {
+        self.compa_config = {
             "r_wheel": self.get_parameter("r_wheel").value,
             "a_wheel": self.get_parameter("a_wheel").value,
             "b_wheel": self.get_parameter("b_wheel").value,
@@ -87,10 +88,11 @@ class HamrControlNode(Node):
         ### - - Set Publishers and Subscribers - - ##
         self.left_wheel_vel_ = self.create_publisher(Float64, "/left_wheel/cmd_vel", 1)
         self.right_wheel_vel_ = self.create_publisher(Float64, "/right_wheel/cmd_vel", 1)
-        self.turret_vel_ = self.create_publisher(Float64, "/turret/cmd_vel", 1)
+        self.turret_vel_ = self.create_publisher(Float64, "/yaw/cmd_vel", 1)
         
-        self.odom_sub_ = self.create_subscription(Odometry, "/hamr/odom", self.callback_odom, 1)
-        self.tf_sub_ = self.create_subscription(TFMessage, "/tf", self.callback_tf, 1)
+        self.odom_sub_ = self.create_subscription(Odometry, "/compa/odom", self.callback_odom, 1)
+        self.tf_sub_ = self.create_subscription(TFMessage, "/tf", self.callback_tf, 10)
+        self.tf_static_sub = self.create_subscription(TFMessage, "/tf_static", self.callback_tf, 10)
 
         self.reference_sub_ = self.create_subscription(ReferenceTraj, "/reference_trajectory", 
                                     self.callback_reference, 1)
@@ -109,7 +111,12 @@ class HamrControlNode(Node):
         ## - - State Variables - - ##        
         self.pose_base_: PoseWithCovariance = None # interested in x, y, yaw
         self.reference_: ReferenceTraj = None # interested in x, y, yaw
-        self.turret_to_base_orientation_: Quaternion = None # interested in relative yaw of turret
+        self.yaw_link_base_orientation_: Quaternion = None # interested in relative yaw of turret
+
+        # Roll Pitch Yaw TFs
+        self._t_base_roll  = None
+        self._t_roll_pitch = None
+        self._t_pitch_yaw  = None
 
         self.err_x_prev = 0.0
         self.err_y_prev = 0.0
@@ -134,7 +141,7 @@ class HamrControlNode(Node):
         self.xy_dot_limit = 5.0
         self.yaw_dot_limit = 2.0
 
-        self.get_logger().info("HAMR Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
+        self.get_logger().info("COMPA Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
                                ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
                                 + "; P_y: " + str(self.gains["y"]["P"]) + 
                                ", I_y: " + str(self.gains["y"]["I"]) + ", D_y: " + str(self.gains["y"]["D"])
@@ -153,10 +160,29 @@ class HamrControlNode(Node):
             err_y = self.reference_.y - self.pose_base_.pose.position.y
 
             yaw_des = self.reference_.yaw # desired yaw for the turret wrt to world frame (used for error)
-            yaw_base_w = quat_to_angle(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
-            yaw_turret_b = quat_to_angle(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
+            yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
+            # yaw_turret_b = quat_to_yaw(self.yaw_link_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
             
-            yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
+            q_w_b = [self.pose_base_.pose.orientation.x,
+                    self.pose_base_.pose.orientation.y,
+                    self.pose_base_.pose.orientation.z,
+                    self.pose_base_.pose.orientation.w]
+
+            # q_b_y is the composed base->yaw
+            q_b_y = [self.yaw_link_base_orientation_.x,
+                    self.yaw_link_base_orientation_.y,
+                    self.yaw_link_base_orientation_.z,
+                    self.yaw_link_base_orientation_.w]
+
+            # world->turret
+            q_w_y = tf_transformations.quaternion_multiply(q_w_b, q_b_y)
+
+            # Extract WORLD yaw
+            yaw_turret_w = math.atan2(
+                2.0*(q_w_y[3]*q_w_y[2] + q_w_y[0]*q_w_y[1]),
+                1.0 - 2.0*(q_w_y[1]*q_w_y[1] + q_w_y[2]*q_w_y[2])
+            )
+            # yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
             err_yaw = wrap_angle(yaw_des - yaw_turret_w)
 
             return err_x, err_y, err_yaw, yaw_base_w # yaw_base_w passed to jacobian later
@@ -232,10 +258,12 @@ class HamrControlNode(Node):
                                 (1.0 - self.d_alpha) * self.d_err_yaw_filt)
             D_yaw = self.gains["yaw"]["D"] * self.d_err_yaw_filt
 
-            desired_yaw_dot = max(-self.yaw_dot_limit, min(self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
+            desired_yaw_dot = max(-self.yaw_dot_limit, min(
+                self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
 
             self.err_yaw_prev = err_yaw
-        
+        self.get_logger().info(f"self.reference_.yaw_dot: {self.reference_.yaw_dot:.3f}, P_yaw: {P_yaw:.3f}, I_yaw: {I_yaw_term:.3f}, D_yaw: {D_yaw:.3f}")
+        self.get_logger().info(f"Desired x: {desired_x_dot:.3f}, y: {desired_y_dot:.3f}, yaw: {desired_yaw_dot:.3f}")
         self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
                                         desired_yaw_dot]), yaw_base_w) # desired vel
@@ -250,7 +278,7 @@ class HamrControlNode(Node):
         self.gains_pub_.publish(gains)
 
     def callback_odom(self, msg: Odometry):
-        ''' Subscription callback to the pose of hamr '''
+        ''' Subscription callback to the pose of compa '''
         self.pose_base_ = msg.pose
 
     def control_tick(self):
@@ -266,15 +294,51 @@ class HamrControlNode(Node):
         self.dt = max(1e-4, min(dt, 0.1))
 
         if (self.pose_base_ is not None and self.reference_ is not None 
-                and self.turret_to_base_orientation_ is not None):
+                and self.yaw_link_base_orientation_ is not None):
             self.pid_step()
 
+    def _quat_normalized(self, q_xyzw):
+        x, y, z, w = q_xyzw
+        n = math.sqrt(x*x + y*y + z*z + w*w)
+        if n < 1e-12:
+            # fallback to I if something degenerate arrives
+            return [0.0, 0.0, 0.0, 1.0]
+        inv = 1.0 / n
+        return [x*inv, y*inv, z*inv, w*inv]
+    
+    def _q_from_tf(self, t):
+        return [t.transform.rotation.x,
+                t.transform.rotation.y,
+                t.transform.rotation.z,
+                t.transform.rotation.w]    
+    
     def callback_tf(self, msg: TFMessage):
         ''' Look through all TFs and find turret_link to get it's Quaternion '''
+        
         for t in msg.transforms:
-            if t.child_frame_id == "turret_link" and t.header.frame_id  == "base_link":
-                self.turret_to_base_orientation_ = t.transform.rotation # Quaternion
-                break
+            # base -> roll
+            if t.header.frame_id == "base_link" and t.child_frame_id == "roll_link":
+                self._t_base_roll = t
+            # roll -> pitch
+            elif t.header.frame_id == "roll_link" and t.child_frame_id == "pitch_link":
+                self._t_roll_pitch = t
+            # pitch -> yaw
+            elif t.header.frame_id == "pitch_link" and t.child_frame_id == "yaw_plate_link":
+                self._t_pitch_yaw = t
+
+        if not (self._t_base_roll and self._t_roll_pitch and self._t_pitch_yaw):
+            return
+
+        q_b_r = self._q_from_tf(self._t_base_roll)  # base to roll
+        q_r_p = self._q_from_tf(self._t_roll_pitch) # roll to pitch
+        q_p_y = self._q_from_tf(self._t_pitch_yaw)  # pitch to yaw
+
+        q_b_p = tf_transformations.quaternion_multiply(q_b_r, q_r_p) # base to pitch
+        q_b_y = tf_transformations.quaternion_multiply(q_b_p, q_p_y) # base to yaw
+        q_b_y = self._quat_normalized(q_b_y)
+
+        self.yaw_link_base_orientation_ = Quaternion(
+            x=q_b_y[0], y=q_b_y[1], z=q_b_y[2], w=q_b_y[3])
 
     def callback_reference(self, msg: ReferenceTraj):
         self.reference_ = msg
@@ -289,8 +353,8 @@ class HamrControlNode(Node):
                 2. left_wheel
                 3. turret 
         '''
-        r_w, b, a = self.hamr_config["r_wheel"], \
-            self.hamr_config["b_wheel"], self.hamr_config["a_wheel"]
+        r_w, b, a = self.compa_config["r_wheel"], \
+            self.compa_config["b_wheel"], self.compa_config["a_wheel"]
         c, s = np.cos(yaw), np.sin(yaw)
 
         J = np.array([
@@ -306,7 +370,8 @@ class HamrControlNode(Node):
         omegas = self.compute_velocities(desired_velocity, yaw)
         self.get_logger().info(f"Computed omegas: {omegas}")
         right_wheel_omega.data, left_wheel_omega.data, turret_omega.data = omegas
-        
+        right_wheel_omega.data = -right_wheel_omega.data
+
         self.right_wheel_vel_.publish(right_wheel_omega)
         self.left_wheel_vel_.publish(left_wheel_omega)
         self.turret_vel_.publish(turret_omega)
@@ -331,12 +396,12 @@ class HamrControlNode(Node):
                 self.gains[group][term] = p.value
                 self.get_logger().info(f"{p.name} changed to {p.value}")
             elif p.name in config_name_map:
-                self.hamr_config[p.name] = p.value
+                self.compa_config[p.name] = p.value
                 self.get_logger().info(f"{p.name} changed to {p.value}")
 
 def main(args=None):
     rclpy.init(args=args)
-    node = HamrControlNode()
+    node = CompaControlNode()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

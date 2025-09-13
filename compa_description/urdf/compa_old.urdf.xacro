@@ -230,8 +230,8 @@
     </inertial>
     <visual>
       <origin
-        xyz="-0.001 0.098 0"
-        rpy="0 0 ${pi}" />
+        xyz="-0.001 -0.098 0"
+        rpy="0 0 0" />
       <geometry>
         <mesh
           filename="package://compa_description/meshes/right_wheel_link.STL" />
@@ -244,7 +244,7 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 ${pi}"
+        xyz="0 0 0"
         rpy="${pi/2} 0 0" />
       <geometry>
         <cylinder radius="0.1075" length="0.083" />
@@ -256,7 +256,7 @@
     type="continuous">
     <origin
       xyz="-0.27114 0.14572 -0.1442"
-      rpy="0 0 ${pi}" />
+      rpy="0 0 0" />
     <parent
       link="right_rocker_link" />
     <child

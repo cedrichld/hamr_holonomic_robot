@@ -8,7 +8,7 @@
     <let name="rviz_config_path" 
         value="$(find-pkg-share hamr_description)/rviz/urdf_config.rviz" />
     <let name="pid_config_path"
-        value="$(find-pkg-share hamr_bringup)/config/hamr_pid_params.yaml" />
+        value="$(find-pkg-share hamr_bringup)/config/compa_pid_params.yaml" />
 
     <!-- To launch GZ -->
     <include file="$(find-pkg-share ros_gz_sim)/launch/gz_sim.launch.py">
@@ -40,12 +40,12 @@
 
     <!-- <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui" /> -->
 
-    <!-- Launch HAMR Controller -->
-    <node pkg="hamr_control" exec="hamr_controller" >
+    <!-- Launch COMPA Controller -->
+    <node pkg="compa_control_py" exec="compa_controller" >
         <param from="$(var pid_config_path)" />
     </node>
-    <node pkg="hamr_control" exec="hamr_pid_graph" />
-    <node pkg="hamr_control" exec="hamr_odom_graph">
+    <node pkg="compa_control_py" exec="compa_pid_graph" />
+    <node pkg="compa_control_py" exec="compa_odom_graph">
         <param name="use_sim_time" value="true" />
     </node>
 

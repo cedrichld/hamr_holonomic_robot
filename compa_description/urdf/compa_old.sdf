@@ -290,7 +290,7 @@
     </link>
 
     <joint name='right_rocker_right_wheel_joint' type='revolute'>
-      <pose relative_to='right_rocker_link'>-0.27113999999999999 0.14571999999999999 -0.14419999999999999 0 0 3.14159</pose>
+      <pose relative_to='right_rocker_link'>-0.27113999999999999 0.14571999999999999 -0.14419999999999999 0 0 0</pose>
       <parent>right_rocker_link</parent>
       <child>right_wheel_link</child>
       <axis>
@@ -307,7 +307,7 @@
     </joint>
 
     <link name='right_wheel_link'>
-      <pose relative_to='right_rocker_right_wheel_joint'>0 0 0 0 0 3.14159</pose>
+      <pose relative_to='right_rocker_right_wheel_joint'>0 0 0 0 0 0</pose>
       <inertial>
         <pose>0.00077430594539401598 0.097571485738337502 0 0 0 0</pose>
         <mass>20.7437809859022702</mass>
@@ -1177,9 +1177,11 @@
       <pose>0 0 0 0 0 0</pose>
     </frame>
 
+    <!-- Add compa default plugins -->
+    <!-- <xacro:compa_default_plugins /> -->
 
 
-    <!-- ADD COMPA PLUGINS -->
+
     <!-- To close the structure loop (base - - - - - > rockers) -->
     <!--                               ⤷ leverage -> rods ⤴ -->
     <plugin filename="libgz-sim-detachable-joint-system.so"

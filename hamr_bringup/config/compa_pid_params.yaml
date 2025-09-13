@@ -1,0 +1,15 @@
+/compa_controller_node:
+  ros__parameters:
+    D_x: 0.25
+    D_y: 0.25
+    D_yaw: 0.1
+    I_x: 0.4
+    I_y: 0.4
+    I_yaw: 0.4
+    P_x: 1.0
+    P_y: 1.0
+    P_yaw: 8.0
+    control_rate_hz: 100.0
+    d_alpha: 0.4
+    use_sim_time: true
+
