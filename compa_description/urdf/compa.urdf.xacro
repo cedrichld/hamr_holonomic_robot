@@ -4,7 +4,8 @@
   
   <!-- To import ball joint, camera and more -->
   <xacro:include filename="common_properties.urdf.xacro" /> 
-  <xacro:include filename="camera.urdf.xacro" />
+  <!-- <xacro:include filename="camera.urdf.xacro" /> -->
+  <xacro:include filename="compa_gazebo.urdf.xacro" /> 
 
 
   <link name="base_footprint" />
@@ -12,7 +13,7 @@
   <joint name="base_joint" type="fixed">
       <parent link="base_footprint" />
       <child link="base_link" />
-      <origin xyz="0 0 0.25042" rpy="0 0 0"/>
+      <origin xyz="0 0 0.25042" rpy="0 0 ${-pi/2}"/>
   </joint>
 
   <link name="base_link">
@@ -114,7 +115,7 @@
         xyz="0.000774305945393738 0.0975714857383374 -2.37966814073398E-07"
         rpy="0 0 0" />
       <mass
-        value="2.74378098590227" />
+        value="20.74378098590227" />
       <inertia
         ixx="0.00876644391195367"
         ixy="-5.31179573172881E-07"
@@ -219,7 +220,7 @@
         xyz="0.000774305945394016 0.0975714857383375 -2.37966814281565E-07"
         rpy="0 0 0" />
       <mass
-        value="2.74378098590227" />
+        value="20.74378098590227" />
       <inertia
         ixx="0.00876644391195365"
         ixy="-5.31179573161731E-07"
@@ -244,7 +245,7 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 ${pi}"
+        xyz="0 0 0"
         rpy="${pi/2} 0 0" />
       <geometry>
         <cylinder radius="0.1075" length="0.083" />

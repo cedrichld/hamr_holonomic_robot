@@ -370,8 +370,7 @@ class CompaControlNode(Node):
         omegas = self.compute_velocities(desired_velocity, yaw)
         self.get_logger().info(f"Computed omegas: {omegas}")
         right_wheel_omega.data, left_wheel_omega.data, turret_omega.data = omegas
-        right_wheel_omega.data = -right_wheel_omega.data
-
+    
         self.right_wheel_vel_.publish(right_wheel_omega)
         self.left_wheel_vel_.publish(left_wheel_omega)
         self.turret_vel_.publish(turret_omega)

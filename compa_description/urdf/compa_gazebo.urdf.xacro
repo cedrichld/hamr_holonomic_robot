@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+<robot name="hamr" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <gazebo reference="right_wheel_link">
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
+    </gazebo>
+
+    <gazebo reference="left_wheel_link">
+        <mu1 value="1.0" />
+        <mu2 value="1.0" />
+    </gazebo>
+
+    <!-- ADD COMPA PLUGINS -->
+    <!-- To close the structure loop (base - - - - - > rockers) -->
+    <!--                               ⤷ leverage -> rods ⤴ -->
+    <!-- Left rocker Connector -->
+    <gazebo>
+        <plugin filename="libgz-sim-detachable-joint-system.so"
+                    name="gz::sim::systems::DetachableJoint">
+            <parent_link>left_rocker_link</parent_link>
+            <child_model>compa</child_model>
+            <child_link>tmp_left_rod_sphere2_t3</child_link>
+            <attach_topic>close_left_loop</attach_topic>
+            <detach_topic>open_left_loop</detach_topic>
+        </plugin>
+    </gazebo>
+
+    <!-- Right rocker Connector -->
+    <gazebo>
+        <plugin filename="libgz-sim-detachable-joint-system.so"
+                    name="gz::sim::systems::DetachableJoint">
+            <parent_link>right_rocker_link</parent_link>
+            <child_model>compa</child_model>
+            <child_link>tmp_right_rod_sphere2_t3</child_link>
+            <attach_topic>close_right_loop</attach_topic>
+            <detach_topic>open_right_loop</detach_topic>
+        </plugin>
+    </gazebo>
+
+    <!-- Joint states -->
+    <gazebo>
+        <plugin
+            filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher">
+            <!-- We could stop here - would publish every joint. But better to be specific -->
+            <!-- <joint_name>base_left_rocker_joint</joint_name>
+            <joint_name>base_right_rocker_joint</joint_name>
+            <joint_name>left_rocker_left_wheel_joint</joint_name>
+            <joint_name>right_rocker_right_wheel_joint</joint_name>
+
+            <joint_name>base_roll_joint</joint_name>
+            <joint_name>roll_pitch_joint</joint_name>
+            <joint_name>pitch_yaw_plate_joint</joint_name>
+
+            <joint_name>base_leverage_joint</joint_name>
+
+            <joint_name>leverage_right_rod_sphere1_joint</joint_name>
+            <joint_name>leverage_left_rod_sphere1_joint</joint_name>
+            <joint_name>left_rod_sphere1_joint</joint_name>
+
+            <joint_name>right_rod_sphere1_rev_z</joint_name>
+            <joint_name>left_rod_sphere1_rev_z</joint_name>
+
+            <joint_name>right_rocker_rod_sphere2_joint</joint_name>
+            <joint_name>left_rocker_rod_sphere2_joint</joint_name> -->
+        </plugin>
+    </gazebo>
+
+    <!-- Left rocker wheel joint controller -->
+    <gazebo> 
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>left_rocker_left_wheel_joint</joint_name>
+        </plugin>
+    </gazebo>
+
+    <!-- Right rocker wheel joint controller -->
+    <gazebo> 
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>right_rocker_right_wheel_joint</joint_name>
+        </plugin>
+    </gazebo>
+    
+
+    <!-- Roll joint controller -->
+    <gazebo> 
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>base_roll_joint</joint_name>
+        </plugin>
+    </gazebo>
+
+    <!-- Pitch joint controller -->
+    <gazebo> 
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>roll_pitch_joint</joint_name>
+        </plugin>
+    </gazebo>
+
+    <!-- Yaw joint controller -->
+    <gazebo> 
+        <plugin
+            filename="gz-sim-joint-controller-system"
+            name="gz::sim::systems::JointController">
+            <joint_name>pitch_yaw_plate_joint</joint_name>
+        </plugin>
+    </gazebo>
+
+
+    <!-- Wheel slip -->
+    <gazebo> 
+        <plugin filename="libgz-sim-wheel-slip-system.so"
+                    name="gz::sim::systems::WheelSlip">
+            <wheel link_name="left_wheel_link">
+                <slip_compliance_lateral>2e-4</slip_compliance_lateral>
+                <slip_compliance_longitudinal>1e-4</slip_compliance_longitudinal>
+                <wheel_normal_force>124.1</wheel_normal_force>
+                <wheel_radius>0.1075</wheel_radius>
+            </wheel>
+            <wheel link_name="right_wheel_link">
+                <slip_compliance_lateral>2e-4</slip_compliance_lateral>
+                <slip_compliance_longitudinal>1e-4</slip_compliance_longitudinal>
+                <wheel_normal_force>124.1</wheel_normal_force>
+                <wheel_radius>0.1075</wheel_radius>
+            </wheel>
+        </plugin>
+    </gazebo>
+
+
+    <!-- Odometry -->
+    <gazebo> 
+        <plugin
+            filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+            <!-- world-fixed frame for odom -->
+            <odom_frame>odom</odom_frame>
+            <robot_base_frame>base_footprint</robot_base_frame>
+            <odom_publish_frequency>50</odom_publish_frequency>
+            <!-- ROS2 topics -->
+            <odom_topic>/model/compa/odometry</odom_topic>
+            <tf_topic>/model/compa/tf</tf_topic>
+            <!-- 3D odometry -->
+            <dimensions>3</dimensions>
+        </plugin>
+    </gazebo>
+
+</robot>
+
+
+<!-- <gazebo>
+    <plugin
+        filename="gz-sim-diff-drive-system"
+        name="gz::sim::systems::DiffDrive">
+        <left_joint>base_left_wheel_joint</left_joint>
+        <right_joint>base_right_wheel_joint</right_joint>
+        <wheel_separation>0.308</wheel_separation> 
+        <wheel_radius>0.0762</wheel_radius>
+        <frame_id>odom</frame_id>
+        <child_frame_id>dummy_link</child_frame_id>
+    </plugin>
+</gazebo> -->
