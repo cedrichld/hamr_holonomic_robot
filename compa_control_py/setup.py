@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'hamr_control'
+package_name = 'compa_control_py'
 
 setup(
     name=package_name,
@@ -20,9 +20,10 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            "hamr_pid_graph = hamr_control.hamr_pid_graph:main",
-            "hamr_odom_graph = hamr_control.hamr_odom_graph:main",
-            "hamr_controller = hamr_control.hamr_controller:main",
+            "compa_pid_graph = compa_control_py.compa_pid_graph:main",
+            "compa_odom_graph = compa_control_py.compa_odom_graph:main",
+            "compa_controller = compa_control_py.compa_controller:main",
+            "tf_trail_node = compa_control_py.tf_trail_node:main",
         ],
     },
 )

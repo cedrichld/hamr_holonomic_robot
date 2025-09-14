@@ -25,10 +25,10 @@
     <link name="camera_link_optical">
     </link>
 
-    <joint name="turret_camera_joint" type="fixed">
-        <parent link="turret_link" />
+    <joint name="yaw_plate_camera_joint" type="fixed">
+        <parent link="yaw_plate_link" />
         <child link="camera_link" />
-        <origin xyz="0 0 0.1" rpy="0 0 ${-pi / 2.0}"/>
+        <origin xyz="0 0 0.1" rpy="0 0 ${-pi}"/>
     </joint>
     
     <!-- generate an optical frame 

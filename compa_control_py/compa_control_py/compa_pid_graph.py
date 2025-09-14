@@ -26,12 +26,12 @@ def quat_to_angle(q):
 # ---------- Node 1: Odom/TF/Reference ----------
 class OdomGraphNode(Node):
     def __init__(self):
-        super().__init__("hamr_live_graph_node")
+        super().__init__("compa_live_graph_node")
         self.gains_sub_ = self.create_subscription(
             LiveGains, "/live_gains", self.callback_gains, 10
         )
         
-        self.get_logger().info("HamrLiveGraphNode started.")
+        self.get_logger().info("CompaLiveGraphNode started.")
 
         self.live_gains = dict(
             p_x=0.0, i_x=0.0, d_x=0.0,

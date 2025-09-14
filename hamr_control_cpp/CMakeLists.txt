@@ -120,6 +120,19 @@ ament_target_dependencies(astar_search
   tf2_geometry_msgs
 )
 
+add_executable(compa_path_tracer
+  src/compa_path_tracer.cpp
+)
+
+ament_target_dependencies(compa_path_tracer
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_geometry_msgs
+)
+
 # Off-ASTAR
 add_executable(or_planner
   src/or_planner.cpp
@@ -140,6 +153,7 @@ ament_target_dependencies(or_planner
 install(TARGETS
   hamr_controller
   hamr_path_tracer
+  compa_path_tracer
   map_publisher
   cost_map_publisher
   prm_builder

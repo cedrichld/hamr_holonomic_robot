@@ -34,8 +34,8 @@
     </gazebo>
 
     <gazebo reference="turret_link">
-        <mu2 value="0.6" />
-        <mu1 value="0.6" />
+        <mu2 value="0.0" />
+        <mu1 value="0.0" />
     </gazebo>
 
 
@@ -92,8 +92,8 @@
             <!-- ROS2 topics -->
             <odom_topic>/model/hamr/odometry</odom_topic>
             <tf_topic>/model/hamr/tf</tf_topic>
-            <!-- 2D odometry -->
-            <dimensions>2</dimensions>
+            <!-- 3D odometry -->
+            <dimensions>3</dimensions>
             <!-- <xyz_offset>0.284843388017437 0.203598611982565 0</xyz_offset> didnt work well - rviz bugs -->
         </plugin>
     </gazebo>

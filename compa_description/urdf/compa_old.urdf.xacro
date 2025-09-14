@@ -1,0 +1,811 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro"
+  name="compa">
+  
+  <!-- To import ball joint, camera and more -->
+  <xacro:include filename="common_properties.urdf.xacro" /> 
+  <xacro:include filename="camera.urdf.xacro" />
+
+
+  <link name="base_footprint" />
+
+  <joint name="base_joint" type="fixed">
+      <parent link="base_footprint" />
+      <child link="base_link" />
+      <origin xyz="0 0 0.25042" rpy="0 0 0"/>
+  </joint>
+
+  <link name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.000339817170498122 0.00424231004595931 0.00197670802942906"
+        rpy="0 0 0" />
+      <mass
+        value="4.7675691308253" />
+      <inertia
+        ixx="0.139176668892902"
+        ixy="3.73786456449896E-05"
+        ixz="0.000406943794666223"
+        iyy="0.260635271329177"
+        iyz="-0.000613703988621289"
+        izz="0.12399220264823" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <link name="left_rocker_link">
+    <inertial>
+      <origin
+        xyz="0.10635785885848 -0.0822265512946505 -0.0953433649729512"
+        rpy="0 0 0" />
+      <mass
+        value="4.36949644437113" />
+      <inertia
+        ixx="0.00932322040257303"
+        ixy="0.000840455697953046"
+        ixz="-0.00990088926719093"
+        iyy="0.100262669486419"
+        iyz="0.000224119901626131"
+        izz="0.0927291914231702" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/left_rocker_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/left_rocker_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_left_rocker_joint"
+    type="continuous">
+    <origin
+      xyz="-0.184999999999999 0 0.0360999999999991"
+      rpy="0 0 -1.5707963267949" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_rocker_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link name="left_wheel_link">
+    <inertial>
+      <origin
+        xyz="0.000774305945393738 0.0975714857383374 -2.37966814073398E-07"
+        rpy="0 0 0" />
+      <mass
+        value="2.74378098590227" />
+      <inertia
+        ixx="0.00876644391195367"
+        ixy="-5.31179573172881E-07"
+        ixz="5.28913139433932E-08"
+        iyy="0.014659876055652"
+        iyz="3.15796027624797E-08"
+        izz="0.00876696237942707" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="-0.001 -0.098 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/left_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.298039215686275 0.298039215686275 0.298039215686275 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="${pi/2} 0 0" />
+      <geometry>
+        <cylinder radius="0.1075" length="0.083" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_rocker_left_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.27114 -0.14572 -0.1442"
+      rpy="3.1416 0 0" />
+    <parent
+      link="left_rocker_link" />
+    <child
+      link="left_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link name="right_rocker_link">
+    <inertial>
+      <origin
+        xyz="0.106539267968694 0.0826305372124516 -0.0953304868043567"
+        rpy="0 0 0" />
+      <mass
+        value="4.36946919822567" />
+      <inertia
+        ixx="0.00932675815874427"
+        ixy="-0.000482864007692931"
+        ixz="-0.00991249460803209"
+        iyy="0.100257791934551"
+        iyz="-0.000121614966655075"
+        izz="0.0927177596175054" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/right_rocker_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/right_rocker_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_right_rocker_joint"
+    type="continuous">
+    <origin
+      xyz="0.185 0 0.0361"
+      rpy="0 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_rocker_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link name="right_wheel_link">
+    <inertial>
+      <origin
+        xyz="0.000774305945394016 0.0975714857383375 -2.37966814281565E-07"
+        rpy="0 0 0" />
+      <mass
+        value="2.74378098590227" />
+      <inertia
+        ixx="0.00876644391195365"
+        ixy="-5.31179573161731E-07"
+        ixz="5.28913139489226E-08"
+        iyy="0.014659876055652"
+        iyz="3.1579602755194E-08"
+        izz="0.00876696237942706" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="-0.001 -0.098 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/right_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.298039215686275 0.298039215686275 0.298039215686275 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="${pi/2} 0 0" />
+      <geometry>
+        <cylinder radius="0.1075" length="0.083" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_rocker_right_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.27114 0.14572 -0.1442"
+      rpy="0 0 0" />
+    <parent
+      link="right_rocker_link" />
+    <child
+      link="right_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link name="roll_link">
+    <inertial>
+      <origin
+        xyz="0.00350000004402022 -5.16314840708076E-10 -4.00015491542477E-06"
+        rpy="0 0 0" />
+      <mass
+        value="0.944517139921142" />
+      <inertia
+        ixx="0.0181589556415456"
+        ixy="-6.29046022348623E-07"
+        ixz="-2.07968206915504E-11"
+        iyy="0.0184849903072778"
+        iyz="-7.02129324325875E-16"
+        izz="0.0364005003554526" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/roll_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/roll_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="base_roll_joint"
+    type="continuous">
+    <origin
+      xyz="0 0 0.03826"
+      rpy="${-pi} 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="roll_link" />
+    <axis
+      xyz="-1 0 0" />
+  </joint>
+
+  <link name="pitch_link">
+    <inertial>
+      <origin
+        xyz="-1.53612491524818E-06 0.0452818711897623 -0.00479118208676022"
+        rpy="0 0 0" />
+      <mass
+        value="0.373399633584383" />
+      <inertia
+        ixx="0.000245121023174029"
+        ixy="-1.04461141223475E-09"
+        ixz="-5.02589593844006E-10"
+        iyy="0.000177685960624184"
+        iyz="-2.52895140798418E-05"
+        izz="0.000294726650760256" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/pitch_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/pitch_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="roll_pitch_joint"
+    type="continuous">
+    <origin
+      xyz="0.0035 0 0"
+      rpy="3.1416 0 0" />
+    <parent
+      link="roll_link" />
+    <child
+      link="pitch_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+  <link name="yaw_plate_link">
+    <inertial>
+      <origin
+        xyz="-0.00447913610788967 2.41196326362311E-05 0.127371508973676"
+        rpy="0 0 0" />
+      <mass
+        value="4.77359574593992" />
+      <inertia
+        ixx="0.137280882823545"
+        ixy="2.12673978923993E-05"
+        ixz="0.000121233585196392"
+        iyy="0.141251293392401"
+        iyz="-6.47537750501791E-07"
+        izz="0.27812043683305" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 ${pi}" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/yaw_plate_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 ${pi}" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/yaw_plate_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="pitch_yaw_plate_joint"
+    type="continuous">
+    <origin
+      xyz="0 0 0.0375"
+      rpy="0 0 ${pi}" />
+    <parent
+      link="pitch_link" />
+    <child
+      link="yaw_plate_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+
+  <link name="leverage_link">
+    <inertial>
+      <origin
+        xyz="-0.0117745961443602 -3.98443129349599E-08 -0.000252346332911095"
+        rpy="0 0 0" />
+      <mass
+        value="0.16962532718169" />
+      <inertia
+        ixx="0.00130897914050679"
+        ixy="3.29957052469139E-12"
+        ixz="-4.97883603410576E-09"
+        iyy="5.88902413778525E-05"
+        iyz="5.89893406244419E-11"
+        izz="0.00125385800443425" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/leverage_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/leverage_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+
+  <!-- BOGIE LINKS -->
+  <joint name="base_leverage_joint"
+    type="continuous">
+    <origin
+      xyz="0 0.2332 0.03826"
+      rpy="0 0 -1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="leverage_link" />
+    <axis
+      xyz="-1 0 0" />
+  </joint>
+
+
+  <!-- Right Side Bogie -->
+  <link name="right_rod_sphere1_link">
+    <inertial>
+      <origin
+        xyz="0.00536589340030799 -0.00133128905926821 -0.00337989932446242"
+        rpy="0 0 0" />
+      <mass
+        value="0.0013014428485605" />
+      <inertia
+        ixx="1.60882150250237E-08"
+        ixy="-5.10245749664677E-18"
+        ixz="-4.13590306276514E-24"
+        iyy="2.14375515430229E-08"
+        iyz="3.44035962441191E-18"
+        izz="1.60882150250237E-08" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="leverage_right_rod_sphere1_joint"
+    type="fixed">
+    <origin
+      xyz="-0.024 0.222 -0.0064"
+      rpy="0 0 1.5708" />
+    <parent
+      link="leverage_link" />
+    <child
+      link="right_rod_sphere1_link" />
+  </joint>
+
+  <link name="right_rod_link">
+    <inertial>
+      <origin
+        xyz="0.00807999415461744 0.00132856456720257 -0.0766613810604778"
+        rpy="0 0 0" />
+      <mass
+        value="0.0151753641367165" />
+      <inertia
+        ixx="3.27980169789714E-05"
+        ixy="-5.95699180514602E-08"
+        ixz="3.43503884989101E-06"
+        iyy="3.31503405889854E-05"
+        iyz="5.65386918327902E-07"
+        izz="5.68009921841292E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 -0.07056"
+        rpy="0 0 ${pi/2}" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/rod_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 -0.07056"
+        rpy="0 0 ${pi/2}" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/rod_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <xacro:ball_joint parent="right_rod_sphere1_link" child="right_rod_link"
+                   joint_prefix="right_rod_sphere1" roll_offset="-0.1075" pitch_offset="-0.0171" />
+
+  <link name="tmp_right_rod_sphere2_link">
+    <inertial>
+      <mass value="0.001"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+    </inertial>
+  </link>
+
+  <xacro:ball_joint parent="right_rod_link" child="tmp_right_rod_sphere2_link"
+                   joint_prefix="tmp_right_rod_sphere2" z_offset="${-2*0.07056}" />
+  
+  <link name="right_rod_sphere2_link">
+    <inertial>
+      <origin
+        xyz="-0.00438528086698853 -0.000172287363280427 0.0035659098744463"
+        rpy="0 0 0" />
+      <mass
+        value="0.0013014428485605" />
+      <inertia
+        ixx="1.60882150250237E-08"
+        ixy="3.36977260250646E-23"
+        ixz="4.13590306276514E-25"
+        iyy="2.14375515430229E-08"
+        iyz="-4.41668705567546E-23"
+        izz="1.60882150250237E-08" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_rocker_rod_sphere2_joint"
+    type="fixed">
+    <origin
+      xyz="-0.24206 0.0394 -0.14451"
+      rpy="0 0 0" />
+    <parent
+      link="right_rocker_link" />
+    <child
+      link="right_rod_sphere2_link" />
+  </joint>
+
+  <!-- Left Side Bogie -->
+  <link name="left_rod_sphere1_link">
+    <inertial>
+      <origin
+        xyz="0.00532991500866456 0.00018815731486499 0.00563172775996076"
+        rpy="0 0 0" />
+      <mass
+        value="0.0013014428485605" />
+      <inertia
+        ixx="1.60882150250237E-08"
+        ixy="4.22440977042159E-18"
+        ixz="-1.65436122510606E-24"
+        iyy="2.14375515430229E-08"
+        iyz="4.47501438672121E-18"
+        izz="1.60882150250237E-08" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="leverage_left_rod_sphere1_joint"
+    type="fixed">
+    <origin
+      xyz="-0.024 -0.222 -0.0064"
+      rpy="0 0 1.5708" />
+    <parent
+      link="leverage_link" />
+    <child
+      link="left_rod_sphere1_link" />
+  </joint>
+
+  <link name="left_rod_link">
+    <inertial>
+      <origin
+        xyz="0.00658807175193704 0.00108313190898462 -0.0625056704234719"
+        rpy="0 0 0" />
+      <mass
+        value="0.0151753392872247" />
+      <inertia
+        ixx="3.27979872110313E-05"
+        ixy="-5.95691313888852E-08"
+        ixz="3.43504152367061E-06"
+        iyy="3.31503109311604E-05"
+        iyz="5.65357219897624E-07"
+        izz="5.6800600012109E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 -0.07056"
+        rpy="0 0 ${pi/2}" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/rod_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 -0.07056"
+        rpy="0 0 ${pi/2}" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/rod_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <xacro:ball_joint parent="left_rod_sphere1_link" child="left_rod_link"
+                   joint_prefix="left_rod_sphere1" roll_offset="-0.1075" pitch_offset="0.0171" />
+
+  <link name="tmp_left_rod_sphere2_link">
+    <inertial>
+      <mass value="0.001"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+    </inertial>
+  </link>
+  
+  <xacro:ball_joint parent="left_rod_link" child="tmp_left_rod_sphere2_link"
+                   joint_prefix="tmp_left_rod_sphere2" z_offset="${-2*0.07056}" />
+
+  <link name="left_rod_sphere2_link">
+    <inertial>
+      <origin
+        xyz="0.0058175572675797 7.41773370049881E-06 0.00031513709950709"
+        rpy="0 0 0" />
+      <mass
+        value="0.0013014428485605" />
+      <inertia
+        ixx="1.60882150250237E-08"
+        ixy="4.03175187101389E-23"
+        ixz="1.34416849539867E-24"
+        iyy="2.14375515430229E-08"
+        iyz="-9.48287106740403E-24"
+        izz="1.60882150250237E-08" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.866666666666667 0.909803921568627 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_rocker_rod_sphere2_joint"
+    type="fixed">
+    <origin
+      xyz="-0.24206 -0.0394 -0.14451"
+      rpy="0 0 0" />
+    <parent
+      link="left_rocker_link" />
+    <child
+      link="left_rod_sphere2_link" />
+  </joint>
+
+  <!-- <joint name="left_rod_sphere2_left_rocker_joint"
+    type="fixed">
+    <origin
+      xyz="-0.079744 -0.22139 -0.25962"
+      rpy="3.1416 1.4029 0" />
+    <parent
+      link="left_rod_sphere2_link" />
+    <child
+      link="left_rocker_dupe_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+ -->
+
+</robot>
