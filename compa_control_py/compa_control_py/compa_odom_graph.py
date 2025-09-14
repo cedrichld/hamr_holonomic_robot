@@ -16,12 +16,6 @@ import time
 def wrap_angle(a):
     return (a + math.pi) % (2.0 * math.pi) - math.pi
 
-def quat_to_angle(q):
-    return math.atan2(
-            2.0 * (q.w * q.z + q.x * q.y),
-            1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        )
-
 def _yaw_from_xyzw(q_xyzw):
     x,y,z,w = q_xyzw
     # same formula you use elsewhere

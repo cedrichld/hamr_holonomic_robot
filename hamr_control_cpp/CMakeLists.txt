@@ -85,6 +85,19 @@ ament_target_dependencies(astar_search
   tf2_geometry_msgs
 )
 
+add_executable(compa_path_tracer
+  src/compa_path_tracer.cpp
+)
+
+ament_target_dependencies(compa_path_tracer
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
+  tf2
+  tf2_geometry_msgs
+)
+
 target_include_directories(hamr_path_tracer PRIVATE include)
 
 if(NANOFANN_INCLUDE_DIR)
@@ -94,6 +107,7 @@ endif()
 install(TARGETS
   hamr_controller
   hamr_path_tracer
+  compa_path_tracer
   map_publisher
   prm_builder
   astar_search

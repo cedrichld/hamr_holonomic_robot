@@ -45,14 +45,9 @@ class TrajectoryNode(Node):
             # [0.0, 0.0, 0.0],
 
             [0.0, 0.0, 0.0], # SQUARE
-            [5.0, 0.0, -1.0],
-            [5.0, 5.0, -2.0],
-            [0.0, 5.0, -3.0],
-            [0.0, 0.0, 2.0],
-
-            [5.0, 0.0, 1.0],
-            [5.0, 5.0, 2.0],
-            [0.0, 5.0, 1.0],
+            [5.0, 0.0, 0.0],
+            [5.0, 5.0, 0.0],
+            [0.0, 5.0, 0.0],
             [0.0, 0.0, 0.0],
             
             # Back and Forth
@@ -95,9 +90,9 @@ class TrajectoryNode(Node):
         pose.x, pose.y, pose.yaw, pose.x_dot, pose.y_dot, pose.yaw_dot = float(x), float(y), float(yaw), float(x_dot), float(y_dot), float(yaw_dot)
         self.reference_trajectory_pub_.publish(pose)
         self.get_logger().info("pose: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
-        if t >= self.trajectory.total_time:
-            self.get_logger().info("Resetting traj")
-            self.last_reference_time = self.get_clock().now()
+        # if t >= self.trajectory.total_time:
+        #     self.get_logger().info("Resetting traj")
+        #     self.last_reference_time = self.get_clock().now()
 
     # Used if we want to change parameter during runtime
     def parameters_callback(self, params: list[Parameter]): 

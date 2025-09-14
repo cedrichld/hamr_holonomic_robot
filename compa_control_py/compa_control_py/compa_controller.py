@@ -9,6 +9,7 @@ from std_msgs.msg import Float64 # to send velocity commands
 from nav_msgs.msg import Odometry # used to get the base current state (position in xyz)
 from geometry_msgs.msg import PoseWithCovariance # used for reference and current pose - not using covariance rn
 from geometry_msgs.msg import Quaternion # for the turret relative 
+from geometry_msgs.msg import Twist # for manual mode
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
 import tf_transformations # for quaternion operations
 
@@ -44,14 +45,16 @@ class CompaControlNode(Node):
 
         ### - - COMPA Config params (m) - - ###
         default_compa_config = {"r_wheel": 0.1075,
-                               "a_wheel": 0.331643,
-                               "b_wheel": -0.274986} # negative value since wheels in front
+                                "a_wheel": 0.331643,
+                                "b_wheel": -0.274986, # negative value since wheels in front
+                                "mode": "manual"} # "auto" or "manual"
         for a, b in default_compa_config.items():
             self.declare_parameter(a, b)
         self.compa_config = {
             "r_wheel": self.get_parameter("r_wheel").value,
             "a_wheel": self.get_parameter("a_wheel").value,
             "b_wheel": self.get_parameter("b_wheel").value,
+            "mode": self.get_parameter("mode").value
         }
         
         ### - - PID Parameters for x, y and yaw - - ###
@@ -103,7 +106,14 @@ class CompaControlNode(Node):
         # Control Rate
         self.control_rate_hz = self.get_parameter("control_rate_hz").value
         self.last_control_time = self.get_clock().now()
-        self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
+
+        if self.compa_config["mode"] == "auto":
+            self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
+            self.get_logger().info("Auto mode: controlling at " + str(self.control_rate_hz) + " Hz")
+        elif self.compa_config["mode"] == "manual":
+            self.manual_sub_ = self.create_subscription(Twist, "/cmd_vel", 
+                                        self.manual_mode_callback, 1)
+            self.get_logger().info("Manual mode: listening to /cmd_vel")
         self.dt = 0.0
 
         ### - - Variables - - ###
@@ -149,7 +159,7 @@ class CompaControlNode(Node):
                                 str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
 
     def pid_step(self):
-        ''' Compute velocities based on PID Controller Logic:
+        ''' Autonomous Mode - compute velocities based on PID Controller Logic:
             - Compute errors based on pose
             - Compute desired velocities based on (a) feed-forward (b) PID corrections from pose errors
             - Feed desired velocities to jacobian (to get joint commands)
@@ -168,7 +178,7 @@ class CompaControlNode(Node):
                     self.pose_base_.pose.orientation.z,
                     self.pose_base_.pose.orientation.w]
 
-            # q_b_y is the composed base->yaw
+            # base->yaw
             q_b_y = [self.yaw_link_base_orientation_.x,
                     self.yaw_link_base_orientation_.y,
                     self.yaw_link_base_orientation_.z,
@@ -262,11 +272,17 @@ class CompaControlNode(Node):
                 self.reference_.yaw_dot + P_yaw + I_yaw_term + D_yaw, self.yaw_dot_limit))
 
             self.err_yaw_prev = err_yaw
-        self.get_logger().info(f"self.reference_.yaw_dot: {self.reference_.yaw_dot:.3f}, P_yaw: {P_yaw:.3f}, I_yaw: {I_yaw_term:.3f}, D_yaw: {D_yaw:.3f}")
-        self.get_logger().info(f"Desired x: {desired_x_dot:.3f}, y: {desired_y_dot:.3f}, yaw: {desired_yaw_dot:.3f}")
+        # self.get_logger().info(f"self.reference_.yaw_dot: {self.reference_.yaw_dot:.3f}, P_yaw: {P_yaw:.3f}, I_yaw: {I_yaw_term:.3f}, D_yaw: {D_yaw:.3f}")
+        # self.get_logger().info(f"Desired x: {desired_x_dot:.3f}, y: {desired_y_dot:.3f}, yaw: {desired_yaw_dot:.3f}")
         self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, 
                                         desired_yaw_dot]), yaw_base_w) # desired vel
+
+    def manual_mode_callback(self, msg: Twist):
+        ''' Manual Mode - directly compute joint commands from terminal inputs '''
+        yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation)
+        self.publish_joint_cmd(np.array([msg.linear.x, msg.linear.y, 
+                                        msg.angular.z]), yaw_base_w)
 
     def publish_live_gains(self, P_x, D_x, I_x, 
                            P_y, D_y, I_y, 
@@ -368,9 +384,9 @@ class CompaControlNode(Node):
     def publish_joint_cmd(self, desired_velocity, yaw):
         right_wheel_omega, left_wheel_omega, turret_omega = Float64(), Float64(), Float64()
         omegas = self.compute_velocities(desired_velocity, yaw)
-        self.get_logger().info(f"Computed omegas: {omegas}")
+        # self.get_logger().info(f"Computed omegas: {omegas}")
         right_wheel_omega.data, left_wheel_omega.data, turret_omega.data = omegas
-    
+        
         self.right_wheel_vel_.publish(right_wheel_omega)
         self.left_wheel_vel_.publish(left_wheel_omega)
         self.turret_vel_.publish(turret_omega)
@@ -388,7 +404,7 @@ class CompaControlNode(Node):
             "I_yaw":("yaw", "I"),
             "D_yaw":("yaw", "D"),
         }
-        config_name_map = ("r_wheel", "a_wheel", "b_wheel", "control_rate_hz", "d_alpha")
+        config_name_map = ("r_wheel", "a_wheel", "b_wheel", "mode", "control_rate_hz", "d_alpha")
         for p in params:
             if p.name in pid_name_map:
                 group, term = pid_name_map[p.name]

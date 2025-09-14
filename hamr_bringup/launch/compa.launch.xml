@@ -50,4 +50,8 @@
         <param name="use_sim_time" value="true" />
     </node>
 
+
+    <node pkg="hamr_control_cpp" exec="compa_path_tracer" />
+    <node pkg="compa_control_py" exec="tf_trail_node" />
+
 </launch>
