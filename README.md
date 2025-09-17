@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/HAMR1_Simulation.png" alt="HAMR Simulation" width="1080">
+  <img src="img/MAZE_OR_Trajectory.png" alt="HAMR Off-Road Maze" width="1080">
 </p>
 
 # HAMR Holonomic Robot (ROS 2 Jazzy)
@@ -33,13 +33,15 @@ echo 'source ~/ros2_ws/install/setup.bash' >> ~/.bashrc
 ### 4) Resources for meshes/STLs and worlds (required)
 ```bash
 export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_description)/share":$GZ_SIM_RESOURCE_PATH 
+export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix compa_description)/share":$GZ_SIM_RESOURCE_PATH
 export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_bringup)/share":$GZ_SIM_RESOURCE_PATH
 # Optional: add to ~/.bashrc
 echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_description)/share":$GZ_SIM_RESOURCE_PATH"' >> ~/.bashrc
+echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix compa_description)/share":$GZ_SIM_RESOURCE_PATH"' >> ~/.bashrc
 echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_bringup)/share":$GZ_SIM_RESOURCE_PATH"' >> ~/.bashrc
 ```
 
-### Run the simulation
+### Run a simple trajectory in simulation
 **Terminal A** (Gazebo + bringup):
 ```bash
 source /opt/ros/jazzy/setup.bash
@@ -50,14 +52,14 @@ ros2 launch hamr_bringup hamr.launch.xml
 ```bash
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
-ros2 run reference_trajectory waypoint_traj
+ros2 run reference_trajectory waypoint_traj_simple # Currently set to a square, triangle or circle
 ```
 
 ### Waypoints (example)
-For now, `waypoint_traj` publishes a discretized set of waypoints:
+Currently, `waypoint_traj` publishes interpolated poses based on waypoints (computed by A* for complex trajectories):
 ```python
-# SQUARE Trajectory
-points = np.array([  
+# SQUARE Trajectory with constant forward facing heading angle
+waypoints = np.array([  
     # x,  y,   yaw
     [0.0, 0.0, 0.0],  
     [5.0, 0.0, 0.0],

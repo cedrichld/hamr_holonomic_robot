@@ -70,9 +70,9 @@ class TrajectoryNode(Node):
 
             return np.array(pts)
 
-        # points = generate_ccw_circle_points()
+        # waypoints = generate_ccw_circle_points()
 
-        points = np.array([ # x, y, yaw
+        waypoints = np.array([ # x, y, yaw
 
             [0.0, 0.0, 0.0], # SQUARE
             [5.0, 0.0, 0.0],
@@ -99,7 +99,7 @@ class TrajectoryNode(Node):
             # [0.0, 0.0, 0.0],
         ])
         
-        self.trajectory = WaypointTraj(points, v_lin=v_lin, w_yaw=w_yaw)
+        self.trajectory = WaypointTraj(waypoints, v_lin=v_lin, w_yaw=w_yaw)
     
     def callback_state_error(self, msg: StateError):
         self.err_xy = math.hypot(msg.err_x, msg.err_y)
