@@ -27,8 +27,8 @@ def quat_to_angle(q):
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
-        self.v_lin = self.declare_parameter("v_lin", 0.2).value # 0.2 m/s is the max our current HW can do
-        self.w_yaw = self.declare_parameter("w_yaw", 0.5).value # 0.5 rad/s
+        self.v_lin = self.declare_parameter("v_lin", 0.3).value # 0.3 m/s is the max our current HW can do
+        self.w_yaw = self.declare_parameter("w_yaw", 1.0).value # 1.0 rad/s
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
@@ -57,7 +57,7 @@ class TrajectoryNode(Node):
             y = ps.pose.position.y
             yaw = quat_to_angle(ps.pose.orientation)
             pts.append([x, y, yaw])
-            # self.get_logger().info("Received path point: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
+            self.get_logger().info("Received path point: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
             # self.get_logger().info("Orientation: w=%.2f, x=%.2f, y=%.2f, z=%.2f" % \
             #                        (ps.pose.orientation.w, ps.pose.orientation.x, ps.pose.orientation.y, ps.pose.orientation.z))
 

@@ -8,7 +8,6 @@ Panels:
         - /Status1
         - /RobotModel1
         - /RobotModel1/Description Topic1
-        - /RobotModel1/Links1
         - /TF1
         - /TF1/Frames1
         - /Camera1/Visibility1
@@ -55,7 +54,7 @@ Visualization Manager:
       Value: true
     - Alpha: 1
       Class: rviz_default_plugins/RobotModel
-      Collision Enabled: false
+      Collision Enabled: true
       Description File: ""
       Description Source: Topic
       Description Topic:
@@ -66,7 +65,7 @@ Visualization Manager:
         Value: /robot_description
       Enabled: true
       Links:
-        All Links Enabled: false
+        All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
@@ -80,21 +79,26 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
+        left_caster_wheel_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         left_rocker_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         left_rod_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         left_rod_sphere1_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         left_rod_sphere1_t1:
           Alpha: 1
           Show Axes: false
@@ -111,18 +115,23 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         left_wheel_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         leverage_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         pitch_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_caster_wheel_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -131,17 +140,17 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         right_rod_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         right_rod_sphere1_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         right_rod_sphere1_t1:
           Alpha: 1
           Show Axes: false
@@ -158,12 +167,12 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         right_wheel_link:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
         roll_link:
           Alpha: 1
           Show Axes: false
@@ -205,7 +214,7 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-          Value: false
+          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
@@ -225,8 +234,10 @@ Visualization Manager:
           Value: true
         base_link:
           Value: false
+        left_caster_wheel_link:
+          Value: true
         left_rocker_link:
-          Value: false
+          Value: true
         left_rod_link:
           Value: false
         left_rod_sphere1_link:
@@ -245,6 +256,8 @@ Visualization Manager:
           Value: false
         pitch_link:
           Value: false
+        right_caster_wheel_link:
+          Value: true
         right_rocker_link:
           Value: false
         right_rod_link:
@@ -290,6 +303,8 @@ Visualization Manager:
         base_footprint:
           base_link:
             left_rocker_link:
+              left_caster_wheel_link:
+                {}
               left_rod_sphere2_link:
                 {}
               left_wheel_link:
@@ -316,6 +331,8 @@ Visualization Manager:
                               tmp_right_rod_sphere2_link:
                                 {}
             right_rocker_link:
+              right_caster_wheel_link:
+                {}
               right_rod_sphere2_link:
                 {}
               right_wheel_link:
@@ -391,25 +408,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 0.9246869683265686
+      Distance: 1.0947185754776
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.033112362027168274
-        Y: 0.00018341338727623224
-        Z: 0.21932324767112732
+        X: 0.04631209000945091
+        Y: -0.009501608088612556
+        Z: 0.3118094503879547
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6702021360397339
+      Pitch: 0.18520241975784302
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.0985898971557617
+      Yaw: 2.3385825157165527
     Saved: ~
 Window Geometry:
   Camera:

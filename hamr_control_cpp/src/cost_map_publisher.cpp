@@ -27,6 +27,7 @@ private:
     
     // Parameters
     double map_width_m_;
+    double map_length_m_;
     double map_height_m_;
     std::string image_path_;
     std::string frame_id_;
@@ -46,13 +47,15 @@ public:
     {
         // Declare parameters with default values
         this->declare_parameter("map_width_m", 40.0);
-        this->declare_parameter("map_height_m", 40.0);
-        this->declare_parameter("image_path", "/home/kartik/hamr_ws/src/hamr_holonomic_robot/map/terrain1_1025.png");
+        this->declare_parameter("map_length_m", 40.0);
+        this->declare_parameter("map_height_m", 2.0);
+        this->declare_parameter("image_path", "/home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/terrain_assets/heightmaps/compa_OR_test_map_257.png");
         this->declare_parameter("frame_id", "map");
         this->declare_parameter("publish_rate", 1.0);
         
         // Get parameters
         this->get_parameter("map_width_m", map_width_m_);
+        this->get_parameter("map_length_m", map_length_m_);
         this->get_parameter("map_height_m", map_height_m_);
         this->get_parameter("image_path", image_path_);
         this->get_parameter("frame_id", frame_id_);
@@ -101,7 +104,7 @@ public:
             image_width_ = img.cols;
             img_gray_ = img.clone();
             height32.create(img_gray_.rows, img_gray_.cols, CV_32FC1);
-            img_gray_.convertTo(height32, CV_32F, 2.0f / 255.0f);
+            img_gray_.convertTo(height32, CV_32F, float_t(map_height_m_) / 255.0f);
             RCLCPP_INFO(this->get_logger(), "Loaded image with dimensions: %dx%d", image_width_, image_height_);
             // Calculate resolution
             resolution_ = map_width_m_ / static_cast<double>(image_width_); 
@@ -141,8 +144,8 @@ public:
         occupancy_grid_.info.width = image_width_;
         occupancy_grid_.info.height = image_height_;
         // Origin (bottom-left corner of the map)
-        occupancy_grid_.info.origin.position.x = -3.2;
-        occupancy_grid_.info.origin.position.y = -4.2;
+        occupancy_grid_.info.origin.position.x = -20;
+        occupancy_grid_.info.origin.position.y = -20;
         occupancy_grid_.info.origin.position.z = 0.0;
         occupancy_grid_.info.origin.orientation.x = 0.0;
         occupancy_grid_.info.origin.orientation.y = 0.0;
@@ -175,7 +178,7 @@ public:
         elevation_map_ = grid_map::GridMap({"elevation"});
         elevation_map_.setFrameId(frame_id_);
         elevation_map_.setGeometry(                      // full size in meters + resolution
-            grid_map::Length(map_width_m_, map_height_m_), 
+            grid_map::Length(map_width_m_, map_length_m_), 
             resolution_);
         elevation_map_.setPosition(grid_map::Position(0.0, 0.0)); // center at (0,0)
 

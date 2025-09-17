@@ -19,13 +19,13 @@ class TfTrailNode(Node):
         self.declare_parameter("odom_topic", "/compa/odom")
         self.declare_parameter("marker_topic", "/tf_trail")
         self.declare_parameter("frame_id", "odom")            # RViz fixed frame for markers
-        self.declare_parameter("lifetime_sec", 70.0)           # how long each arrow stays
-        self.declare_parameter("min_dist", 0.1)              # meters between drops
+        self.declare_parameter("lifetime_sec", 1000.0)          # how long each arrow stays
+        self.declare_parameter("min_dist", 0.5)               # meters between drops
         self.declare_parameter("drop_every_n_msgs", 1)        # optional: sub-sample odom
 
-        self.declare_parameter("arrow_shaft_len", 0.25)       # Marker.scale.x
-        self.declare_parameter("arrow_shaft_diam", 0.03)      # Marker.scale.y
-        self.declare_parameter("arrow_head_diam", 0.06)       # Marker.scale.z
+        self.declare_parameter("arrow_shaft_len", 0.45)       # Marker.scale.x
+        self.declare_parameter("arrow_shaft_diam", 0.05)      # Marker.scale.y
+        self.declare_parameter("arrow_head_diam", 0.09)       # Marker.scale.z
         self.declare_parameter("color_rgba", [0.47, 0.0, 0.784, 1.0])  # r,g,b,a
 
         self.odom_topic       = self.get_parameter("odom_topic").get_parameter_value().string_value

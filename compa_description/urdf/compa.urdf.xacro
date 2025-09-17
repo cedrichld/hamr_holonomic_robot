@@ -7,7 +7,7 @@
   <!-- <xacro:include filename="camera.urdf.xacro" /> -->
   <xacro:include filename="compa_gazebo.urdf.xacro" /> 
 
-
+  <!-- Base -->
   <link name="base_footprint" />
 
   <joint name="base_joint" type="fixed">
@@ -56,6 +56,8 @@
     </collision>
   </link>
 
+
+  <!-- Left Rocker -->
   <link name="left_rocker_link">
     <inertial>
       <origin
@@ -87,11 +89,12 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0 -0.072 -0.021"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/left_rocker_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/left_rocker_link.STL" /> -->
+        <box size="0.6 0.037 0.05"/>
       </geometry>
     </collision>
   </link>
@@ -161,6 +164,34 @@
       xyz="0 1 0" />
   </joint>
 
+  <link name="left_caster_wheel_link">
+    <xacro:sphere_inertia m="0.5" r="0.087"
+                        o_xyz="0 0 0" o_rpy="0 0 0" />
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="${pi/2} 0 0" />
+      <geometry>
+        <cylinder radius="0.087" length="0.05" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_rocker_left_caster_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0.315 -0.10422 -0.1647"
+      rpy="3.1416 0 0" />
+    <parent
+      link="left_rocker_link" />
+    <child
+      link="left_caster_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+
+  <!-- Right Rocker -->
   <link name="right_rocker_link">
     <inertial>
       <origin
@@ -192,11 +223,12 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0 0.072 -0.021"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/right_rocker_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/right_rocker_link.STL" /> -->
+        <box size="0.6 0.037 0.05"/>
       </geometry>
     </collision>
   </link>
@@ -266,6 +298,34 @@
       xyz="0 1 0" />
   </joint>
 
+  <link name="right_caster_wheel_link">
+    <xacro:sphere_inertia m="0.5" r="0.087"
+                        o_xyz="0 0 0" o_rpy="0 0 0" />
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="${pi/2} 0 0" />
+      <geometry>
+        <cylinder radius="0.087" length="0.05" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_rocker_right_caster_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0.315 0.10422 -0.1647"
+      rpy="3.1416 0 0" />
+    <parent
+      link="right_rocker_link" />
+    <child
+      link="right_caster_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+
+  <!-- Gimbal -->
   <link name="roll_link">
     <inertial>
       <origin
@@ -425,6 +485,9 @@
       xyz="0 0 -1" />
   </joint>
 
+
+
+  <!-- ROCKER LINKS -->
   <link name="leverage_link">
     <inertial>
       <origin
@@ -466,9 +529,8 @@
   </link>
 
 
-  <!-- BOGIE LINKS -->
   <joint name="base_leverage_joint"
-    type="continuous">
+    type="revolute">
     <origin
       xyz="0.2332 0 0.03826"
       rpy="0 0 ${-pi}" />
@@ -478,10 +540,10 @@
       link="leverage_link" />
     <axis
       xyz="-1 0 0" />
+    <limit effort="20" velocity="1.0" lower="${-pi/12}" upper="${pi/12}"/>
   </joint>
 
-
-  <!-- Right Side Bogie -->
+  <!-- Right Side Rocker -->
   <link name="right_rod_sphere1_link">
     <inertial>
       <origin
@@ -638,7 +700,7 @@
       link="right_rod_sphere2_link" />
   </joint>
 
-  <!-- Left Side Bogie -->
+  <!-- Left Side Rocker -->
   <link name="left_rod_sphere1_link">
     <inertial>
       <origin

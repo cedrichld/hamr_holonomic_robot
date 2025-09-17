@@ -66,5 +66,15 @@
                      izz="${(m/12) * (y*y + x*x)}" />
         </inertial>
     </xacro:macro>
+    
+    <xacro:macro name="sphere_inertia" params="m r o_xyz o_rpy">
+        <inertial>
+            <mass value="${m}" />
+            <origin xyz="${o_xyz}" rpy="${o_rpy}" />
+            <inertia ixx="${(2/5) * m * r*r}" ixy="0" ixz="0"
+                    iyy="${(2/5) * m * r*r}" iyz="0"
+                    izz="${(2/5) * m * r*r}" />
+        </inertial>
+    </xacro:macro>
 
 </robot>

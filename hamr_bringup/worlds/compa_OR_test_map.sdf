@@ -40,9 +40,9 @@
           <geometry>
             <heightmap>
               <use_terrain_paging>true</use_terrain_paging>
-              <uri>file://hamr_bringup/terrain_assets/heightmaps/compa_OR_test_map.png</uri>
+              <uri>file://hamr_bringup/terrain_assets/heightmaps/compa_OR_test_map_257.png</uri>
 
-              <size>8 8 0.5</size>
+              <size>8 8 0.7</size>
               <pos>0 0 0</pos>
               
               <texture>
@@ -59,8 +59,8 @@
         <collision name="terrain_collision">
           <geometry>
             <heightmap>
-              <uri>file://hamr_bringup/terrain_assets/heightmaps/compa_OR_test_map.png</uri>
-              <size>8 8 0.5</size>
+              <uri>file://hamr_bringup/terrain_assets/heightmaps/compa_OR_test_map_257.png</uri>
+              <size>8 8 0.7</size>
               <pos>0 0 0</pos>
             </heightmap>
           </geometry>
