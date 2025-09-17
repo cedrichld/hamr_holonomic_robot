@@ -54,16 +54,21 @@ The result is an off-road holonomic base that can execute **arbitrary trajectori
 Canonical experiments included **square, triangle, and circle trajectories**, as well as **maze navigation** using PRM/A\* planners. In both simulation and physical testing, the robot successfully demonstrated holonomic control, with the turret maintaining orientation independent of the base.
 
 <p align="center">
-  <img src="img/Square_OR_Trajectory.png" alt="Square" height="200">
-  <img src="img/Triangle_OR_Trajectory.png" alt="Triangle" height="200">
-  <img src="img/Circle_OR_Trajectory.png" alt="Circle" height="200">
-  <em>Canonical holonomy tests on uneven heightmaps (square, triangle, circle).</em></p>
+  <img src="img/Square_OR_Trajectory.png" alt="Square" height="180">
+  <img src="img/Triangle_OR_Trajectory.png" alt="Triangle" height="180">
+  <img src="img/Circle_OR_Trajectory.png" alt="Circle" height="180">
 </p>
 
+<p align="center"><em>Canonical holonomy tests on uneven heightmaps (square, triangle, circle).</em></p>
+
 <p align="center">
-  <img src="img/MAZE_OR_Trajectory.png" alt="Maze trajectory" width="1080">
-  <em>Holonomy test on an uneven maze heightmap, using PRM and A*.</em></p>  
-</p>
+  <img src="img/MAZE_OR_Trajectory.png" alt="Maze trajectory" width="600">
+<p>
+
+<p align="center"><em>Holonomy test on an uneven maze heightmap, using PRM and A*.</em></p>
+
+
+
 
 ### Results (sim & hardware)
 | Path      | RMSE (sim, m) | RMSE (hw, m) | Yaw Std (rad, hw) |
@@ -101,15 +106,15 @@ $\(\displaystyle \hat H=\frac{\sigma_{\min}(J)}{\sigma_{\max}(J)}\)$
 ---
 
 ### Key topics
-| Topic                    | Type                         | Pub/Sub | Notes                                      |
-|--------------------------|------------------------------|---------|--------------------------------------------|
-| `/left_wheel/cmd_vel`    | `std_msgs/msg/Float64`       | Pub     | Left wheel rate command (rad/s) → ω_ℓ      |
-| `/right_wheel/cmd_vel`   | `std_msgs/msg/Float64`       | Pub     | Right wheel rate command (rad/s) → ω_r     |
-| `/roll/cmd_vel`          | `std_msgs/msg/Float64`       | Pub     | Gimbal roll rate/target  → ω_roll    |
-| `/pitch/cmd_vel`         | `std_msgs/msg/Float64`       | Pub     | Gimbal pitch rate/target     → ω_pitch         |
-| `/yaw/cmd_vel`           | `std_msgs/msg/Float64`       | Pub     | Turret yaw rate/target → ω_yaw                |
-| `/reference_trajectory`  | `hamr_interfaces/msg/ReferenceTraj` | Pub | Interpolated reference poses               |
-| `/compa/odom`            | `nav_msgs/msg/Odometry`      | Sub     | Odometry for outer-loop PID                 |
+| Topic                    | Type                                | Notes                                  |
+|--------------------------|-------------------------------------|----------------------------------------|
+| `/left_wheel/cmd_vel`    | `std_msgs/msg/Float64`              | Left wheel rate command (rad/s) → ω_ℓ  |
+| `/right_wheel/cmd_vel`   | `std_msgs/msg/Float64`              | Right wheel rate command (rad/s) → ω_r |
+| `/roll/cmd_vel`          | `std_msgs/msg/Float64`              | Gimbal roll rate/target  → ω_roll      |
+| `/pitch/cmd_vel`         | `std_msgs/msg/Float64`              | Gimbal pitch rate/target     → ω_pitch |
+| `/yaw/cmd_vel`           | `std_msgs/msg/Float64`              | Turret yaw rate/target → ω_yaw         |
+| `/reference_trajectory`  | `hamr_interfaces/msg/ReferenceTraj` | Interpolated reference poses           |
+| `/compa/odom`            | `nav_msgs/msg/Odometry`             | Odometry for outer-loop PID            |
 
 
 ---
