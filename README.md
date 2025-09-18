@@ -6,8 +6,8 @@
 
 <!-- Hero: physical robot + Gazebo render -->
 <p align="center">
-  <img src="img/compa_physical_robot.png" alt="COMPA physical robot" height="280">
-  <img src="img/Gazebo_OR.png" alt="Gazebo off-road world" height="280">
+  <img src="img/compa_physical_robot.png" alt="COMPA physical robot" height="240">
+  <img src="img/Gazebo_OR.png" alt="Gazebo off-road world" height="240">
 </p>
 <p align="center"><em>Left: COMPA Physical robot, Right: COMPA Simulated robot.</em></p>
 
@@ -29,8 +29,8 @@ The result is an off-road holonomic base that can execute **arbitrary trajectori
 
 <!-- Small looping visualization + Mobility Ellipsoid -->
 <p align="center">
-  <img src="img/HAMR_holonomy_viz.gif" alt="HAMR holonomy visualization" height="250" loading="lazy">
-  <img src="img/mobility_ellipsoid.png" alt="COMPA Mobility Ellipsoid" height="250">
+  <img src="img/HAMR_holonomy_viz.gif" alt="HAMR holonomy visualization" height="220" loading="lazy">
+  <img src="img/mobility_ellipsoid.png" alt="COMPA Mobility Ellipsoid" height="220">
 </p>
 <p align="center"><em>Left: Holonomy visualization (HAMR), Right: COMPA Mobility Ellipsoid.</em></p>
 
@@ -39,7 +39,7 @@ The result is an off-road holonomic base that can execute **arbitrary trajectori
 ## COMPA Hardware and Simulation Overview
 
 <p align="center">
-  <img src="img/compa_hardware.png" alt="COMPA Hardware Overview" width="960">
+  <img src="img/compa_hardware.png" alt="COMPA Hardware Overview" width="700">
 </p>
 
 * **Mobile base**: Two powered drive wheels on a rocker suspension, plus rear casters for support.
@@ -54,15 +54,15 @@ The result is an off-road holonomic base that can execute **arbitrary trajectori
 Canonical experiments included **square, triangle, and circle trajectories**, as well as **maze navigation** using PRM/A\* planners. In both simulation and physical testing, the robot successfully demonstrated holonomic control, with the turret maintaining orientation independent of the base.
 
 <p align="center">
-  <img src="img/Square_OR_Trajectory.png" alt="Square" height="180">
-  <img src="img/Triangle_OR_Trajectory.png" alt="Triangle" height="180">
-  <img src="img/Circle_OR_Trajectory.png" alt="Circle" height="180">
+  <img src="img/Square_OR_Trajectory.png" alt="Square" height="120">
+  <img src="img/Triangle_OR_Trajectory.png" alt="Triangle" height="120">
+  <img src="img/Circle_OR_Trajectory.png" alt="Circle" height="120">
 </p>
 
 <p align="center"><em>Canonical holonomy tests on uneven heightmaps (square, triangle, circle).</em></p>
 
 <p align="center">
-  <img src="img/MAZE_OR_Trajectory.png" alt="Maze trajectory" width="600">
+  <img src="img/MAZE_OR_Trajectory.png" alt="Maze trajectory" width="400">
 <p>
 
 <p align="center"><em>Holonomy test on an uneven maze heightmap, using PRM and A*.</em></p>
