@@ -91,8 +91,8 @@ $$
 \boldsymbol{\omega} \equiv \begin{bmatrix}\omega_r & \omega_\ell & \omega_t\end{bmatrix}^\top \\
 J(\psi) &=
 \begin{bmatrix}
-\frac{r_w}{2}\!\left(c-\!s\,\frac{b}{a}\right) & \frac{r_w}{2}\!\left(c+\!s\,\frac{b}{a}\right) & 0 \\
-\frac{r_w}{2}\!\left(s+\!c\,\frac{b}{a}\right) & \frac{r_w}{2}\!\left(s-\!c\,\frac{b}{a}\right) & 0 \\
+\frac{r_w}{2} \left(c-s\frac{b}{a}\right) & \frac{r_w}{2} \left(c+s\frac{b}{a}\right) & 0 \\
+\frac{r_w}{2} \left(s+c\frac{b}{a}\right) & \frac{r_w}{2} \left(s-c\frac{b}{a}\right) & 0 \\
 \frac{r_w}{2a} & -\frac{r_w}{2a} & 1
 \end{bmatrix},\quad c=\cos\psi,\ s=\sin\psi
 \end{aligned}
