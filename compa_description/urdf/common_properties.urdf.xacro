@@ -45,10 +45,10 @@
             <limit lower="-${lim}" upper="${lim}" effort="1" velocity="1"/>
         </joint>
 
-        <joint name="${joint_prefix}_rev_z" type="revolute">
+        <joint name="${joint_prefix}_rev_z" type="continuous">
             <parent link="${joint_prefix}_t2"/><child link="${joint_prefix}_t3"/>
             <origin xyz="0 0 0" rpy="0 0 ${yaw_offset}"/><axis xyz="0 0 1"/>
-            <limit lower="-${lim}" upper="${lim}" effort="1" velocity="1"/>
+            <!-- <limit lower="-${lim}" upper="${lim}" effort="1" velocity="1"/> -->
         </joint>
 
         <joint name="${joint_prefix}_fixed" type="fixed">
@@ -74,6 +74,16 @@
             <inertia ixx="${(2/5) * m * r*r}" ixy="0" ixz="0"
                     iyy="${(2/5) * m * r*r}" iyz="0"
                     izz="${(2/5) * m * r*r}" />
+        </inertial>
+    </xacro:macro>
+
+    <xacro:macro name="cylinder_inertia" params="m r h o_xyz:='0 0 0' o_rpy:='0 0 0'">
+        <inertial>
+            <mass value="${m}" />
+            <origin xyz="${o_xyz}" rpy="${o_rpy}" />
+            <inertia ixx="${(m/12) * (3*r*r + h*h)}" ixy="0" ixz="0"
+                     iyy="${(m/12) * (3*r*r + h*h)}" iyz="0"
+                     izz="${(m/2) * (r*r)}" />
         </inertial>
     </xacro:macro>
 

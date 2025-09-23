@@ -168,7 +168,7 @@ echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_bringup)/share":$GZ_SI
 ```bash
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
-ros2 launch hamr_bringup hamr.launch.xml
+ros2 launch hamr_bringup compa.launch.xml
 ```
 
 **Terminal B** (reference trajectory):

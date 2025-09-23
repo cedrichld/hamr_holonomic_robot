@@ -13,14 +13,14 @@
   <joint name="base_joint" type="fixed">
       <parent link="base_footprint" />
       <child link="base_link" />
-      <origin xyz="0 0 0.25042" rpy="0 0 0"/>
+      <origin xyz="0 0 0.25042" rpy="0 0 ${pi}"/>
   </joint>
 
   <link name="base_link">
     <inertial>
       <origin
         xyz="-0.000339817170498122 0.00424231004595931 0.00197670802942906"
-        rpy="0 0 0" />
+        rpy="${-pi/2} 0 0" />
       <mass
         value="4.7675691308253" />
       <inertia
@@ -131,7 +131,7 @@
     </inertial> -->
     <xacro:cylinder_inertia m="20.74378098590227" r="0.1075" h="0.083"
                         o_xyz="0 0 0"
-                        o_rpy="${pi/2} 0 0" />
+                        o_rpy="${-pi/2} 0 0" />
     <visual>
       <origin
         xyz="-0.001 -0.098 0"
@@ -149,7 +149,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="${pi/2} 0 0" />
+        rpy="${-pi/2} 0 0" />
       <geometry>
         <cylinder radius="0.1075" length="0.083" />
       </geometry>
@@ -160,7 +160,7 @@
     type="continuous">
     <origin
       xyz="-0.27114 -0.14572 -0.1442"
-      rpy="3.1416 0 0" />
+      rpy="0 0 0" />
     <parent
       link="left_rocker_link" />
     <child
@@ -270,11 +270,11 @@
     </inertial> -->    
     <xacro:cylinder_inertia m="20.74378098590227" r="0.1075" h="0.083"
                         o_xyz="0 0 0"
-                        o_rpy="${pi/2} 0 0" />
+                        o_rpy="${-pi/2} 0 0" />
     <visual>
       <origin
         xyz="-0.001 0.098 0"
-        rpy="0 0 ${pi}" />
+        rpy="0 0 0" />
       <geometry>
         <mesh
           filename="package://compa_description/meshes/right_wheel_link.STL" />
@@ -288,7 +288,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="${pi/2} 0 0" />
+        rpy="${-pi/2} 0 0" />
       <geometry>
         <cylinder radius="0.1075" length="0.083" />
       </geometry>
@@ -299,7 +299,7 @@
     type="continuous">
     <origin
       xyz="-0.27114 0.14572 -0.1442"
-      rpy="0 0 ${pi}" />
+      rpy="0 0 0" />
     <parent
       link="right_rocker_link" />
     <child
@@ -460,7 +460,7 @@
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="${pi} 0 ${pi}" />
+        rpy="0 0 ${pi}" />
       <geometry>
         <mesh
           filename="package://compa_description/meshes/yaw_plate_link.STL" />
@@ -474,7 +474,7 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="${pi} 0 ${pi}" />
+        rpy="0 0 ${pi}" />
       <geometry>
         <mesh
           filename="package://compa_description/meshes/yaw_plate_link.STL" />
@@ -486,43 +486,13 @@
     type="continuous">
     <origin
       xyz="0 0 0.0375"
-      rpy="${pi} 0 ${pi}" />
+      rpy="0 0 0" />
     <parent
       link="pitch_link" />
     <child
       link="yaw_plate_link" />
     <axis
       xyz="0 0 -1" />
-  </joint>
-
-  <!-- Dummy link to visualize yaw axis -->
-  <link name="yaw_dummy_link">
-    <inertial>
-      <mass value="0.001"/>
-      <inertia ixx="1e-6" iyy="1e-6" izz="1e-6" ixy="0" ixz="0" iyz="0"/>
-    </inertial>
-
-    <visual name="yaw_dummy_visual">
-      <geometry>
-        <sphere radius="0.001"/>
-      </geometry>
-    </visual>
-
-    <collision name="yaw_dummy_collision">
-      <geometry>
-        <sphere radius="0.03"/>
-      </geometry>
-    </collision>
-  </link>
-
-  <joint name="yaw_plate_fixed_joint" type="revolute">
-    <origin xyz="0 0 0.075" rpy="${pi} 0 0"/>
-    <parent link="yaw_plate_link"/>
-    <child  link="yaw_dummy_link"/>
-    <axis xyz="0 0 1"/>
-    <!-- Lock at 0 lower=upper=0; add large effort + damping so it stays put -->
-    <limit lower="0" upper="0" effort="1e6" velocity="0"/>
-    <dynamics damping="100" friction="1.0"/>
   </joint>
 
 

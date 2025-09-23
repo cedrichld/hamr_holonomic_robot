@@ -40,8 +40,9 @@ class TrajectoryNode(Node):
         max_point = 5.0
         origin = 0.0
 
-        def generate_ccw_circle_points(center=(0.0, 2.5), radius=2.5, steps_between=10):
-            cx, cy = center
+        def generate_ccw_circle_points(radius=2.5, steps_between=10):
+            cx = -2.0
+            cy = radius
 
             # Angles for waypoints (rad)
             # waypoints = [-np.pi/2, -np.pi, -3*np.pi/2, -2*np.pi, -5*np.pi/2] # CW
@@ -70,34 +71,34 @@ class TrajectoryNode(Node):
 
             return np.array(pts)
 
-        # waypoints = generate_ccw_circle_points()
+        waypoints = generate_ccw_circle_points()
 
-        waypoints = np.array([ # x, y, yaw
+        # waypoints = np.array([ # x, y, yaw
 
-            [0.0, 0.0, 0.0], # SQUARE
-            [5.0, 0.0, 0.0],
-            [5.0, 5.0, 0.0],
-            [0.0, 5.0, 0.0],
-            [0.0, 0.0, 0.0],
+        #     [0.0, 0.0, 0.0], # SQUARE
+        #     [5.0, 0.0, 0.0],
+        #     [5.0, 5.0, 0.0],
+        #     [0.0, 5.0, 0.0],
+        #     [0.0, 0.0, 0.0],
 
-            # [origin,    origin,    0.0], # SQUARE
-            # [max_point, origin,    0.0],
-            # [max_point, max_point, 0.0],
-            # [origin,    max_point, 0.0],
-            # [origin,    origin,    0.0],
+        #     # [origin,    origin,    0.0], # SQUARE
+        #     # [max_point, origin,    0.0],
+        #     # [max_point, max_point, 0.0],
+        #     # [origin,    max_point, 0.0],
+        #     # [origin,    origin,    0.0],
             
-            # # Back and Forth
-            # [0.0, 0.0, 0.0],
-            # [3.0, 0.0, 0.0],
-            # [1.0, 1.0, 0.0],
-            # [1.0, 0.0, 0.0],
-            # [0.0, 0.0, 0.0],
+        #     # # Back and Forth
+        #     # [0.0, 0.0, 0.0],
+        #     # [3.0, 0.0, 0.0],
+        #     # [1.0, 1.0, 0.0],
+        #     # [1.0, 0.0, 0.0],
+        #     # [0.0, 0.0, 0.0],
 
-            # [0.0, 0.0, 0.0], # TRIANGLE
-            # [5.0, 2.5, 0.0],
-            # [0.0, 5.0, 0.0],
-            # [0.0, 0.0, 0.0],
-        ])
+        #     # [0.0, 0.0, 0.0], # TRIANGLE
+        #     # [10.0, 5.0, 0.0],
+        #     # [0.0, 10.0, 0.0],
+        #     # [0.0, 0.0, 0.0],
+        # ])
         
         self.trajectory = WaypointTraj(waypoints, v_lin=v_lin, w_yaw=w_yaw)
     
