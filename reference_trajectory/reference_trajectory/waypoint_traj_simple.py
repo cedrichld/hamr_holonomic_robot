@@ -30,9 +30,11 @@ class TrajectoryNode(Node):
             ReferenceTraj, "/reference_trajectory", 1
         )
 
-        self.last_reference_time = self.get_clock().now()
+        self.begun = False
+        self.last_reference_time = None
+        
         self.reference_timer_ = self.create_timer(
-            1 / self.reference_timer_hz, self.reference_udpdate)
+            1 / self.reference_timer_hz, self.reference_update)
         
         self.err_xy = math.inf
         self.err_yaw = math.inf
@@ -40,9 +42,9 @@ class TrajectoryNode(Node):
         max_point = 5.0
         origin = 0.0
 
-        def generate_ccw_circle_points(radius=2.5, steps_between=10):
-            cx = -2.0
-            cy = radius
+        def generate_ccw_circle_points(radius=3.1, steps_between=10):
+            cx = 0.25
+            cy = 0.5 + radius
 
             # Angles for waypoints (rad)
             # waypoints = [-np.pi/2, -np.pi, -3*np.pi/2, -2*np.pi, -5*np.pi/2] # CW
@@ -50,7 +52,7 @@ class TrajectoryNode(Node):
             pts = []
 
             # First point explicitly at (0,0,0)
-            pts.append([0.0, 0.0, 0.0])
+            pts.append([cx, cy - radius, 0.0])
 
             # Generate ccw points
             for i in range(len(waypoints) - 1):
@@ -67,7 +69,7 @@ class TrajectoryNode(Node):
                     pts.append([float(x), float(y), 0.0])
 
             # Close the loop back to start
-            pts.append([0.0, 0.0, 0.0])
+            pts.append([0.5, 0.5, 0.0])
 
             return np.array(pts)
 
@@ -106,7 +108,12 @@ class TrajectoryNode(Node):
         self.err_xy = math.hypot(msg.err_x, msg.err_y)
         self.err_yaw = msg.err_yaw
     
-    def reference_udpdate(self):
+    def reference_update(self):
+        if not self.begun:
+            self.begun = True
+            self.get_logger().info("Beginning trajectory tracking.")
+            self.last_reference_time = self.get_clock().now()
+
         now = self.get_clock().now()
         t = (now - self.last_reference_time).nanoseconds * 1e-9
         x, y, yaw, x_dot, y_dot, yaw_dot = self.trajectory.update(t)
@@ -132,7 +139,7 @@ class TrajectoryNode(Node):
                 self.reference_timer_hz = p.value
                 self.reference_timer_.cancel()
                 self.reference_timer_ = self.create_timer(
-                    1 / self.reference_timer_hz, self.reference_udpdate)
+                    1 / self.reference_timer_hz, self.reference_update)
                 self.get_logger().info(f"{p.name} changed to {p.value}")
             
 class WaypointTraj(object):
