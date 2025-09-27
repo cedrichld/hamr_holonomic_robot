@@ -8,7 +8,8 @@ Panels:
         - /Status1
         - /RobotModel1
         - /RobotModel1/Description Topic1
-        - /TF1
+        - /RobotModel1/Links1
+        - /RobotModel1/Links1/yaw_plate_link1
         - /TF1/Frames1
         - /Camera1/Visibility1
         - /Path1
@@ -16,7 +17,7 @@ Panels:
         - /GridMap1/Topic1
         - /Path2
       Splitter Ratio: 0.5
-    Tree Height: 361
+    Tree Height: 1174
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -220,7 +221,7 @@ Visualization Manager:
           Show Trail: false
           Value: true
         yaw_plate_link:
-          Alpha: 1
+          Alpha: 0.6499999761581421
           Show Axes: false
           Show Trail: false
           Value: true
@@ -430,7 +431,7 @@ Visualization Manager:
       Color: 200; 200; 200
       Color Layer: elevation
       Color Transformer: IntensityLayer
-      Enabled: false
+      Enabled: true
       Height Layer: elevation
       Height Transformer: ""
       History Length: 1
@@ -443,13 +444,13 @@ Visualization Manager:
       Show Grid Lines: true
       Topic:
         Depth: 5
-        Durability Policy: Volatile
+        Durability Policy: Transient Local
         Filter size: 10
-        History Policy: Keep Last
+        History Policy: Keep All
         Reliability Policy: Reliable
         Value: /elevation_map
       Use Rainbow: true
-      Value: false
+      Value: true
     - Alpha: 0.699999988079071
       Binary representation: false
       Binary threshold: 100
@@ -547,25 +548,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 9.840269088745117
+      Distance: 13.616442680358887
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.26424574851989746
-        Y: 6.26608943939209
-        Z: 0.5301820635795593
+        X: 4.054102420806885
+        Y: 3.6243395805358887
+        Z: 0.5765228271484375
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.479796290397644
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.1685755252838135
+      Yaw: 3.1335768699645996
     Saved: ~
 Window Geometry:
   Camera:

@@ -42,9 +42,9 @@ class TrajectoryNode(Node):
         max_point = 5.0
         origin = 0.0
 
-        def generate_ccw_circle_points(radius=3.1, steps_between=10):
-            cx = 0.25
-            cy = 0.5 + radius
+        def generate_ccw_circle_points(radius=3.7, steps_between=10):
+            cx = 0.0
+            cy = 0.0 + radius
 
             # Angles for waypoints (rad)
             # waypoints = [-np.pi/2, -np.pi, -3*np.pi/2, -2*np.pi, -5*np.pi/2] # CW
@@ -69,7 +69,7 @@ class TrajectoryNode(Node):
                     pts.append([float(x), float(y), 0.0])
 
             # Close the loop back to start
-            pts.append([0.5, 0.5, 0.0])
+            pts.append([0.0, 0.0, 0.0])
 
             return np.array(pts)
 
@@ -77,11 +77,11 @@ class TrajectoryNode(Node):
 
         # waypoints = np.array([ # x, y, yaw
 
-        #     [0.0, 0.0, 0.0], # SQUARE
-        #     [5.0, 0.0, 0.0],
-        #     [5.0, 5.0, 0.0],
-        #     [0.0, 5.0, 0.0],
-        #     [0.0, 0.0, 0.0],
+        #     # [0.0, 0.0, 0.0], # SQUARE
+        #     # [8.0, 0.0, 0.0],
+        #     # [8.0, 8.0, 0.0],
+        #     # [0.0, 8.0, 0.0],
+        #     # [0.0, 0.0, 0.0],
 
         #     # [origin,    origin,    0.0], # SQUARE
         #     # [max_point, origin,    0.0],
@@ -96,10 +96,10 @@ class TrajectoryNode(Node):
         #     # [1.0, 0.0, 0.0],
         #     # [0.0, 0.0, 0.0],
 
-        #     # [0.0, 0.0, 0.0], # TRIANGLE
-        #     # [10.0, 5.0, 0.0],
-        #     # [0.0, 10.0, 0.0],
-        #     # [0.0, 0.0, 0.0],
+        #     [0.0, 0.0, 0.0], # TRIANGLE
+        #     [9.0, 4.5, 0.0],
+        #     [0.0, 9.0, 0.0],
+        #     [0.0, 0.0, 0.0],
         # ])
         
         self.trajectory = WaypointTraj(waypoints, v_lin=v_lin, w_yaw=w_yaw)

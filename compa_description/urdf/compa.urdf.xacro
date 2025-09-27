@@ -17,20 +17,8 @@
   </joint>
 
   <link name="base_link">
-    <inertial>
-      <origin
-        xyz="-0.000339817170498122 0.00424231004595931 0.00197670802942906"
-        rpy="0 0 0" />
-      <mass
-        value="4.7675691308253" />
-      <inertia
-        ixx="0.139176668892902"
-        ixy="3.73786456449896E-05"
-        ixz="0.000406943794666223"
-        iyy="0.260635271329177"
-        iyz="-0.000613703988621289"
-        izz="0.12399220264823" />
-    </inertial>
+    <xacro:box_inertia m="4.77" x="0.45" y="0.45" z="0.05"
+                    o_xyz="0 0 0" o_rpy="0 0 ${-pi/2}" />
     <visual>
       <origin
         xyz="0 0 0"
@@ -50,8 +38,9 @@
         xyz="0 0 0"
         rpy="0 0 ${-pi/2}" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/base_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/base_link.STL" /> -->
+        <box size="0.45 0.45 0.05"/>
       </geometry>
     </collision>
   </link>
@@ -337,20 +326,8 @@
 
   <!-- Gimbal -->
   <link name="roll_link">
-    <inertial>
-      <origin
-        xyz="0.00350000004402022 -5.16314840708076E-10 -4.00015491542477E-06"
-        rpy="0 0 0" />
-      <mass
-        value="0.944517139921142" />
-      <inertia
-        ixx="0.0181589556415456"
-        ixy="-6.29046022348623E-07"
-        ixz="-2.07968206915504E-11"
-        iyy="0.0184849903072778"
-        iyz="-7.02129324325875E-16"
-        izz="0.0364005003554526" />
-    </inertial>
+    <xacro:box_inertia m="0.944517139921142" x="0.35" y="0.35" z="0.05"
+                    o_xyz="0 0 0" o_rpy="0 0 0" />
     <visual>
       <origin
         xyz="0 0 0"
@@ -370,8 +347,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/roll_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/roll_link.STL" /> -->
+        <box size="0.35 0.35 0.05"/>
       </geometry>
     </collision>
   </link>
@@ -423,8 +401,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/pitch_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/pitch_link.STL" /> -->
+        <box size="0.07 0.3 0.05"/>
       </geometry>
     </collision>
   </link>
@@ -473,11 +452,12 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0 0 -0.127371508973676"
         rpy="${pi} 0 ${pi}" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/yaw_plate_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/yaw_plate_link.STL" /> -->
+        <cylinder radius="0.4" length="0.01"/>
       </geometry>
     </collision>
   </link>
@@ -562,8 +542,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/leverage_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/leverage_link.STL" /> -->
+        <box size="0.01 0.45 0.07"/>
       </geometry>
     </collision>
   </link>
@@ -618,8 +599,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
@@ -669,8 +651,9 @@
         xyz="0 0 -0.07056"
         rpy="0 0 ${pi/2}" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/rod_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/rod_link.STL" /> -->
+        <cylinder radius="0.0035" length="${2*0.07056 - 0.007}"/>
       </geometry>
     </collision>
   </link>
@@ -723,8 +706,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
@@ -775,8 +759,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
@@ -826,8 +811,9 @@
         xyz="0 0 -0.07056"
         rpy="0 0 ${pi/2}" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/rod_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/rod_link.STL" /> -->
+        <cylinder radius="0.0035" length="${2*0.07056 - 0.007}"/>
       </geometry>
     </collision>
   </link>
@@ -880,8 +866,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
