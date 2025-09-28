@@ -61,7 +61,6 @@ public:
     max_slope_ = std::tan(max_tilt_deg_ * M_PI / 180.0);
 
     // --- Subs & pubs ---
-    // Note: if your publishers are not transient-local, you can drop transient_local() below.
     costmap_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
       costmap_topic_, rclcpp::QoS(1).transient_local().reliable(),
       std::bind(&AStarPlanner::onCostmap, this, std::placeholders::_1));

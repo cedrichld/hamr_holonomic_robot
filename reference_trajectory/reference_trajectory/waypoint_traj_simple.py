@@ -4,6 +4,9 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from hamr_interfaces.msg import StateError
 from hamr_interfaces.msg import ReferenceTraj
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
 
 import math
 import numpy as np
@@ -30,6 +33,15 @@ class TrajectoryNode(Node):
             ReferenceTraj, "/reference_trajectory", 1
         )
 
+        qos_waypoints = QoSProfile(
+            depth=1,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            reliability=QoSReliabilityPolicy.RELIABLE
+        )
+        self.waypoints_path_pub_ = self.create_publisher(
+            Path, "/waypoints_path", qos_profile=qos_waypoints
+        )
+
         self.begun = False
         self.last_reference_time = None
         
@@ -42,7 +54,7 @@ class TrajectoryNode(Node):
         max_point = 5.0
         origin = 0.0
 
-        def generate_ccw_circle_points(radius=3.7, steps_between=10):
+        def generate_ccw_circle_points(radius=5.0, steps_between=10):
             cx = 0.0
             cy = 0.0 + radius
 
@@ -77,11 +89,11 @@ class TrajectoryNode(Node):
 
         # waypoints = np.array([ # x, y, yaw
 
-        #     # [0.0, 0.0, 0.0], # SQUARE
-        #     # [8.0, 0.0, 0.0],
-        #     # [8.0, 8.0, 0.0],
-        #     # [0.0, 8.0, 0.0],
-        #     # [0.0, 0.0, 0.0],
+        #     [0.0, 0.0, 0.0], # SQUARE
+        #     [5.75, 0.0, 0.0],
+        #     [5.75, 5.75, 0.0],
+        #     [0.0, 5.75, 0.0],
+        #     [0.0, 0.0, 0.0],
 
         #     # [origin,    origin,    0.0], # SQUARE
         #     # [max_point, origin,    0.0],
@@ -96,10 +108,10 @@ class TrajectoryNode(Node):
         #     # [1.0, 0.0, 0.0],
         #     # [0.0, 0.0, 0.0],
 
-        #     [0.0, 0.0, 0.0], # TRIANGLE
-        #     [9.0, 4.5, 0.0],
-        #     [0.0, 9.0, 0.0],
-        #     [0.0, 0.0, 0.0],
+        #     # [0.0, 0.0, 0.0], # TRIANGLE
+        #     # [9.0, 4.5, 0.0],
+        #     # [0.0, 9.0, 0.0],
+        #     # [0.0, 0.0, 0.0],
         # ])
         
         self.trajectory = WaypointTraj(waypoints, v_lin=v_lin, w_yaw=w_yaw)
@@ -113,6 +125,29 @@ class TrajectoryNode(Node):
             self.begun = True
             self.get_logger().info("Beginning trajectory tracking.")
             self.last_reference_time = self.get_clock().now()
+
+            # Publish waypoints as Path for visualization
+            path_msg = Path()
+            path_msg.header.frame_id = "odom"
+            path_msg.header.stamp = self.get_clock().now().to_msg()
+
+            for pt in self.trajectory.points:
+                x, y, yaw = float(pt[0]), float(pt[1]), float(pt[2])
+
+                ps = PoseStamped()
+                ps.header.frame_id = "odom"
+                ps.header.stamp = path_msg.header.stamp  # keep a consistent stamp
+                ps.pose.position.x = x
+                ps.pose.position.y = y
+                ps.pose.position.z = 0.0
+
+                ps.pose.orientation.x = 0.0
+                ps.pose.orientation.y = 0.0
+                ps.pose.orientation.z = math.sin(yaw * 0.5)
+                ps.pose.orientation.w = math.cos(yaw * 0.5)
+
+                path_msg.poses.append(ps)
+            self.waypoints_path_pub_.publish(path_msg)
 
         now = self.get_clock().now()
         t = (now - self.last_reference_time).nanoseconds * 1e-9

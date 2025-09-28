@@ -46,7 +46,7 @@ class CompaControlNode(Node):
         ### - - COMPA Config params (m) - - ###
         default_compa_config = {"r_wheel": 0.1075,
                                 "a_wheel": 0.331643,
-                                "b_wheel": -0.274986, # negative value since wheels in front
+                                "b_wheel": 0.274986, # negative value since wheels in front
                                 "mode": "auto"} # "auto" or "manual"
         for a, b in default_compa_config.items():
             self.declare_parameter(a, b)
@@ -167,7 +167,7 @@ class CompaControlNode(Node):
 
         ## - - Thresholds - - ##
         self.threshold_x_y = 0.005 # 0.5cm
-        self.threshold_roll_pitch = 0.05 # 2.86 deg
+        self.threshold_roll_pitch = 0.15 # 7 deg
         self.threshold_yaw = 0.05 # 2.86 deg
 
         ## - - Velocity Limits (Magnitude) - - ##
@@ -237,11 +237,18 @@ class CompaControlNode(Node):
             pitch_w = math.asin(
                 2.0*(q_w_p[3]*q_w_p[1] - q_w_p[2]*q_w_p[0])
             )
+            # roll_w = math.atan2(
+            #     2.0*(q_w_y[3]*q_w_y[0] + q_w_y[1]*q_w_y[2]),
+            #     1.0 - 2.0*(q_w_y[0]*q_w_y[0] + q_w_y[1]*q_w_y[1])
+            # )
+            # pitch_w = math.asin(
+            #     2.0*(q_w_y[3]*q_w_y[1] - q_w_y[2]*q_w_y[0])
+            # )
             yaw_turret_w = math.atan2(
                 2.0*(q_w_y[3]*q_w_y[2] + q_w_y[0]*q_w_y[1]),
                 1.0 - 2.0*(q_w_y[1]*q_w_y[1] + q_w_y[2]*q_w_y[2])
             )
-
+            
             # yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
             err_roll = wrap_angle(roll_des - roll_w)
             err_pitch = wrap_angle(pitch_des - pitch_w)
@@ -430,7 +437,7 @@ class CompaControlNode(Node):
                 t.transform.rotation.w]    
     
     def callback_tf(self, msg: TFMessage):
-        ''' Look through all TFs and find turret_link to get it's Quaternion '''
+        ''' Look through all TFs and find turret_link to get its Quaternion (wrt base link) '''
         
         for t in msg.transforms:
             # base -> roll

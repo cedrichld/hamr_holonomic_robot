@@ -1,6 +1,6 @@
 <launch>
     <let name="urdf_path" 
-        value="$(find-pkg-share compa_description)/urdf/compa.urdf.xacro" />
+        value="$(find-pkg-share compa_description)/urdf/compa_back.urdf.xacro" />
     
     <let name="rviz_config_path" 
         value="$(find-pkg-share compa_description)/rviz/urdf_config.rviz" />

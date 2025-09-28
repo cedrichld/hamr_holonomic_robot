@@ -200,7 +200,6 @@ def main():
 
     # --------- Choose reference path ----------
     waypoints = np.array([[0,0],[5,0],[5,5],[0,5],[0,0]])  # SQUARE
-    # (You can swap to your CIRCLE or MAZE definitions)
 
     # Densify the path for nearest-neighbor distance & heading lookup
     ref_path = []
@@ -209,7 +208,7 @@ def main():
         ref_path.append(edge)
     ref_path = np.vstack(ref_path)
 
-    # ---------- Position RMSE (you already had this) ----------
+    # ---------- Position RMSE ----------
     x_run = np.asarray(x_vals, dtype=float)
     y_run = np.asarray(y_vals, dtype=float)
     pts   = np.column_stack((x_run, y_run))

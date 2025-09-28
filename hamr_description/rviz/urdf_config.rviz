@@ -8,16 +8,17 @@ Panels:
         - /Status1
         - /RobotModel1
         - /RobotModel1/Description Topic1
-        - /RobotModel1/Links1
-        - /RobotModel1/Links1/yaw_plate_link1
+        - /TF1
         - /TF1/Frames1
         - /Camera1/Visibility1
         - /Path1
         - /GridMap1
         - /GridMap1/Topic1
         - /Path2
+        - /Path3
+        - /Path3/Topic1
       Splitter Ratio: 0.5
-    Tree Height: 1174
+    Tree Height: 361
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -215,13 +216,8 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
-        yaw_dummy_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
         yaw_plate_link:
-          Alpha: 0.6499999761581421
+          Alpha: 1
           Show Axes: false
           Show Trail: false
           Value: true
@@ -244,6 +240,150 @@ Visualization Manager:
           Value: false
         base_link:
           Value: false
+        gimbal_drop_00000:
+          Value: true
+        gimbal_drop_00001:
+          Value: true
+        gimbal_drop_00002:
+          Value: true
+        gimbal_drop_00003:
+          Value: true
+        gimbal_drop_00004:
+          Value: true
+        gimbal_drop_00005:
+          Value: true
+        gimbal_drop_00006:
+          Value: true
+        gimbal_drop_00007:
+          Value: true
+        gimbal_drop_00008:
+          Value: true
+        gimbal_drop_00009:
+          Value: true
+        gimbal_drop_00010:
+          Value: true
+        gimbal_drop_00011:
+          Value: true
+        gimbal_drop_00012:
+          Value: true
+        gimbal_drop_00013:
+          Value: true
+        gimbal_drop_00014:
+          Value: true
+        gimbal_drop_00015:
+          Value: true
+        gimbal_drop_00016:
+          Value: true
+        gimbal_drop_00017:
+          Value: true
+        gimbal_drop_00018:
+          Value: true
+        gimbal_drop_00019:
+          Value: true
+        gimbal_drop_00020:
+          Value: true
+        gimbal_drop_00021:
+          Value: true
+        gimbal_drop_00022:
+          Value: true
+        gimbal_drop_00023:
+          Value: true
+        gimbal_drop_00024:
+          Value: true
+        gimbal_drop_00025:
+          Value: true
+        gimbal_drop_00026:
+          Value: true
+        gimbal_drop_00027:
+          Value: true
+        gimbal_drop_00028:
+          Value: true
+        gimbal_drop_00029:
+          Value: true
+        gimbal_drop_00030:
+          Value: true
+        gimbal_drop_00031:
+          Value: true
+        gimbal_drop_00032:
+          Value: true
+        gimbal_drop_00033:
+          Value: true
+        gimbal_drop_00034:
+          Value: true
+        gimbal_drop_00035:
+          Value: true
+        gimbal_drop_00036:
+          Value: true
+        gimbal_drop_00037:
+          Value: true
+        gimbal_drop_00038:
+          Value: true
+        gimbal_drop_00039:
+          Value: true
+        gimbal_drop_00040:
+          Value: true
+        gimbal_drop_00041:
+          Value: true
+        gimbal_drop_00042:
+          Value: true
+        gimbal_drop_00043:
+          Value: true
+        gimbal_drop_00044:
+          Value: true
+        gimbal_drop_00045:
+          Value: true
+        gimbal_drop_00046:
+          Value: true
+        gimbal_drop_00047:
+          Value: true
+        gimbal_drop_00048:
+          Value: true
+        gimbal_drop_00049:
+          Value: true
+        gimbal_drop_00050:
+          Value: true
+        gimbal_drop_00051:
+          Value: true
+        gimbal_drop_00052:
+          Value: true
+        gimbal_drop_00053:
+          Value: true
+        gimbal_drop_00054:
+          Value: true
+        gimbal_drop_00055:
+          Value: true
+        gimbal_drop_00056:
+          Value: true
+        gimbal_drop_00057:
+          Value: true
+        gimbal_drop_00058:
+          Value: true
+        gimbal_drop_00059:
+          Value: true
+        gimbal_drop_00060:
+          Value: true
+        gimbal_drop_00061:
+          Value: true
+        gimbal_drop_00062:
+          Value: true
+        gimbal_drop_00063:
+          Value: true
+        gimbal_drop_00064:
+          Value: true
+        gimbal_drop_00065:
+          Value: true
+        gimbal_drop_00066:
+          Value: true
+        gimbal_drop_00067:
+          Value: true
+        gimbal_drop_00068:
+          Value: true
+        gimbal_drop_00069:
+          Value: true
+        gimbal_drop_00070:
+          Value: true
+        gimbal_drop_00071:
+          Value: true
         left_caster_wheel_link:
           Value: false
         left_rocker_link:
@@ -306,13 +446,11 @@ Visualization Manager:
           Value: false
         tmp_right_rod_sphere2_t3:
           Value: false
-        yaw_dummy_link:
-          Value: true
         yaw_plate_link:
-          Value: true
+          Value: false
       Marker Scale: 1
       Name: TF
-      Show Arrows: true
+      Show Arrows: false
       Show Axes: true
       Show Names: false
       Tree:
@@ -358,8 +496,151 @@ Visualization Manager:
                 roll_link:
                   pitch_link:
                     yaw_plate_link:
-                      yaw_dummy_link:
-                        {}
+                      {}
+            gimbal_drop_00000:
+              {}
+            gimbal_drop_00001:
+              {}
+            gimbal_drop_00002:
+              {}
+            gimbal_drop_00003:
+              {}
+            gimbal_drop_00004:
+              {}
+            gimbal_drop_00005:
+              {}
+            gimbal_drop_00006:
+              {}
+            gimbal_drop_00007:
+              {}
+            gimbal_drop_00008:
+              {}
+            gimbal_drop_00009:
+              {}
+            gimbal_drop_00010:
+              {}
+            gimbal_drop_00011:
+              {}
+            gimbal_drop_00012:
+              {}
+            gimbal_drop_00013:
+              {}
+            gimbal_drop_00014:
+              {}
+            gimbal_drop_00015:
+              {}
+            gimbal_drop_00016:
+              {}
+            gimbal_drop_00017:
+              {}
+            gimbal_drop_00018:
+              {}
+            gimbal_drop_00019:
+              {}
+            gimbal_drop_00020:
+              {}
+            gimbal_drop_00021:
+              {}
+            gimbal_drop_00022:
+              {}
+            gimbal_drop_00023:
+              {}
+            gimbal_drop_00024:
+              {}
+            gimbal_drop_00025:
+              {}
+            gimbal_drop_00026:
+              {}
+            gimbal_drop_00027:
+              {}
+            gimbal_drop_00028:
+              {}
+            gimbal_drop_00029:
+              {}
+            gimbal_drop_00030:
+              {}
+            gimbal_drop_00031:
+              {}
+            gimbal_drop_00032:
+              {}
+            gimbal_drop_00033:
+              {}
+            gimbal_drop_00034:
+              {}
+            gimbal_drop_00035:
+              {}
+            gimbal_drop_00036:
+              {}
+            gimbal_drop_00037:
+              {}
+            gimbal_drop_00038:
+              {}
+            gimbal_drop_00039:
+              {}
+            gimbal_drop_00040:
+              {}
+            gimbal_drop_00041:
+              {}
+            gimbal_drop_00042:
+              {}
+            gimbal_drop_00043:
+              {}
+            gimbal_drop_00044:
+              {}
+            gimbal_drop_00045:
+              {}
+            gimbal_drop_00046:
+              {}
+            gimbal_drop_00047:
+              {}
+            gimbal_drop_00048:
+              {}
+            gimbal_drop_00049:
+              {}
+            gimbal_drop_00050:
+              {}
+            gimbal_drop_00051:
+              {}
+            gimbal_drop_00052:
+              {}
+            gimbal_drop_00053:
+              {}
+            gimbal_drop_00054:
+              {}
+            gimbal_drop_00055:
+              {}
+            gimbal_drop_00056:
+              {}
+            gimbal_drop_00057:
+              {}
+            gimbal_drop_00058:
+              {}
+            gimbal_drop_00059:
+              {}
+            gimbal_drop_00060:
+              {}
+            gimbal_drop_00061:
+              {}
+            gimbal_drop_00062:
+              {}
+            gimbal_drop_00063:
+              {}
+            gimbal_drop_00064:
+              {}
+            gimbal_drop_00065:
+              {}
+            gimbal_drop_00066:
+              {}
+            gimbal_drop_00067:
+              {}
+            gimbal_drop_00068:
+              {}
+            gimbal_drop_00069:
+              {}
+            gimbal_drop_00070:
+              {}
+            gimbal_drop_00071:
+              {}
       Update Interval: 0
       Value: true
     - Class: rviz_default_plugins/Camera
@@ -394,7 +675,7 @@ Visualization Manager:
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Billboards
-      Line Width: 0.11999999731779099
+      Line Width: 0.09000000357627869
       Name: Path
       Offset:
         X: 0
@@ -417,7 +698,7 @@ Visualization Manager:
       Enabled: true
       Name: MarkerArray
       Namespaces:
-        tf_trail: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -502,6 +783,34 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /astar/path
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz_default_plugins/Path
+      Color: 28; 113; 216
+      Enabled: true
+      Head Diameter: 0.05000000074505806
+      Head Length: 0.20000000298023224
+      Length: 0.10000000149011612
+      Line Style: Billboards
+      Line Width: 0.05000000074505806
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 1.600000023841858
+      Pose Color: 145; 65; 172
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.019999999552965164
+      Shaft Length: 0.10000000149011612
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /waypoints_path
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 255; 255; 255
@@ -548,25 +857,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 13.616442680358887
+      Distance: 8.913594245910645
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.054102420806885
-        Y: 3.6243395805358887
-        Z: 0.5765228271484375
+        X: 2.8151004314422607
+        Y: 3.3070755004882812
+        Z: 1.5497875213623047
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.479796290397644
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.1335768699645996
+      Yaw: 3.1435930728912354
     Saved: ~
 Window Geometry:
   Camera:

@@ -51,7 +51,7 @@ The result is an off-road holonomic base that can execute **arbitrary trajectori
 
 ## Holonomic Trajectories
 
-Canonical experiments included **square, triangle, and circle trajectories**, as well as **maze navigation** using PRM/A\* planners. In both simulation and physical testing, the robot successfully demonstrated holonomic control, with the turret maintaining orientation independent of the base. Here are some [simulation videos](https://drive.google.com/drive/folders/1L5fZbZpEMv6Lch935niWMHmpB58fBjkm?usp=drive_link).
+Canonical experiments included **square, triangle, and circle trajectories**, as well as **maze navigation** using PRM/A\* planners. In both simulation and physical testing, the robot successfully demonstrated holonomic control, with the turret maintaining orientation independent of the base. Here are some [simulation videos](https://drive.google.com/drive/folders/1EY-bJhKYq_guximBzEeTff3mIo9-671F?usp=drive_link).
 
 <p align="center">
   <img src="img/Square_OR_Trajectory.png" alt="Square" height="120">
