@@ -4,7 +4,7 @@
   
   <!-- To import ball joint, camera and more -->
   <xacro:include filename="common_properties.urdf.xacro" /> 
-  <!-- <xacro:include filename="camera.urdf.xacro" /> -->
+  <xacro:include filename="camera.urdf.xacro" />
   <xacro:include filename="compa_gazebo.urdf.xacro" /> 
 
   <!-- Base -->

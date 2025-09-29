@@ -28,7 +28,7 @@
     <joint name="yaw_plate_camera_joint" type="fixed">
         <parent link="yaw_plate_link" />
         <child link="camera_link" />
-        <origin xyz="0 0 -0.15" rpy="0 0 ${-pi}"/>
+        <origin xyz="0 0 0.25" rpy="0 0 0"/>
     </joint>
     
     <!-- generate an optical frame 

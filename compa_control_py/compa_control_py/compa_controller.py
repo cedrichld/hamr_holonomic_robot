@@ -172,7 +172,8 @@ class CompaControlNode(Node):
 
         ## - - Velocity Limits (Magnitude) - - ##
         self.xy_dot_limit = 5.0
-        self.roll_pitch_dot_limit = 1.0
+        # 240 deg/s - equivalent to going from -30deg to 30deg in 0.5s (with constant accel)
+        self.roll_pitch_dot_limit = 2.0 * math.pi * (240.0 / 360.0) 
         self.yaw_dot_limit = 2.0
 
         self.get_logger().info("COMPA Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 

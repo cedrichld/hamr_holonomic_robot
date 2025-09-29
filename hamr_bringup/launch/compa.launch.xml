@@ -59,9 +59,9 @@
     <!-- <node pkg="compa_control_py" exec="compa_pid_graph">
         <param name="use_sim_time" value="true" />
     </node> -->
-    <!-- <node pkg="compa_control_py" exec="compa_odom_graph">
+    <node pkg="compa_control_py" exec="rpy_tf_graph">
         <param name="use_sim_time" value="true" />
-    </node> -->
+    </node>
 
 
     <!-- TRACERS -->

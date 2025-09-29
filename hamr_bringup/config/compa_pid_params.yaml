@@ -14,8 +14,8 @@
 
     P_x: 1.0
     P_y: 1.0
-    P_roll: 3.0
-    P_pitch: 3.0
+    P_roll: 8.0
+    P_pitch: 8.0
     P_yaw: 8.0
 
     control_rate_hz: 100.0

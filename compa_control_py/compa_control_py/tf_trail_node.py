@@ -13,8 +13,8 @@ class TfTrailNode(Node):
         # -------- Parameters --------
         self.declare_parameter("odom_topic", "/compa/odom")
         self.declare_parameter("frame_id", "odom")
-        self.declare_parameter("lifetime_sec", 1000.0)
-        self.declare_parameter("min_dist", 0.3)
+        self.declare_parameter("lifetime_sec", 10.0)
+        self.declare_parameter("min_dist", 0.1)
         self.declare_parameter("drop_every_n_msgs", 1)
 
         self.odom_topic   = self.get_parameter("odom_topic").value
