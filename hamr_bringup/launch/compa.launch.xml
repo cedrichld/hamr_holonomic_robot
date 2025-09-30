@@ -69,12 +69,13 @@
     <node pkg="hamr_control_cpp" exec="hamr_path_tracer" />
 
     <node pkg="hamr_control_cpp" exec="compa_path_tracer" />
-    <node pkg="hamr_control_cpp" exec="cost_map_publisher">
+    <!-- <node pkg="hamr_control_cpp" exec="cost_map_publisher">
         <param name="map_width_m" value="40.0" />
         <param name="map_length_m" value="40.0" />
         <param name="map_height_m" value="4.5" />
         <param name="image_path" value="$(find-pkg-share hamr_bringup)/terrain_assets/heightmaps/off_road_maps/terrain1_513.png" />
-    </node>
+    </node> -->
+    <include file="$(find-pkg-share hamr_bringup)/launch/gridmap_rviz.launch.py" />
 
     <!-- <node pkg="reference_trajectory" exec="waypoint_traj_simple">
         <param name="use_sim_time" value="true" />

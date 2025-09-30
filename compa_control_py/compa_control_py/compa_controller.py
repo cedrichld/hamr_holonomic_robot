@@ -513,7 +513,7 @@ class CompaControlNode(Node):
             "P_x": ("x", "P"),
             "I_x": ("x", "I"),
             "D_x": ("x", "D"),
-            "P_y": ("y", "P"),
+            "P_y": ("y", "P"),  
             "I_y": ("y", "I"),
             "D_y": ("y", "D"),
             "P_roll":("roll", "P"),

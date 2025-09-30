@@ -14,17 +14,17 @@ def wrap_angle(a):
     return (a + math.pi) % (2.0 * math.pi) - math.pi
 
 def quat_to_rpy(q_xyzw):
-    """Return roll, pitch, yaw (XYZ convention) from quaternion [x,y,z,w]."""
+    """Return roll, pitch, yaw (XYZ convention)"""
     x, y, z, w = q_xyzw
-    # roll (x-axis)
+    
     sinr_cosp = 2.0 * (w*x + y*z)
     cosr_cosp = 1.0 - 2.0 * (x*x + y*y)
     roll = math.atan2(sinr_cosp, cosr_cosp)
-    # pitch (y-axis)
+    
     sinp = 2.0 * (w*y - z*x)
     sinp = max(-1.0, min(1.0, sinp))
     pitch = math.asin(sinp)
-    # yaw (z-axis)
+    
     siny_cosp = 2.0 * (w*z + x*y)
     cosy_cosp = 1.0 - 2.0 * (y*y + z*z)
     yaw = math.atan2(siny_cosp, cosy_cosp)
@@ -36,7 +36,7 @@ class RpyTfGraphNode(Node):
 
         # Parameters
         self.declare_parameter("frame_id", "odom")
-        self.declare_parameter("target_link", "yaw_plate_link")  # default to base_link for "basic tf"
+        self.declare_parameter("target_link", "yaw_plate_link")
         self.declare_parameter("sample_period", 0.05)
         self.declare_parameter("max_points", 1000)
         self.declare_parameter("plot_degrees", True)
@@ -110,7 +110,7 @@ class RpyTfGraphNode(Node):
             self._rate_warn(f"TF can_transform error: {e}")
             return
 
-        # Lookup; if extrapolation at a stamp occurs, retry with latest
+        # Lookup- if extrapolation at a stamp occurs, retry with latest
         try:
             tfmsg = self.tf_buffer.lookup_transform(self.frame_id, self.target_link, target_time, timeout=Duration(seconds=0.2))
         except Exception as e1:
@@ -124,7 +124,6 @@ class RpyTfGraphNode(Node):
         q = tfmsg.transform.rotation
         roll, pitch, yaw = quat_to_rpy((q.x, q.y, q.z, q.w))
 
-        # Wrap to [-pi, pi] then convert to degrees if requested
         roll  = wrap_angle(roll)
         pitch = wrap_angle(pitch)
         yaw   = wrap_angle(yaw)
