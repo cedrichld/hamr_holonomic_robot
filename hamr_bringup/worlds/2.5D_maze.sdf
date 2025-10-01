@@ -40,7 +40,7 @@
           <geometry>
             <heightmap>
               <use_terrain_paging>true</use_terrain_paging>
-              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/terrain1_1025.png</uri>
+              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/hamr_maze_big_offroad.png</uri>
 
               <size>40 40 2</size>
               <pos>0 0 0</pos>
@@ -59,7 +59,7 @@
         <collision name="terrain_collision">
           <geometry>
             <heightmap>
-              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/terrain1_1025.png</uri>
+              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/hamr_maze_big_offroad.png</uri>
               <size>40 40 2</size>
               <pos>0 0 0</pos>
             </heightmap>
