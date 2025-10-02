@@ -17,6 +17,7 @@ def generate_launch_description():
 
     img_px_res = 1025  # pixels
     map_width = 45.0
+    map_height = 4.5 # meters
 
     terrain_path = os.path.join(
         hamr_bringup_dir,
@@ -123,7 +124,7 @@ def generate_launch_description():
             'image_topic': "/image",
             'map_frame_id': 'terrain_map',
             'min_height': 0.0, # m
-            'max_height': 4.5, # m
+            'max_height': map_height, # m
             'resolution': map_width / img_px_res, # meters per cell -> img_res / map_xy: 45m / 1025px            
         }]
     )

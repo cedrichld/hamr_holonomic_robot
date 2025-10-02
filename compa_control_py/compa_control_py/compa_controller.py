@@ -46,7 +46,7 @@ class CompaControlNode(Node):
         ### - - COMPA Config params (m) - - ###
         default_compa_config = {"r_wheel": 0.1075,
                                 "a_wheel": 0.331643,
-                                "b_wheel": 0.274986, # negative value since wheels in front
+                                "b_wheel": 0.274986, 
                                 "mode": "auto"} # "auto" or "manual"
         for a, b in default_compa_config.items():
             self.declare_parameter(a, b)
