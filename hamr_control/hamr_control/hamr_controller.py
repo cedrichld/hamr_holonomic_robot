@@ -55,6 +55,7 @@ class HamrControlNode(Node):
             "a_wheel": self.get_parameter("a_wheel").value,
             "b_wheel": self.get_parameter("b_wheel").value,
             "simulating": self.get_parameter("simulating").value,
+            "mode": self.get_parameter("mode").value,
         }
         
         ### - - PID Parameters for x, y and yaw - - ###
@@ -112,10 +113,10 @@ class HamrControlNode(Node):
         self.control_rate_hz = self.get_parameter("control_rate_hz").value
         self.last_control_time = self.get_clock().now()
         
-        if self.hamr_config_config["mode"] == "auto":
+        if self.hamr_config["mode"] == "auto":
             self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
             self.get_logger().info("Auto mode: controlling at " + str(self.control_rate_hz) + " Hz")
-        elif self.hamr_config_config["mode"] == "manual":
+        elif self.hamr_config["mode"] == "manual":
             self.manual_sub_ = self.create_subscription(Twist, "/cmd_vel", 
                                         self.manual_mode_callback, 1)
             self.get_logger().info("Manual mode: listening to /cmd_vel")
@@ -283,6 +284,13 @@ class HamrControlNode(Node):
         ''' HARDWARE ONLY: Subscription callback to the turret of hamr '''
         self.turret_to_base_orientation_ = msg.pose.pose.orientation
 
+    def callback_tf(self, msg: TFMessage):
+        ''' SIMULATION ONLY: Look through all TFs and find turret_link to get it's Quaternion '''
+        for t in msg.transforms:
+            if t.child_frame_id == "turret_link" and t.header.frame_id  == "base_link":
+                self.turret_to_base_orientation_ = t.transform.rotation # Quaternion
+                break
+
     def control_tick(self):
         ''' Send command every (1 / control_rate_hz)[s] '''
         now = self.get_clock().now()
@@ -298,19 +306,12 @@ class HamrControlNode(Node):
         if (self.pose_base_ is not None and self.reference_ is not None 
                 and self.turret_to_base_orientation_ is not None):
             self.pid_step()
-        else:
-            self.get_logger().warn("Either:  pose %d, reference %d, turret_to_base %d" % (
-                self.pose_base_ is not None,
-                self.reference_ is not None,
-                self.turret_to_base_orientation_ is not None
-            ))
-
-    def callback_tf(self, msg: TFMessage):
-        ''' SIMULATION ONLY: Look through all TFs and find turret_link to get it's Quaternion '''
-        for t in msg.transforms:
-            if t.child_frame_id == "turret_link" and t.header.frame_id  == "base_link":
-                self.turret_to_base_orientation_ = t.transform.rotation # Quaternion
-                break
+        # else:
+        #     self.get_logger().warn("Either:  pose %d, reference %d, turret_to_base %d" % (
+        #         self.pose_base_ is not None,
+        #         self.reference_ is not None,
+        #         self.turret_to_base_orientation_ is not None
+        #     ))
 
     def callback_reference(self, msg: ReferenceTraj):
         self.reference_ = msg
@@ -350,7 +351,7 @@ class HamrControlNode(Node):
     def publish_joint_cmd(self, desired_velocity, yaw):
         right_wheel_omega, left_wheel_omega, turret_omega = Float64(), Float64(), Float64()
         omegas = self.compute_velocities(desired_velocity, yaw)
-        self.get_logger().info(f"Computed omegas: {omegas}")
+        # self.get_logger().info(f"Computed omegas: {omegas}")
         right_wheel_omega.data, left_wheel_omega.data, turret_omega.data = omegas
         
         self.right_wheel_vel_.publish(right_wheel_omega)

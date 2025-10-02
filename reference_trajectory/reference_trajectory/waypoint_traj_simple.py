@@ -22,7 +22,7 @@ import numpy as np
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_simple_node")
-        v_lin = self.declare_parameter("v_lin", 0.3).value
+        v_lin = self.declare_parameter("v_lin", 0.15).value
         w_yaw = self.declare_parameter("w_yaw", 1.0).value
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
