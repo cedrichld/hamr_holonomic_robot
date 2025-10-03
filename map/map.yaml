@@ -1,4 +1,4 @@
-image: hamr_maze_big.pgm
+image: hamr_maze_big_square.pgm
 resolution: 0.05
 origin: [-30, -30, 0.0]
 negate: 0

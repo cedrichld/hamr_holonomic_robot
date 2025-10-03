@@ -40,14 +40,14 @@
           <geometry>
             <heightmap>
               <use_terrain_paging>true</use_terrain_paging>
-              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_1025.png</uri>
+              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_2049.png</uri>
 
-              <size>40 40 4</size>
+              <size>20 20 1.5</size>
               <pos>0 0 0</pos>
               
               <texture>
-                <diffuse>file://hamr_bringup/terrain_assets/textures/checker.png</diffuse>
-                <normal>file://hamr_bringup/terrain_assets/textures/checker.png</normal>
+                <diffuse>file://hamr_bringup/worlds/Rubicon_World/textures/TerrainRocky_Albedo.png</diffuse>
+                <normal>file://hamr_bringup/worlds/Rubicon_World/textures/TerrainRocky_Normal.png</normal>
                 <!-- how many meters before texture repeats -->
                 <size>10</size>
               </texture>
@@ -59,8 +59,8 @@
         <collision name="terrain_collision">
           <geometry>
             <heightmap>
-              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_1025.png</uri>
-              <size>40 40 4</size>
+              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_2049.png</uri>
+              <size>20 20 1.5</size>
               <pos>0 0 0</pos>
             </heightmap>
           </geometry>
