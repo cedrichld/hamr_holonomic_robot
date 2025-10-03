@@ -23,7 +23,7 @@ class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_simple_node")
         v_lin = self.declare_parameter("v_lin", 0.15).value
-        w_yaw = self.declare_parameter("w_yaw", 1.0).value
+        w_yaw = self.declare_parameter("w_yaw", 0.35).value
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
@@ -54,65 +54,72 @@ class TrajectoryNode(Node):
         max_point = 5.0
         origin = 0.0
 
-        def generate_ccw_circle_points(radius=5.0, steps_between=10):
-            cx = 0.0
-            cy = 0.0 + radius
+        # def generate_ccw_circle_points(radius=5.0, steps_between=10):
+        #     cx = 0.0
+        #     cy = 0.0 + radius
 
-            # Angles for waypoints (rad)
-            # waypoints = [-np.pi/2, -np.pi, -3*np.pi/2, -2*np.pi, -5*np.pi/2] # CW
-            waypoints = [-5*np.pi/2, -2*np.pi, -3*np.pi/2, -np.pi, -np.pi/2] # CCW
-            pts = []
+        #     # Angles for waypoints (rad)
+        #     # waypoints = [-np.pi/2, -np.pi, -3*np.pi/2, -2*np.pi, -5*np.pi/2] # CW
+        #     waypoints = [-5*np.pi/2, -2*np.pi, -3*np.pi/2, -np.pi, -np.pi/2] # CCW
+        #     pts = []
 
-            # First point explicitly at (0,0,0)
-            pts.append([cx, cy - radius, 0.0])
+        #     # First point explicitly at (0,0,0)
+        #     pts.append([cx, cy - radius, 0.0])
 
-            # Generate ccw points
-            for i in range(len(waypoints) - 1):
-                th_start = waypoints[i]
-                th_end   = waypoints[i + 1]
+        #     # Generate ccw points
+        #     for i in range(len(waypoints) - 1):
+        #         th_start = waypoints[i]
+        #         th_end   = waypoints[i + 1]
 
-                # steps_between points between waypoints
-                thetas = np.linspace(th_start, th_end, steps_between + 1, endpoint=False)[1:] if i == 0 else \
-                        np.linspace(th_start, th_end, steps_between + 1, endpoint=False)
+        #         # steps_between points between waypoints
+        #         thetas = np.linspace(th_start, th_end, steps_between + 1, endpoint=False)[1:] if i == 0 else \
+        #                 np.linspace(th_start, th_end, steps_between + 1, endpoint=False)
 
-                for th in thetas:
-                    x = cx + radius * np.cos(th)
-                    y = cy + radius * np.sin(th)
-                    pts.append([float(x), float(y), 0.0])
+        #         for th in thetas:
+        #             x = cx + radius * np.cos(th)
+        #             y = cy + radius * np.sin(th)
+        #             pts.append([float(x), float(y), 0.0])
 
-            # Close the loop back to start
-            pts.append([0.0, 0.0, 0.0])
+        #     # Close the loop back to start
+        #     pts.append([0.0, 0.0, 0.0])
 
-            return np.array(pts)
+        #     return np.array(pts)
 
-        waypoints = generate_ccw_circle_points()
+        # waypoints = generate_ccw_circle_points()
 
-        # waypoints = np.array([ # x, y, yaw
+        waypoints = np.array([ # x, y, yaw
 
-        #     [0.0, 0.0, 0.0], # SQUARE
-        #     [5.75, 0.0, 0.0],
-        #     [5.75, 5.75, 0.0],
-        #     [0.0, 5.75, 0.0],
-        #     [0.0, 0.0, 0.0],
+            # [0.0, 0.0, 0.0], # SQUARE
+            # [5.75, 0.0, 0.0],
+            # [5.75, 5.75, 0.0],
+            # [0.0, 5.75, 0.0],
+            # [0.0, 0.0, 0.0],
 
-        #     # [origin,    origin,    0.0], # SQUARE
-        #     # [max_point, origin,    0.0],
-        #     # [max_point, max_point, 0.0],
-        #     # [origin,    max_point, 0.0],
-        #     # [origin,    origin,    0.0],
+
+            [-1.0, 5.0, 0.0], # HW SQUARE
+            [-1.0, 3.0, 0.0],
+            [1.0, 3.0, 0.0],
+            [1.0, 5.0, 0.0],
+            [-1.0, 5.0, 0.0],
+
+            # [origin,    origin,    0.0], # SQUARE
+            # [max_point, origin,    0.0],
+            # [max_point, max_point, 0.0],
+            # [origin,    max_point, 0.0],
+            # [origin,    origin,    0.0],
             
-        #     # # Back and Forth
-        #     # [0.0, 0.0, 0.0],
-        #     # [3.0, 0.0, 0.0],
-        #     # [1.0, 1.0, 0.0],
-        #     # [1.0, 0.0, 0.0],
-        #     # [0.0, 0.0, 0.0],
+            # # Back and Forth
+            # [0.0, 0.0, 0.0],
+            # [3.0, 0.0, 0.0],
+            # [1.0, 1.0, 0.0],
+            # [1.0, 0.0, 0.0],
+            # [0.0, 0.0, 0.0],
 
-        #     # [0.0, 0.0, 0.0], # TRIANGLE
-        #     # [9.0, 4.5, 0.0],
-        #     # [0.0, 9.0, 0.0],
-        #     # [0.0, 0.0, 0.0],
-        # ])
+            # [0.0, 0.0, 0.0], # TRIANGLE
+            # [9.0, 4.5, 0.0],
+            # [0.0, 9.0, 0.0],
+            # [0.0, 0.0, 0.0],
+        ])
         
         self.trajectory = WaypointTraj(waypoints, v_lin=v_lin, w_yaw=w_yaw)
     
@@ -157,9 +164,9 @@ class TrajectoryNode(Node):
         pose.x, pose.y, pose.yaw, pose.x_dot, pose.y_dot, pose.yaw_dot = float(x), float(y), float(yaw), float(x_dot), float(y_dot), float(yaw_dot)
         self.reference_trajectory_pub_.publish(pose)
         self.get_logger().info("pose: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
-        # if t >= self.trajectory.total_time:
-            # self.get_logger().info("Resetting traj")
-            # self.last_reference_time = self.get_clock().now()
+        if t >= self.trajectory.total_time:
+            self.get_logger().info("Resetting traj")
+            self.last_reference_time = self.get_clock().now()
 
     # Used if we want to change parameter during runtime
     def parameters_callback(self, params: list[Parameter]): 

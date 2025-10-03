@@ -128,7 +128,8 @@ class HamrControlNode(Node):
         ## - - State Variables - - ##        
         self.pose_base_: PoseWithCovariance = None # interested in x, y, yaw
         self.reference_: ReferenceTraj = None # interested in x, y, yaw
-        self.turret_to_base_orientation_: Quaternion = None # interested in relative yaw of turret
+        self.turret_to_base_orientation_: Quaternion = None  # SIMULATION: interested in yaw of turret relative to base
+        self.turret_to_world_orientation_: Quaternion = None # HARDWARE: interested in yaw of turret
 
         self.err_x_prev = 0.0
         self.err_y_prev = 0.0
@@ -175,9 +176,12 @@ class HamrControlNode(Node):
 
             yaw_des = self.reference_.yaw # desired yaw for the turret wrt to world frame (used for error)
             yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
-            yaw_turret_b = quat_to_yaw(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
             
-            yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
+            if self.hamr_config["simulating"]:
+                yaw_turret_b = quat_to_yaw(self.turret_to_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
+                yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
+            else:
+                yaw_turret_w = wrap_angle(quat_to_yaw(self.turret_to_world_orientation_))
             err_yaw = wrap_angle(yaw_des - yaw_turret_w)
 
             return err_x, err_y, err_yaw, yaw_base_w # yaw_base_w passed to jacobian later
@@ -264,8 +268,7 @@ class HamrControlNode(Node):
     def manual_mode_callback(self, msg: Twist):
         ''' Manual Mode - directly compute joint commands from terminal inputs '''
         yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation)
-        self.publish_joint_cmd(np.array([msg.linear.x, msg.linear.y, msg.angular.x, 
-                                         msg.angular.y, msg.angular.z]), yaw_base_w)
+        self.publish_joint_cmd(np.array([msg.linear.x, msg.linear.y, msg.angular.z]), yaw_base_w)
 
     def publish_live_gains(self, P_x, D_x, I_x, 
                            P_y, D_y, I_y, 
@@ -282,7 +285,7 @@ class HamrControlNode(Node):
 
     def callback_turret_odom(self, msg: Odometry):
         ''' HARDWARE ONLY: Subscription callback to the turret of hamr '''
-        self.turret_to_base_orientation_ = msg.pose.pose.orientation
+        self.turret_to_world_orientation_ = msg.pose.pose.orientation
 
     def callback_tf(self, msg: TFMessage):
         ''' SIMULATION ONLY: Look through all TFs and find turret_link to get it's Quaternion '''
@@ -302,15 +305,15 @@ class HamrControlNode(Node):
             return
         
         self.dt = max(1e-4, min(dt, 0.1))
-
+        turret_check = self.turret_to_base_orientation_ or self.turret_to_world_orientation_
         if (self.pose_base_ is not None and self.reference_ is not None 
-                and self.turret_to_base_orientation_ is not None):
+                and turret_check is not None):
             self.pid_step()
         # else:
         #     self.get_logger().warn("Either:  pose %d, reference %d, turret_to_base %d" % (
         #         self.pose_base_ is not None,
         #         self.reference_ is not None,
-        #         self.turret_to_base_orientation_ is not None
+        #         turret_check is not None
         #     ))
 
     def callback_reference(self, msg: ReferenceTraj):

@@ -9,14 +9,14 @@
 
     
     <!-- To launch the URDF Robot State Publisher -->
-    <node pkg="robot_state_publisher" exec="robot_state_publisher">
+    <!-- <node pkg="robot_state_publisher" exec="robot_state_publisher">
         <param name="robot_description" 
             value="$(command 'xacro $(var urdf_path)')" />
-    </node> 
+    </node>  -->
 
     <!-- Launch Rviz with the configuration -->
-    <node pkg="rviz2" exec="rviz2" output="screen"
-          args="-d $(var rviz_config_path)" />
+    <!-- <node pkg="rviz2" exec="rviz2" output="screen"
+          args="-d $(var rviz_config_path)" /> -->
 
     <!-- Launch HAMR Controller -->
     <node pkg="hamr_control" exec="hamr_controller" >
@@ -24,9 +24,9 @@
     </node>
 
     <!-- Graphing -->
-    <node pkg="hamr_control" exec="hamr_pid_graph" />
+    <!-- <node pkg="hamr_control" exec="hamr_pid_graph" />
     <node pkg="hamr_control" exec="hamr_odom_graph"/>
-    <node pkg="hamr_control_cpp" exec="hamr_path_tracer" />
+    <node pkg="hamr_control_cpp" exec="hamr_path_tracer" /> -->
 
     <node pkg="hamr_uros_bridge" exec="relay_node" />
 
