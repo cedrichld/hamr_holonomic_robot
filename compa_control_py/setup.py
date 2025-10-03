@@ -24,6 +24,7 @@ setup(
             "compa_odom_graph = compa_control_py.compa_odom_graph:main",
             "compa_controller = compa_control_py.compa_controller:main",
             "tf_trail_node = compa_control_py.tf_trail_node:main",
+            "rpy_tf_graph = compa_control_py.rpy_tf_graph:main",
         ],
     },
 )

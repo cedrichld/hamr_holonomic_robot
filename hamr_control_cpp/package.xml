@@ -19,7 +19,6 @@
   <build_depend>visualization_msgs</build_depend>
   <build_depend>tf2_msgs</build_depend>
   <build_depend>hamr_interfaces</build_depend>
-  <!-- If you include TF2 headers / use tf2_ros in code, uncomment: -->
   <build_depend>tf2_ros</build_depend> 
   <build_depend>tf2</build_depend> 
   <build_depend>tf2_geometry_msgs</build_depend> 

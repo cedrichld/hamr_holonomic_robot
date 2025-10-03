@@ -40,14 +40,14 @@
           <geometry>
             <heightmap>
               <use_terrain_paging>true</use_terrain_paging>
-              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/hamr_maze_big_offroad.png</uri>
+              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/terrain1_1025.png</uri>
 
-              <size>40 40 2</size>
+              <size>60 60 1.5</size>
               <pos>0 0 0</pos>
               
               <texture>
-                <diffuse>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/textures/checker.png</diffuse>
-                <normal>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/textures/checker.png</normal>
+                <diffuse>file://hamr_bringup/terrain_assets/textures/checker.png</diffuse>
+                <normal>file://hamr_bringup/terrain_assets/textures/checker.png</normal>
                 <!-- how many meters before texture repeats -->
                 <size>2.0</size>
               </texture>
@@ -59,7 +59,7 @@
         <collision name="terrain_collision">
           <geometry>
             <heightmap>
-              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/hamr_maze_big_offroad.png</uri>
+              <uri>file://src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/terrain1_1025.png</uri>
               <size>40 40 2</size>
               <pos>0 0 0</pos>
             </heightmap>

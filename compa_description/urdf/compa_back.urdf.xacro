@@ -5,35 +5,24 @@
   <!-- To import ball joint, camera and more -->
   <xacro:include filename="common_properties.urdf.xacro" /> 
   <xacro:include filename="camera.urdf.xacro" />
+  <xacro:include filename="compa_gazebo.urdf.xacro" /> 
 
-
+  <!-- Base -->
   <link name="base_footprint" />
 
   <joint name="base_joint" type="fixed">
       <parent link="base_footprint" />
       <child link="base_link" />
-      <origin xyz="0 0 0.25042" rpy="0 0 0"/>
+      <origin xyz="0 0 0.22" rpy="0 0 0"/>
   </joint>
 
   <link name="base_link">
-    <inertial>
-      <origin
-        xyz="-0.000339817170498122 0.00424231004595931 0.00197670802942906"
-        rpy="0 0 0" />
-      <mass
-        value="4.7675691308253" />
-      <inertia
-        ixx="0.139176668892902"
-        ixy="3.73786456449896E-05"
-        ixz="0.000406943794666223"
-        iyy="0.260635271329177"
-        iyz="-0.000613703988621289"
-        izz="0.12399220264823" />
-    </inertial>
+    <xacro:box_inertia m="4.77" x="0.45" y="0.45" z="0.05"
+                    o_xyz="0 0 0" o_rpy="0 0 ${pi/2}" />
     <visual>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0" />
+        rpy="0 0 ${pi/2}" />
       <geometry>
         <mesh
           filename="package://compa_description/meshes/base_link.STL" />
@@ -47,16 +36,19 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 0" />
+        rpy="0 0 ${pi/2}" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/base_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/base_link.STL" /> -->
+        <box size="0.45 0.45 0.05"/>
       </geometry>
     </collision>
   </link>
 
-  <link name="left_rocker_link">
-    <inertial>
+
+  <!-- Left Rocker -->
+  <link name="right_rocker_link">
+    <!-- <inertial>
       <origin
         xyz="0.10635785885848 -0.0822265512946505 -0.0953433649729512"
         rpy="0 0 0" />
@@ -69,14 +61,16 @@
         iyy="0.100262669486419"
         iyz="0.000224119901626131"
         izz="0.0927291914231702" />
-    </inertial>
+    </inertial> -->
+    <xacro:box_inertia m="4.36949644437113" x="0.6" y="0.037" z="0.05"
+                    o_xyz="0 -0.072 -0.021" o_rpy="0 0 0" />
     <visual>
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://compa_description/meshes/left_rocker_link.STL" />
+          filename="package://compa_description/meshes/f_right_rocker_link.STL" />
       </geometry>
       <material
         name="">
@@ -86,35 +80,36 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0 -0.072 -0.021"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/left_rocker_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/right_rocker_link.STL" /> -->
+        <box size="0.6 0.037 0.05"/>
       </geometry>
     </collision>
   </link>
 
-  <joint name="base_left_rocker_joint"
+  <joint name="base_right_rocker_joint"
     type="continuous">
     <origin
-      xyz="-0.184999999999999 0 0.0360999999999991"
-      rpy="0 0 -1.5707963267949" />
+      xyz="0 -0.184999999999999 0.0360999999999991"
+      rpy="0 0 0" />
     <parent
       link="base_link" />
     <child
-      link="left_rocker_link" />
+      link="right_rocker_link" />
     <axis
       xyz="0 1 0" />
   </joint>
 
-  <link name="left_wheel_link">
-    <inertial>
+  <link name="right_wheel_link">
+    <!-- <inertial>
       <origin
         xyz="0.000774305945393738 0.0975714857383374 -2.37966814073398E-07"
         rpy="0 0 0" />
       <mass
-        value="2.74378098590227" />
+        value="20.74378098590227" />
       <inertia
         ixx="0.00876644391195367"
         ixy="-5.31179573172881E-07"
@@ -122,14 +117,17 @@
         iyy="0.014659876055652"
         iyz="3.15796027624797E-08"
         izz="0.00876696237942707" />
-    </inertial>
+    </inertial> -->
+    <xacro:cylinder_inertia m="20.74378098590227" r="0.1075" h="0.083"
+                        o_xyz="0 0 0"
+                        o_rpy="${-pi/2} 0 0" />
     <visual>
       <origin
-        xyz="-0.001 -0.098 0"
-        rpy="0 0 0" />
+        xyz="0.001 0.098 0"
+        rpy="0 0 ${pi}" />
       <geometry>
         <mesh
-          filename="package://compa_description/meshes/left_wheel_link.STL" />
+          filename="package://compa_description/meshes/f_right_wheel_link.STL" />
       </geometry>
       <material
         name="">
@@ -140,28 +138,56 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="${pi/2} 0 0" />
+        rpy="${-pi/2} 0 0" />
       <geometry>
         <cylinder radius="0.1075" length="0.083" />
       </geometry>
     </collision>
   </link>
 
-  <joint name="left_rocker_left_wheel_joint"
+  <joint name="right_rocker_right_wheel_joint"
     type="continuous">
     <origin
       xyz="-0.27114 -0.14572 -0.1442"
-      rpy="3.1416 0 0" />
+      rpy="0 0 0" />
     <parent
-      link="left_rocker_link" />
+      link="right_rocker_link" />
     <child
-      link="left_wheel_link" />
+      link="right_wheel_link" />
     <axis
       xyz="0 1 0" />
   </joint>
 
-  <link name="right_rocker_link">
-    <inertial>
+  <link name="right_caster_wheel_link">
+    <xacro:cylinder_inertia m="5.0" r="0.087" h="0.05"
+                        o_xyz="0 0 0" o_rpy="${pi/2} 0 0" />
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="${pi/2} 0 0" />
+      <geometry>
+        <cylinder radius="0.087" length="0.05" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_rocker_right_caster_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0.315 -0.10422 -0.1647"
+      rpy="3.1416 0 0" />
+    <parent
+      link="right_rocker_link" />
+    <child
+      link="right_caster_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+
+  <!-- Right Rocker -->
+  <link name="left_rocker_link">
+    <!-- <inertial>
       <origin
         xyz="0.106539267968694 0.0826305372124516 -0.0953304868043567"
         rpy="0 0 0" />
@@ -174,14 +200,16 @@
         iyy="0.100257791934551"
         iyz="-0.000121614966655075"
         izz="0.0927177596175054" />
-    </inertial>
+    </inertial> -->    
+    <xacro:box_inertia m="4.36949644437113" x="0.6" y="0.037" z="0.05"
+                    o_xyz="0 0.072 -0.021" o_rpy="0 0 0" />
     <visual>
       <origin
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://compa_description/meshes/right_rocker_link.STL" />
+          filename="package://compa_description/meshes/f_left_rocker_link.STL" />
       </geometry>
       <material
         name="">
@@ -191,35 +219,36 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0 0.072 -0.021"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/right_rocker_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/left_rocker_link.STL" /> -->
+        <box size="0.6 0.037 0.05"/>
       </geometry>
     </collision>
   </link>
 
-  <joint name="base_right_rocker_joint"
+  <joint name="base_left_rocker_joint"
     type="continuous">
     <origin
-      xyz="0.185 0 0.0361"
-      rpy="0 0 -1.5708" />
+      xyz="0 0.185 0.0361"
+      rpy="0 0 0" />
     <parent
       link="base_link" />
     <child
-      link="right_rocker_link" />
+      link="left_rocker_link" />
     <axis
       xyz="0 1 0" />
   </joint>
 
-  <link name="right_wheel_link">
-    <inertial>
+  <link name="left_wheel_link">
+    <!-- <inertial>
       <origin
         xyz="0.000774305945394016 0.0975714857383375 -2.37966814281565E-07"
         rpy="0 0 0" />
       <mass
-        value="2.74378098590227" />
+        value="20.74378098590227" />
       <inertia
         ixx="0.00876644391195365"
         ixy="-5.31179573161731E-07"
@@ -227,14 +256,17 @@
         iyy="0.014659876055652"
         iyz="3.1579602755194E-08"
         izz="0.00876696237942706" />
-    </inertial>
+    </inertial> -->    
+    <xacro:cylinder_inertia m="20.74378098590227" r="0.1075" h="0.083"
+                        o_xyz="0 0 0"
+                        o_rpy="${-pi/2} 0 0" />
     <visual>
       <origin
         xyz="-0.001 -0.098 0"
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://compa_description/meshes/right_wheel_link.STL" />
+          filename="package://compa_description/meshes/f_left_wheel_link.STL" />
       </geometry>
       <material
         name="">
@@ -245,41 +277,57 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="${pi/2} 0 0" />
+        rpy="${-pi/2} 0 0" />
       <geometry>
         <cylinder radius="0.1075" length="0.083" />
       </geometry>
     </collision>
   </link>
 
-  <joint name="right_rocker_right_wheel_joint"
+  <joint name="left_rocker_left_wheel_joint"
     type="continuous">
     <origin
       xyz="-0.27114 0.14572 -0.1442"
       rpy="0 0 0" />
     <parent
-      link="right_rocker_link" />
+      link="left_rocker_link" />
     <child
-      link="right_wheel_link" />
+      link="left_wheel_link" />
     <axis
       xyz="0 1 0" />
   </joint>
 
-  <link name="roll_link">
-    <inertial>
+  <link name="left_caster_wheel_link">
+    <xacro:cylinder_inertia m="5.0" r="0.087" h="0.05"
+                        o_xyz="0 0 0" o_rpy="${pi/2} 0 0" />
+    <collision>
       <origin
-        xyz="0.00350000004402022 -5.16314840708076E-10 -4.00015491542477E-06"
-        rpy="0 0 0" />
-      <mass
-        value="0.944517139921142" />
-      <inertia
-        ixx="0.0181589556415456"
-        ixy="-6.29046022348623E-07"
-        ixz="-2.07968206915504E-11"
-        iyy="0.0184849903072778"
-        iyz="-7.02129324325875E-16"
-        izz="0.0364005003554526" />
-    </inertial>
+        xyz="0 0 0"
+        rpy="${pi/2} 0 0" />
+      <geometry>
+        <cylinder radius="0.087" length="0.05" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_rocker_left_caster_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="0.315 0.10422 -0.1647"
+      rpy="3.1416 0 0" />
+    <parent
+      link="left_rocker_link" />
+    <child
+      link="left_caster_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+
+
+  <!-- Gimbal -->
+  <link name="roll_link">
+    <xacro:box_inertia m="0.944517139921142" x="0.35" y="0.35" z="0.05"
+                    o_xyz="0 0 0" o_rpy="0 0 0" />
     <visual>
       <origin
         xyz="0 0 0"
@@ -299,8 +347,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/roll_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/roll_link.STL" /> -->
+        <box size="0.35 0.35 0.05"/>
       </geometry>
     </collision>
   </link>
@@ -309,13 +358,13 @@
     type="continuous">
     <origin
       xyz="0 0 0.03826"
-      rpy="${-pi} 0 -1.5708" />
+      rpy="0 0 0" />
     <parent
       link="base_link" />
     <child
       link="roll_link" />
     <axis
-      xyz="-1 0 0" />
+      xyz="1 0 0" />
   </joint>
 
   <link name="pitch_link">
@@ -352,8 +401,9 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/pitch_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/pitch_link.STL" /> -->
+        <box size="0.07 0.3 0.05"/>
       </geometry>
     </collision>
   </link>
@@ -361,8 +411,8 @@
   <joint name="roll_pitch_joint"
     type="continuous">
     <origin
-      xyz="0.0035 0 0"
-      rpy="3.1416 0 0" />
+      xyz="-0.0035 0 0"
+      rpy="0 0 0" />
     <parent
       link="roll_link" />
     <child
@@ -374,7 +424,7 @@
   <link name="yaw_plate_link">
     <inertial>
       <origin
-        xyz="-0.00447913610788967 2.41196326362311E-05 0.127371508973676"
+        xyz="-0.00447913610788967 2.41196326362311E-05 -0.127371508973676"
         rpy="0 0 0" />
       <mass
         value="4.77359574593992" />
@@ -403,10 +453,11 @@
     <collision>
       <origin
         xyz="0 0 0"
-        rpy="0 0 ${pi}" />
+        rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/yaw_plate_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/yaw_plate_link.STL" /> -->
+        <cylinder radius="0.4" length="0.01"/>
       </geometry>
     </collision>
   </link>
@@ -415,15 +466,18 @@
     type="continuous">
     <origin
       xyz="0 0 0.0375"
-      rpy="0 0 ${pi}" />
+      rpy="0 0 0" />
     <parent
       link="pitch_link" />
     <child
       link="yaw_plate_link" />
     <axis
-      xyz="0 0 -1" />
+      xyz="0 0 1" />
   </joint>
 
+
+
+  <!-- ROCKER LINKS -->
   <link name="leverage_link">
     <inertial>
       <origin
@@ -458,30 +512,30 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/leverage_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/leverage_link.STL" /> -->
+        <box size="0.01 0.45 0.07"/>
       </geometry>
     </collision>
   </link>
 
 
-  <!-- BOGIE LINKS -->
   <joint name="base_leverage_joint"
-    type="continuous">
+    type="revolute">
     <origin
-      xyz="0 0.2332 0.03826"
-      rpy="0 0 -1.5708" />
+      xyz="-0.2332 0 0.03826"
+      rpy="0 0 0" />
     <parent
       link="base_link" />
     <child
       link="leverage_link" />
     <axis
-      xyz="-1 0 0" />
+      xyz="1 0 0" />
+    <limit effort="20" velocity="1.0" lower="${-pi/12}" upper="${pi/12}"/>
   </joint>
 
-
-  <!-- Right Side Bogie -->
-  <link name="right_rod_sphere1_link">
+  <!-- Right Side Rocker -->
+  <link name="left_rod_sphere1_link">
     <inertial>
       <origin
         xyz="0.00536589340030799 -0.00133128905926821 -0.00337989932446242"
@@ -515,13 +569,14 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
 
-  <joint name="leverage_right_rod_sphere1_joint"
+  <joint name="leverage_left_rod_sphere1_joint"
     type="fixed">
     <origin
       xyz="-0.024 0.222 -0.0064"
@@ -529,10 +584,10 @@
     <parent
       link="leverage_link" />
     <child
-      link="right_rod_sphere1_link" />
+      link="left_rod_sphere1_link" />
   </joint>
 
-  <link name="right_rod_link">
+  <link name="left_rod_link">
     <inertial>
       <origin
         xyz="0.00807999415461744 0.00132856456720257 -0.0766613810604778"
@@ -566,16 +621,17 @@
         xyz="0 0 -0.07056"
         rpy="0 0 ${pi/2}" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/rod_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/rod_link.STL" /> -->
+        <cylinder radius="0.0035" length="${2*0.07056 - 0.007}"/>
       </geometry>
     </collision>
   </link>
 
-  <xacro:ball_joint parent="right_rod_sphere1_link" child="right_rod_link"
-                   joint_prefix="right_rod_sphere1" roll_offset="-0.1075" pitch_offset="-0.0171" />
+  <xacro:ball_joint parent="left_rod_sphere1_link" child="left_rod_link"
+                   joint_prefix="left_rod_sphere1" roll_offset="-0.1075" pitch_offset="-0.0171" />
 
-  <link name="tmp_right_rod_sphere2_link">
+  <link name="tmp_left_rod_sphere2_link">
     <inertial>
       <mass value="0.001"/>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -583,13 +639,13 @@
     </inertial>
   </link>
 
-  <xacro:ball_joint parent="right_rod_link" child="tmp_right_rod_sphere2_link"
-                   joint_prefix="tmp_right_rod_sphere2" z_offset="${-2*0.07056}" />
+  <xacro:ball_joint parent="left_rod_link" child="tmp_left_rod_sphere2_link"
+                   joint_prefix="tmp_left_rod_sphere2" z_offset="${-2*0.07056}" />
   
-  <link name="right_rod_sphere2_link">
+  <link name="left_rod_sphere2_link">
     <inertial>
       <origin
-        xyz="-0.00438528086698853 -0.000172287363280427 0.0035659098744463"
+        xyz="0 0 0"
         rpy="0 0 0" />
       <mass
         value="0.0013014428485605" />
@@ -620,25 +676,26 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
 
-  <joint name="right_rocker_rod_sphere2_joint"
+  <joint name="left_rocker_rod_sphere2_joint"
     type="fixed">
     <origin
       xyz="-0.24206 0.0394 -0.14451"
       rpy="0 0 0" />
     <parent
-      link="right_rocker_link" />
+      link="left_rocker_link" />
     <child
-      link="right_rod_sphere2_link" />
+      link="left_rod_sphere2_link" />
   </joint>
 
-  <!-- Left Side Bogie -->
-  <link name="left_rod_sphere1_link">
+  <!-- Left Side Rocker -->
+  <link name="right_rod_sphere1_link">
     <inertial>
       <origin
         xyz="0.00532991500866456 0.00018815731486499 0.00563172775996076"
@@ -672,13 +729,14 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
 
-  <joint name="leverage_left_rod_sphere1_joint"
+  <joint name="leverage_right_rod_sphere1_joint"
     type="fixed">
     <origin
       xyz="-0.024 -0.222 -0.0064"
@@ -686,10 +744,10 @@
     <parent
       link="leverage_link" />
     <child
-      link="left_rod_sphere1_link" />
+      link="right_rod_sphere1_link" />
   </joint>
 
-  <link name="left_rod_link">
+  <link name="right_rod_link">
     <inertial>
       <origin
         xyz="0.00658807175193704 0.00108313190898462 -0.0625056704234719"
@@ -723,16 +781,17 @@
         xyz="0 0 -0.07056"
         rpy="0 0 ${pi/2}" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/rod_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/rod_link.STL" /> -->
+        <cylinder radius="0.0035" length="${2*0.07056 - 0.007}"/>
       </geometry>
     </collision>
   </link>
 
-  <xacro:ball_joint parent="left_rod_sphere1_link" child="left_rod_link"
-                   joint_prefix="left_rod_sphere1" roll_offset="-0.1075" pitch_offset="0.0171" />
+  <xacro:ball_joint parent="right_rod_sphere1_link" child="right_rod_link"
+                   joint_prefix="right_rod_sphere1" roll_offset="-0.1075" pitch_offset="0.0171" />
 
-  <link name="tmp_left_rod_sphere2_link">
+  <link name="tmp_right_rod_sphere2_link">
     <inertial>
       <mass value="0.001"/>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -740,13 +799,13 @@
     </inertial>
   </link>
   
-  <xacro:ball_joint parent="left_rod_link" child="tmp_left_rod_sphere2_link"
-                   joint_prefix="tmp_left_rod_sphere2" z_offset="${-2*0.07056}" />
+  <xacro:ball_joint parent="right_rod_link" child="tmp_right_rod_sphere2_link"
+                   joint_prefix="tmp_right_rod_sphere2" z_offset="${-2*0.07056}" />
 
-  <link name="left_rod_sphere2_link">
+  <link name="right_rod_sphere2_link">
     <inertial>
       <origin
-        xyz="0.0058175572675797 7.41773370049881E-06 0.00031513709950709"
+        xyz="0 0 0"
         rpy="0 0 0" />
       <mass
         value="0.0013014428485605" />
@@ -777,32 +836,33 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://compa_description/meshes/sphere_link.STL" />
+        <!-- <mesh
+          filename="package://compa_description/meshes/sphere_link.STL" /> -->
+        <sphere radius="0.0055"/>
       </geometry>
     </collision>
   </link>
 
-  <joint name="left_rocker_rod_sphere2_joint"
+  <joint name="right_rocker_rod_sphere2_joint"
     type="fixed">
     <origin
       xyz="-0.24206 -0.0394 -0.14451"
       rpy="0 0 0" />
     <parent
-      link="left_rocker_link" />
+      link="right_rocker_link" />
     <child
-      link="left_rod_sphere2_link" />
+      link="right_rod_sphere2_link" />
   </joint>
 
-  <!-- <joint name="left_rod_sphere2_left_rocker_joint"
+  <!-- <joint name="right_rod_sphere2_right_rocker_joint"
     type="fixed">
     <origin
       xyz="-0.079744 -0.22139 -0.25962"
       rpy="3.1416 1.4029 0" />
     <parent
-      link="left_rod_sphere2_link" />
+      link="right_rod_sphere2_link" />
     <child
-      link="left_rocker_dupe_link" />
+      link="right_rocker_dupe_link" />
     <axis
       xyz="0 0 0" />
   </joint>

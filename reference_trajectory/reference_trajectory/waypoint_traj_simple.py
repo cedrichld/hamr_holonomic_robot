@@ -4,6 +4,9 @@ from rclpy.node import Node
 from rclpy.parameter import Parameter
 from hamr_interfaces.msg import StateError
 from hamr_interfaces.msg import ReferenceTraj
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
+from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy
 
 import math
 import numpy as np
@@ -19,8 +22,8 @@ import numpy as np
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_simple_node")
-        v_lin = self.declare_parameter("v_lin", 0.3).value
-        w_yaw = self.declare_parameter("w_yaw", 1.0).value
+        v_lin = self.declare_parameter("v_lin", 0.15).value
+        w_yaw = self.declare_parameter("w_yaw", 0.35).value
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
@@ -30,58 +33,129 @@ class TrajectoryNode(Node):
             ReferenceTraj, "/reference_trajectory", 1
         )
 
-        self.last_reference_time = self.get_clock().now()
+        qos_waypoints = QoSProfile(
+            depth=1,
+            durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
+            reliability=QoSReliabilityPolicy.RELIABLE
+        )
+        self.waypoints_path_pub_ = self.create_publisher(
+            Path, "/waypoints_path", qos_profile=qos_waypoints
+        )
+
+        self.begun = False
+        self.last_reference_time = None
+        
         self.reference_timer_ = self.create_timer(
-            1 / self.reference_timer_hz, self.reference_udpdate)
+            1 / self.reference_timer_hz, self.reference_update)
         
         self.err_xy = math.inf
         self.err_yaw = math.inf
 
-        points = np.array([ # x, y, yaw
+        max_point = 5.0
+        origin = 0.0
+
+        # def generate_ccw_circle_points(radius=5.0, steps_between=10):
+        #     cx = 0.0
+        #     cy = 0.0 + radius
+
+        #     # Angles for waypoints (rad)
+        #     # waypoints = [-np.pi/2, -np.pi, -3*np.pi/2, -2*np.pi, -5*np.pi/2] # CW
+        #     waypoints = [-5*np.pi/2, -2*np.pi, -3*np.pi/2, -np.pi, -np.pi/2] # CCW
+        #     pts = []
+
+        #     # First point explicitly at (0,0,0)
+        #     pts.append([cx, cy - radius, 0.0])
+
+        #     # Generate ccw points
+        #     for i in range(len(waypoints) - 1):
+        #         th_start = waypoints[i]
+        #         th_end   = waypoints[i + 1]
+
+        #         # steps_between points between waypoints
+        #         thetas = np.linspace(th_start, th_end, steps_between + 1, endpoint=False)[1:] if i == 0 else \
+        #                 np.linspace(th_start, th_end, steps_between + 1, endpoint=False)
+
+        #         for th in thetas:
+        #             x = cx + radius * np.cos(th)
+        #             y = cy + radius * np.sin(th)
+        #             pts.append([float(x), float(y), 0.0])
+
+        #     # Close the loop back to start
+        #     pts.append([0.0, 0.0, 0.0])
+
+        #     return np.array(pts)
+
+        # waypoints = generate_ccw_circle_points()
+
+        waypoints = np.array([ # x, y, yaw
+
             # [0.0, 0.0, 0.0], # SQUARE
-            # [5.0, 0.0, -0.5],
-            # [5.0, 5.0, -0.5],
-            # [0.0, 5.0, -0.5],
+            # [5.75, 0.0, 0.0],
+            # [5.75, 5.75, 0.0],
+            # [0.0, 5.75, 0.0],
             # [0.0, 0.0, 0.0],
 
-            [0.0, 0.0, 0.0], # SQUARE
-            [5.0, 0.0, 0.0],
-            [5.0, 5.0, 0.0],
-            [0.0, 5.0, 0.0],
-            [0.0, 0.0, 0.0],
+
+            [-1.0, 5.0, 0.0], # HW SQUARE
+            [-1.0, 3.0, 0.0],
+            [1.0, 3.0, 0.0],
+            [1.0, 5.0, 0.0],
+            [-1.0, 5.0, 0.0],
+
+            # [origin,    origin,    0.0], # SQUARE
+            # [max_point, origin,    0.0],
+            # [max_point, max_point, 0.0],
+            # [origin,    max_point, 0.0],
+            # [origin,    origin,    0.0],
             
-            # Back and Forth
+            # # Back and Forth
             # [0.0, 0.0, 0.0],
             # [3.0, 0.0, 0.0],
             # [1.0, 1.0, 0.0],
             # [1.0, 0.0, 0.0],
             # [0.0, 0.0, 0.0],
 
-            # SQUARE
-            # [0.0, 0.0, 0.0], 
-            # [5.0, 0.0, -0.5],
-            # [5.0, 5.0, -1.0],
-            # [0.0, 5.0, -1.5],
-            # [0.0, 0.0, -2.0],
-            # SQUARE
-            # [5.0, 0.0, -2.5],
-            # [5.0, 5.0, -3.0],
-            # [0.0, 5.0, 0.0],
-            # [0.0, 0.0, 0.0],
-
             # [0.0, 0.0, 0.0], # TRIANGLE
-            # [5.0, 2.5, 0.0],
-            # [0.0, 5.0, 0.0],
+            # [9.0, 4.5, 0.0],
+            # [0.0, 9.0, 0.0],
             # [0.0, 0.0, 0.0],
         ])
         
-        self.trajectory = WaypointTraj(points, v_lin=v_lin, w_yaw=w_yaw)
+        self.trajectory = WaypointTraj(waypoints, v_lin=v_lin, w_yaw=w_yaw)
     
     def callback_state_error(self, msg: StateError):
         self.err_xy = math.hypot(msg.err_x, msg.err_y)
         self.err_yaw = msg.err_yaw
     
-    def reference_udpdate(self):
+    def reference_update(self):
+        if not self.begun:
+            self.begun = True
+            self.get_logger().info("Beginning trajectory tracking.")
+            self.last_reference_time = self.get_clock().now()
+
+            # Publish waypoints as Path for visualization
+            path_msg = Path()
+            path_msg.header.frame_id = "odom"
+            path_msg.header.stamp = self.get_clock().now().to_msg()
+
+            for pt in self.trajectory.points:
+                x, y, yaw = float(pt[0]), float(pt[1]), float(pt[2])
+
+                ps = PoseStamped()
+                ps.header.frame_id = "odom"
+                ps.header.stamp = path_msg.header.stamp  # keep a consistent stamp
+                ps.pose.position.x = x
+                ps.pose.position.y = y
+                ps.pose.position.z = 0.0
+
+                ps.pose.orientation.x = 0.0
+                ps.pose.orientation.y = 0.0
+                ps.pose.orientation.z = math.sin(yaw * 0.5)
+                ps.pose.orientation.w = math.cos(yaw * 0.5)
+
+                path_msg.poses.append(ps)
+            self.waypoints_path_pub_.publish(path_msg)
+
         now = self.get_clock().now()
         t = (now - self.last_reference_time).nanoseconds * 1e-9
         x, y, yaw, x_dot, y_dot, yaw_dot = self.trajectory.update(t)
@@ -90,9 +164,9 @@ class TrajectoryNode(Node):
         pose.x, pose.y, pose.yaw, pose.x_dot, pose.y_dot, pose.yaw_dot = float(x), float(y), float(yaw), float(x_dot), float(y_dot), float(yaw_dot)
         self.reference_trajectory_pub_.publish(pose)
         self.get_logger().info("pose: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
-        # if t >= self.trajectory.total_time:
-        #     self.get_logger().info("Resetting traj")
-        #     self.last_reference_time = self.get_clock().now()
+        if t >= self.trajectory.total_time:
+            self.get_logger().info("Resetting traj")
+            self.last_reference_time = self.get_clock().now()
 
     # Used if we want to change parameter during runtime
     def parameters_callback(self, params: list[Parameter]): 
@@ -107,7 +181,7 @@ class TrajectoryNode(Node):
                 self.reference_timer_hz = p.value
                 self.reference_timer_.cancel()
                 self.reference_timer_ = self.create_timer(
-                    1 / self.reference_timer_hz, self.reference_udpdate)
+                    1 / self.reference_timer_hz, self.reference_update)
                 self.get_logger().info(f"{p.name} changed to {p.value}")
             
 class WaypointTraj(object):

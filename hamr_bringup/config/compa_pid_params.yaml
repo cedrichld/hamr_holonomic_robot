@@ -2,13 +2,22 @@
   ros__parameters:
     D_x: 0.25
     D_y: 0.25
+    D_roll: 0.1
+    D_pitch: 0.1
     D_yaw: 0.1
+
     I_x: 0.4
     I_y: 0.4
+    I_roll: 0.0
+    I_pitch: 0.0
     I_yaw: 0.4
+
     P_x: 1.0
     P_y: 1.0
+    P_roll: 8.0
+    P_pitch: 8.0
     P_yaw: 8.0
+
     control_rate_hz: 100.0
     d_alpha: 0.4
     use_sim_time: true

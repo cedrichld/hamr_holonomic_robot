@@ -1,0 +1,33 @@
+<launch>
+    <!-- Path Variables -->
+    <let name="urdf_path" 
+        value="$(find-pkg-share hamr_description)/urdf/hamr.urdf.xacro" />
+    <let name="rviz_config_path" 
+        value="$(find-pkg-share hamr_description)/rviz/HW_urdf_config.rviz" />
+    <let name="pid_config_path"
+        value="$(find-pkg-share hamr_bringup)/config/hamr_hw_control_params.yaml" />
+
+    
+    <!-- To launch the URDF Robot State Publisher -->
+    <!-- <node pkg="robot_state_publisher" exec="robot_state_publisher">
+        <param name="robot_description" 
+            value="$(command 'xacro $(var urdf_path)')" />
+    </node>  -->
+
+    <!-- Launch Rviz with the configuration -->
+    <!-- <node pkg="rviz2" exec="rviz2" output="screen"
+          args="-d $(var rviz_config_path)" /> -->
+
+    <!-- Launch HAMR Controller -->
+    <node pkg="hamr_control" exec="hamr_controller" >
+        <param from="$(var pid_config_path)" />
+    </node>
+
+    <!-- Graphing -->
+    <!-- <node pkg="hamr_control" exec="hamr_pid_graph" />
+    <node pkg="hamr_control" exec="hamr_odom_graph"/>
+    <node pkg="hamr_control_cpp" exec="hamr_path_tracer" /> -->
+
+    <node pkg="hamr_uros_bridge" exec="relay_node" />
+
+</launch>

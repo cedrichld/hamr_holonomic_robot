@@ -11,7 +11,7 @@
         <mu2 value="1.0" />
     </gazebo>
 
-    <!-- ADD COMPA PLUGINS -->
+    <!-- COMPA PLUGINS -->
     <!-- To close the structure loop (base - - - - - > rockers) -->
     <!--                               ⤷ leverage -> rods ⤴ -->
     <!-- Left rocker Connector -->

@@ -150,6 +150,17 @@ ament_target_dependencies(or_planner
   grid_map_msgs
 )
 
+add_executable(
+  image_to_gridmap
+  src/image_to_gridmap_node.cpp
+  src/ImageToGridmap.cpp
+)
+ament_target_dependencies(image_to_gridmap
+  grid_map_msgs
+  grid_map_ros
+  rclcpp
+)
+
 install(TARGETS
   hamr_controller
   hamr_path_tracer
@@ -159,6 +170,13 @@ install(TARGETS
   prm_builder
   astar_search
   or_planner
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  TARGETS image_to_gridmap
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
