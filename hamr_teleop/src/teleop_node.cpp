@@ -75,7 +75,8 @@ private:
   static inline float norm_axis(int16_t v) {
     // js_event value is -32767..32767
     float x = (v >= 0) ? (float)v / 32767.0f : (float)v / 32768.0f;
-    if (x > 1.f) x = 1.f; if (x < -1.f) x = -1.f;
+    if (x > 1.f) x = 1.f;
+    if (x < -1.f) x = -1.f;
     return x;
   }
 
@@ -85,7 +86,8 @@ private:
     if (std::fabs(x) < deadband_) return 0.0f;
     // rescale to keep full-range after deadband
     float s = (std::fabs(x) - (float)deadband_) / (1.0f - (float)deadband_);
-    if (s < 0.f) s = 0.f; if (s > 1.f) s = 1.f;
+    if (s < 0.f) s = 0.f; 
+    if (s > 1.f) s = 1.f;
     return std::copysign(s, x);
   }
 
