@@ -45,7 +45,7 @@ class HamrControlNode(Node):
         ### - - HAMR Config params (m) - - ###
         default_hamr_config = {"r_wheel": 0.0762,
                                "a_wheel": 0.149556,
-                               "b_wheel": 0.19682,
+                               "b_wheel": -0.19682,
                                "simulating": True,
                                "mode": "auto"} # "auto" or "manual"
         for a, b in default_hamr_config.items():
@@ -147,11 +147,11 @@ class HamrControlNode(Node):
         self.I_yaw = PIAccumulator(limit=1.0)
 
         ## - - Thresholds - - ##
-        self.threshold_x_y = 0.02 # 2cm
-        self.threshold_yaw = 0.05 # 2.86 deg
+        self.threshold_x_y = 0.03 # 2cm
+        self.threshold_yaw = 0.1 # 5.7 deg
 
         ## - - Velocity Limits (Magnitude) - - ##
-        self.xy_dot_limit = 0.2
+        self.xy_dot_limit = 0.41
         self.yaw_dot_limit = 2.0
 
         self.use_diff_drive = False  # True: ignore turret & holonomic offset

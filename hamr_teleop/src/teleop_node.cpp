@@ -37,7 +37,7 @@ public:
     max_rpm_cmd_      = this->declare_parameter<double>("max_rpm_cmd", 30.0);
     turret_max_rad_s_ = this->declare_parameter<double>("turret_max_rad_s", 2.0);
     publish_rate_hz_  = this->declare_parameter<double>("publish_rate_hz", 100.0);
-    stale_timeout_s_  = this->declare_parameter<double>("stale_timeout_s", 0.3);
+    stale_timeout_s_  = this->declare_parameter<double>("stale_timeout_s", 100.0);
     ema_tau_s_        = this->declare_parameter<double>("ema_tau_s", 0.05); // output smoothing
 
     // Convert max RPM to rad/s
