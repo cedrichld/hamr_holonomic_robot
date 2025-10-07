@@ -28,7 +28,7 @@ public:
     axis_lt_          = this->declare_parameter<int>("axis_lt", 2);   // Left trigger
     axis_rt_          = this->declare_parameter<int>("axis_rt", 5);   // Right trigger
     invert_ly_        = this->declare_parameter<bool>("invert_ly", true);   // up is usually -1
-    invert_rx_        = this->declare_parameter<bool>("invert_rx", false);
+    invert_rx_        = this->declare_parameter<bool>("invert_rx", true);
     invert_lt_        = this->declare_parameter<bool>("invert_lt", false);
     invert_rt_        = this->declare_parameter<bool>("invert_rt", false);
     deadman_button_   = this->declare_parameter<int>("deadman_button", -1); // -1 disables

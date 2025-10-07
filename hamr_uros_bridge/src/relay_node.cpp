@@ -281,7 +281,7 @@ private:
   
   // Publish pose data as ROS message
   void publish_pose_data(const PacketPose& p) {
-    auto stamp = this->now();
+    auto stamp = rclcpp::Clock(RCL_ROS_TIME).now();
     // PoseWithCovarianceStamped
     auto pose_msg = geometry_msgs::msg::PoseWithCovarianceStamped();
     pose_msg.header.stamp = stamp;
