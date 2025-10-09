@@ -21,4 +21,4 @@
     control_rate_hz: 100.0
     d_alpha: 0.4
     use_sim_time: true
-
+    mode: manual

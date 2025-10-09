@@ -45,16 +45,29 @@ def generate_launch_description():
 
 
     # Declare launch arguments
+    # declare_filters_config_file_cmd = DeclareLaunchArgument(
+    #     'filters_config',
+    #     default_value=os.path.join(
+    #         grid_map_demos_dir, 'config', 'filters_demo_filter_chain.yaml'),
+    #     description='Full path to the filter chain config file to use')
+
+    # declare_visualization_config_file_cmd = DeclareLaunchArgument(
+    #     'visualization_config',
+    #     default_value=os.path.join(
+    #         grid_map_demos_dir, 'config', 'filters_demo.yaml'),
+    #     description='Full path to the Gridmap visualization config file to use')
+
+
     declare_filters_config_file_cmd = DeclareLaunchArgument(
         'filters_config',
         default_value=os.path.join(
-            grid_map_demos_dir, 'config', 'filters_demo_filter_chain.yaml'),
+            hamr_bringup_dir, 'config', 'filters_demo_filter_chain.yaml'),
         description='Full path to the filter chain config file to use')
 
     declare_visualization_config_file_cmd = DeclareLaunchArgument(
         'visualization_config',
         default_value=os.path.join(
-            grid_map_demos_dir, 'config', 'filters_demo.yaml'),
+            hamr_bringup_dir, 'config', 'filters_demo.yaml'),
         description='Full path to the Gridmap visualization config file to use')
     
     '''
@@ -110,7 +123,7 @@ def generate_launch_description():
         name='image_publisher',
         output='screen',
         parameters=[{
-            'image_path': terrain_path,
+            'image_path': os.path.join(grid_map_demos_dir, 'data', 'terrain.png'), #terrain_path,
             'topic': 'image'
         }]
     )
@@ -120,13 +133,13 @@ def generate_launch_description():
         executable='image_to_gridmap',
         name='image_to_gridmap',
         output='screen',
-        parameters=[{
-            'image_topic': "/image",
-            'map_frame_id': 'terrain_map',
-            'min_height': 0.0, # m
-            'max_height': map_height, # m
-            'resolution': map_width / img_px_res, # meters per cell -> img_res / map_xy: 45m / 1025px            
-        }]
+        parameters=[visualization_config_file]#[{
+        #     'image_topic': "/image",
+        #     'map_frame_id': 'terrain_map',
+        #     'min_height': 0.0, # m
+        #     'max_height': map_height, # m
+        #     'resolution': map_width / img_px_res, # meters per cell -> img_res / map_xy: 45m / 1025px            
+        # }]
     )
 
     grid_map_visualization_node = Node(
@@ -138,13 +151,13 @@ def generate_launch_description():
     )
 
     # TODO: needs to be commented when used with compa.launch.xml
-    # rviz2_node = Node(
-    #     package='rviz2',
-    #     executable='rviz2',
-    #     name='rviz2',
-    #     output='screen',
-    #     arguments=['-d', rviz_config_file]
-    # )
+    rviz2_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_file]
+    )
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -163,8 +176,7 @@ def generate_launch_description():
     ld.add_action(image_to_gridmap_demo_node)
     ld.add_action(grid_map_visualization_node)
 
-
     # TODO: needs to be commented when used with compa.launch.xml
-    # ld.add_action(rviz2_node)
+    ld.add_action(rviz2_node)
 
     return ld
