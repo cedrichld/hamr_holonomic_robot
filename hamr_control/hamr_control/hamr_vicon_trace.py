@@ -22,10 +22,12 @@ def quat_to_angle(q):
 class OdomGraphNode(Node):
     def __init__(self):
         super().__init__("hamr_odom_graph_node")
+        self.base_vicon_sub_ = self.create_subscription(
+            Odometry, "/HAMR_Base/odom", self.base_vicon_callback_, 1)
         self.base_odom_sub_ = self.create_subscription(
-            Odometry, "/HAMR_Base/odom", self.base_odom_callback_, 1)
-        self.turret_odom_sub_ = self.create_subscription(
-            Odometry, "/HAMR_Turret/odom", self.turret_odom_callback_, 1)
+            Odometry, "/odom", self.base_odom_callback_, 1)
+        self.turret_vicon_sub_ = self.create_subscription(
+            Odometry, "/HAMR_Turret/odom", self.turret_vicon_callback_, 1)
         self.reference_sub_ = self.create_subscription(
             ReferenceTraj, "/reference_trajectory", self.callback_reference, 1)
         
@@ -34,28 +36,45 @@ class OdomGraphNode(Node):
         # current values
         self.curr_x = 0.0
         self.curr_y = 0.0
+        self.curr_x_est = 0.0
+        self.curr_y_est = 0.0
         self.curr_yaw_t_w = 0.0
+
+        self.init_x = 0.0
+        self.init_y = 0.0
+        self.init_yaw = 0.0
+        self.init_pose_set = False
 
         self.reference_x = 0.0
         self.reference_y = 0.0
         self.reference_yaw = 0.0
 
         self.waypoints = np.array([ # x, y, yaw
-            [-1.0, 5.0, 0.0], # HW SQUARE
-            [-1.0, 3.0, 0.0],
-            [1.0, 3.0, 0.0],
-            [1.0, 5.0, 0.0],])
+            [-1.0, -5.0, 0.0], # HW SQUARE
+            [-1.0, -3.0, 0.0],
+            [1.0, -3.0, 0.0],
+            [1.0, -5.0, 0.0],])
+
+    def base_vicon_callback_(self, msg: Odometry):
+        if not self.init_pose_set:
+            self.init_x = msg.pose.pose.position.x - 0.06463093098238556 # mocap markers offset
+            self.init_y = msg.pose.pose.position.y + 0.04782778830030647 # mocap markers offset
+            self.init_pose_set = True
+            self.get_logger().info(f"Initial pose set: x={self.init_x:.3f}, y={self.init_y:.3f}, yaw={self.init_yaw:.3f} rad") 
+
+        self.curr_x = msg.pose.pose.position.x - self.init_x # mocap markers offset
+        self.curr_y = msg.pose.pose.position.y - self.init_y # mocap markers offset
 
     def base_odom_callback_(self, msg: Odometry):
-        self.curr_x = msg.pose.pose.position.x - 0.06463093098238556 # mocap markers offset
-        self.curr_y = msg.pose.pose.position.y + 0.04782778830030647 # mocap markers offset
-    
+        self.curr_x_est = -msg.pose.pose.position.x
+        self.curr_y_est = msg.pose.pose.position.y
+
     def callback_reference(self, msg: ReferenceTraj):
         self.reference_x = msg.x
         self.reference_y = msg.y
         self.reference_yaw = msg.yaw
 
-    def turret_odom_callback_(self, msg: Odometry):
+    def turret_vicon_callback_(self, msg: Odometry):
         self.curr_yaw_t_w = quat_to_angle(msg.pose.pose.orientation)
 
 def main(args=None):
@@ -75,7 +94,9 @@ def main(args=None):
     ax.set_title('Base pose: XY with heading arrows')
 
     # Path line
-    (line_path,) = ax.plot([], [], linewidth=2, label='path')
+    (line_vicon_path,) = ax.plot([], [], linewidth=2, label='path')
+    (line_odom_path,) = ax.plot([], [], linewidth=2, label='path')
+    (ref_path,)  = ax.plot([], [], linewidth=1, label='ref path', color='green', linestyle='--')
 
     # Current-pose arrow
     curr_quiv = ax.quiver([0.0], [0.0], [0.0], [0.0],
@@ -92,18 +113,18 @@ def main(args=None):
     trail_pts = ax.scatter([], [], s=6, c='gray', alpha=0.5, zorder=4)
 
     ax.legend()
-    ax.set_xlim(-3, 3)
-    ax.set_ylim(2, 6)
+    ax.set_xlim(3, -3)
+    ax.set_ylim(4, -4)
 
     # --- DRAW WAYPOINT SQUARE (once) ---
-    wps = node.waypoints
-    # close the loop back to the first corner
-    xs = list(wps[:, 0]) + [wps[0, 0]]
-    ys = list(wps[:, 1]) + [wps[0, 1]]
-    (square_line,) = ax.plot(xs, ys, 'o--', linewidth=1., label='waypoints')
+    # wps = node.waypoints
+    # # close the loop back to the first corner
+    # xs = list(wps[:, 0]) + [wps[0, 0]]
+    # ys = list(wps[:, 1]) + [wps[0, 1]]
+    # (square_line,) = ax.plot(xs, ys, 'o--', linewidth=1., label='waypoints')
 
     # Buffers
-    x_buf, y_buf, yaw_buf = [], [], []
+    x_buf, y_buf, x_est_buf, y_est_buf, x_ref_buf, y_ref_buf, yaw_buf = [], [], [], [], [], [], []
 
     # Arrow buffers (positions and unit directions scaled by ARROW_LEN)
     arx, ary, aru, arv = [], [], [], []
@@ -121,6 +142,10 @@ def main(args=None):
             cut = len(x_buf) - MAX_N
             del x_buf[:cut]
             del y_buf[:cut]
+            del x_est_buf[:cut]
+            del y_est_buf[:cut]
+            del x_ref_buf[:cut]
+            del y_ref_buf[:cut]
             del yaw_buf[:cut]
         # Trim arrows loosely tied to the visible window
         # (optional: keep all arrows; here we keep them bounded to ~2*MAX_N)
@@ -135,6 +160,10 @@ def main(args=None):
 
             x = node.curr_x
             y = node.curr_y
+            x_est = node.curr_x_est
+            y_est = node.curr_y_est
+            x_ref = node.reference_x
+            y_ref = node.reference_y
             yaw = wrap_angle(node.curr_yaw_t_w)
 
             # UPDATE current yaw arrow (position = current x,y; direction = yaw)
@@ -144,6 +173,10 @@ def main(args=None):
 
             x_buf.append(x)
             y_buf.append(y)
+            x_est_buf.append(x_est)
+            y_est_buf.append(y_est)
+            x_ref_buf.append(x_ref)
+            y_ref_buf.append(y_ref)
             yaw_buf.append(yaw)
 
             # Arrow placement logic
@@ -172,7 +205,9 @@ def main(args=None):
             trim_history()
 
             # Update artists
-            line_path.set_data(x_buf, y_buf)
+            line_vicon_path.set_data(x_buf, y_buf)
+            line_odom_path.set_data(x_est_buf, y_est_buf)
+            ref_path.set_data(x_ref_buf, y_ref_buf)
             
             # Recreate the trail quiver every frame
             if len(arx) == 0:
