@@ -37,7 +37,7 @@ public:
     max_rpm_cmd_      = this->declare_parameter<double>("max_rpm_cmd", 30.0);
     turret_max_rad_s_ = this->declare_parameter<double>("turret_max_rad_s", 2.0);
     publish_rate_hz_  = this->declare_parameter<double>("publish_rate_hz", 100.0);
-    stale_timeout_s_  = this->declare_parameter<double>("stale_timeout_s", 0.3);
+    stale_timeout_s_  = this->declare_parameter<double>("stale_timeout_s", 100.0);
     ema_tau_s_        = this->declare_parameter<double>("ema_tau_s", 0.05); // output smoothing
 
     // Convert max RPM to rad/s
@@ -75,7 +75,8 @@ private:
   static inline float norm_axis(int16_t v) {
     // js_event value is -32767..32767
     float x = (v >= 0) ? (float)v / 32767.0f : (float)v / 32768.0f;
-    if (x > 1.f) x = 1.f; if (x < -1.f) x = -1.f;
+    if (x > 1.f) x = 1.f;
+    if (x < -1.f) x = -1.f;
     return x;
   }
 
@@ -85,7 +86,8 @@ private:
     if (std::fabs(x) < deadband_) return 0.0f;
     // rescale to keep full-range after deadband
     float s = (std::fabs(x) - (float)deadband_) / (1.0f - (float)deadband_);
-    if (s < 0.f) s = 0.f; if (s > 1.f) s = 1.f;
+    if (s < 0.f) s = 0.f; 
+    if (s > 1.f) s = 1.f;
     return std::copysign(s, x);
   }
 

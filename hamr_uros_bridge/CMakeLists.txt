@@ -10,6 +10,8 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_executable(relay_node src/relay_node.cpp)
 ament_target_dependencies(relay_node 
@@ -21,5 +23,6 @@ nav_msgs
 
 install(TARGETS relay_node
   DESTINATION lib/${PROJECT_NAME})
+
 
 ament_package()

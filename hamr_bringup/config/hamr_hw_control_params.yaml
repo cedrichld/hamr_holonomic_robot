@@ -9,8 +9,12 @@
     P_x: 0.5
     P_y: 0.5
     P_yaw: 0.13
-    d_alpha: 0.4
-    
-    mode: auto
+    a_wheel: 0.149556
+    b_wheel: -0.19682
     control_rate_hz: 100.0
+    d_alpha: 0.4
+    mode: auto
+    r_wheel: 0.0762
     simulating: false
+    start_type_description_service: true
+    use_sim_time: false
