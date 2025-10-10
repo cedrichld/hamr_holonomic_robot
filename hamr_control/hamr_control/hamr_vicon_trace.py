@@ -66,7 +66,7 @@ class OdomGraphNode(Node):
         self.curr_y = msg.pose.pose.position.y - self.init_y # mocap markers offset
 
     def base_odom_callback_(self, msg: Odometry):
-        self.curr_x_est = -msg.pose.pose.position.x
+        self.curr_x_est = msg.pose.pose.position.x
         self.curr_y_est = msg.pose.pose.position.y
 
     def callback_reference(self, msg: ReferenceTraj):
