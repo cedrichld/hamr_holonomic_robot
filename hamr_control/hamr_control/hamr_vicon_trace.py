@@ -43,7 +43,7 @@ class OdomGraphNode(Node):
         self.init_x = 0.0
         self.init_y = 0.0
         self.init_yaw = 0.0
-        self.init_pose_set = False
+        self.init_pose_set = True # assume known start
 
         self.reference_x = 0.0
         self.reference_y = 0.0
@@ -84,7 +84,7 @@ def main(args=None):
     # ---- Plot config ----
     ARROW_STEP = 0.20 # meters between arrows
     ARROW_LEN = 0.16 # visual arrow length (meters)
-    MAX_N = 2400 # keep last N points for the path
+    MAX_N = 3000 # keep last N points for the path
 
     plt.ion()
     fig, ax = plt.subplots()
@@ -96,7 +96,7 @@ def main(args=None):
     # Path line
     (line_vicon_path,) = ax.plot([], [], linewidth=2, label='path')
     (line_odom_path,) = ax.plot([], [], linewidth=2, label='path')
-    (ref_path,)  = ax.plot([], [], linewidth=1, label='ref path', color='green', linestyle='--')
+    (ref_path,)  = ax.plot([], [], linewidth=1, label='reference', color='green', linestyle='--')
 
     # Current-pose arrow
     curr_quiv = ax.quiver([0.0], [0.0], [0.0], [0.0],
@@ -113,8 +113,8 @@ def main(args=None):
     trail_pts = ax.scatter([], [], s=6, c='gray', alpha=0.5, zorder=4)
 
     ax.legend()
-    ax.set_xlim(3, -3)
-    ax.set_ylim(4, -4)
+    ax.set_xlim(-3, 3)
+    ax.set_ylim(2, 6)
 
     # --- DRAW WAYPOINT SQUARE (once) ---
     # wps = node.waypoints

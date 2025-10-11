@@ -42,7 +42,7 @@
               <use_terrain_paging>true</use_terrain_paging>
               <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_4097.png</uri>
 
-              <size>45 45 11.5</size>
+              <size>45 45 4.5</size>
               <pos>0 0 0</pos>
               
               <texture>
@@ -60,7 +60,7 @@
           <geometry>
             <heightmap>
               <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_4097.png</uri>
-              <size>45 45 11.5</size>
+              <size>45 45 4.5</size>
               <pos>0 0 0</pos>
             </heightmap>
           </geometry>

@@ -249,7 +249,7 @@ public:
 private:
   void left_cb(const std_msgs::msg::Float64 & msg)  { left_ = static_cast<float>(msg.data); }
   void right_cb(const std_msgs::msg::Float64 & msg) { right_ = static_cast<float>(msg.data); }
-  void turret_cb(const std_msgs::msg::Float64 & msg){ turret_ = static_cast<float>(msg.data); }
+  void turret_cb(const std_msgs::msg::Float64 & msg){ turret_ = static_cast<float>(-msg.data); } // Invert turret for ZYX Convention
 
   void tx_tick() {
     PacketCmd3 pkt{};

@@ -123,7 +123,7 @@ def generate_launch_description():
         name='image_publisher',
         output='screen',
         parameters=[{
-            'image_path': os.path.join(grid_map_demos_dir, 'data', 'terrain.png'), #terrain_path,
+            'image_path': terrain_path, #os.path.join(grid_map_demos_dir, 'data', 'terrain.png'), #terrain_path,
             'topic': 'image'
         }]
     )
@@ -133,13 +133,13 @@ def generate_launch_description():
         executable='image_to_gridmap',
         name='image_to_gridmap',
         output='screen',
-        parameters=[visualization_config_file]#[{
-        #     'image_topic': "/image",
-        #     'map_frame_id': 'terrain_map',
-        #     'min_height': 0.0, # m
-        #     'max_height': map_height, # m
-        #     'resolution': map_width / img_px_res, # meters per cell -> img_res / map_xy: 45m / 1025px            
-        # }]
+        parameters=[{
+            'image_topic': "/image",
+            'map_frame_id': 'terrain_map',
+            'min_height': 0.0, # m
+            'max_height': map_height, # m
+            'resolution': map_width / img_px_res, # meters per cell -> img_res / map_xy: 45m / 1025px            
+        }]
     )
 
     grid_map_visualization_node = Node(
