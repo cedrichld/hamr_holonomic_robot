@@ -62,12 +62,19 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
 <p align="center"><em>Canonical holonomy tests on uneven heightmaps (square, triangle, circle).</em></p>
 
 <p align="center">
-  <img src="img/MAZE_OR_Trajectory.png" alt="Maze trajectory" width="400">
+  <img src="img/MAZE_OR_Trajectory.png" alt="Maze trajectory" height="250">
+  <img src="img/2.5D_Consecutive_Poses_Square.png" alt="2.5D Consecutive TFs - Square" height="250">
 <p>
 
-<p align="center"><em>Holonomy test on an uneven maze heightmap, using PRM and A*.</em></p>
+<p align="center"><em>Left: Holonomy test on an uneven maze heightmap, using PRM and A*, Right: TFs during an Off-Road Square Trajectory.</em></p>
 
 
+## 2.5D Traversability (Holonomic Traversability Optimization Algorithm in the works)
+<p align="center">
+  <img src="img/2.5D_Traversability_Rough_Terrain_Viz.png" alt="2.5D_Traversability_Rough_Terrain_Viz" height="250">
+  <img src="img/2.5D_manual_traversability_viz.png" alt="2.5D_manual_traversability_viz" height="250">
+</p>
+<p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Trajectory Optimized for Holonomic Traversability</em></p>
 
 
 ### Results (sim & hardware)
