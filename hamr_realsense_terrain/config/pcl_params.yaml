@@ -1,0 +1,16 @@
+# Path is passed via params_file
+pcl_grid_map_extraction:
+  grid_map:
+    resolution: 0.15
+    min_num_points_per_cell: 3
+  downsampling:
+    is_downsample_cloud: true
+    voxel_size: [0.05, 0.05, 0.05]
+  outlier_removal:
+    is_remove_outliers: true
+    mean_K: 20
+    stddev_threshold: 1.0
+  # Optional rigid transform - if we don't want to wire TF yet:
+  cloud_transform:
+    translation: [0.0, 0.0, 0.0]
+    rotation: [0.0, 0.0, 0.0]
