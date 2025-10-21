@@ -36,7 +36,7 @@ grid_map_filters:
         params:
           input_layer: elevation_inpainted
           output_layer: elevation_smooth
-          radius: 0.1
+          radius: 0.2
 
       # filter5:  # Boxblur as an alternative to the inpaint and radial blurring filter above.
       #   name: boxblur
@@ -107,7 +107,7 @@ grid_map_filters:
         type: gridMapFilters/MathExpressionFilter
         params:
           output_layer: traversability
-          expression: 0.5 * (1.0 - (slope / 0.6)) + 0.5 * (1.0 - (roughness / 0.1))
+          expression: 0.5 * (1.0 - (slope / 0.6)) + 0.5 * (1.0 - (roughness / 0.1)) # max slope of 0.6rad
 
       filter11:  # Set lower threshold on traversability.
         name: traversability_lower_threshold
@@ -131,7 +131,8 @@ grid_map_filters:
         type: gridMapFilters/MathExpressionFilter
         params:
           output_layer: traversability_custom
-          expression: 0.9 * (1.0 - (slope / 0.6)) + 0.1 * (1.0 - (roughness / 0.01))
+          # max slope of 0.5rad (30deg) and 3cm max bump height
+          expression: 0.7 * (1.0 - (slope / 0.5)) + 0.3 * (1.0 - (roughness / 0.03)) 
 
       filter14:  # Set lower threshold on traversability_custom.
         name: traversability_custom_lower_threshold

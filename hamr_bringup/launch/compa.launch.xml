@@ -74,7 +74,13 @@
         <param name="map_height_m" value="4.5" />
         <param name="image_path" value="$(find-pkg-share hamr_bringup)/terrain_assets/heightmaps/off_road_maps/terrain1_513.png" />
     </node> -->
-    <include file="$(find-pkg-share hamr_bringup)/launch/gridmap_rviz.launch.py" />
+    <include file="$(find-pkg-share hamr_bringup)/launch/gridmap_rviz.launch.py">
+        <arg name="testing_terrain" value="false"/>
+        <arg name="visualize_rviz" value="false"/>
+        <arg name="img_px_res" value="1025"/>
+        <arg name="map_width" value="45.0"/>
+        <arg name="map_height" value="4.5"/>
+    </include>
 
     <!-- <node pkg="reference_trajectory" exec="waypoint_traj_simple">
         <param name="use_sim_time" value="true" />
