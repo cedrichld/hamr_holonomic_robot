@@ -49,7 +49,7 @@ public:
         this->declare_parameter("map_width_m", 40.0);
         this->declare_parameter("map_length_m", 40.0);
         this->declare_parameter("map_height_m", 2.0);
-        this->declare_parameter("image_path", "/home/cedric/ros2_ws/hamr_ws/src/hamr_bringup/terrain_assets/heightmaps/compa_OR_test_map_257.png");
+        this->declare_parameter("image_path", "/home/kartik/hamr_ws/src/hamr_holonomic_robot/hamr_bringup/terrain_assets/heightmaps/compa_OR_test_map_257.png");
         this->declare_parameter("frame_id", "map");
         this->declare_parameter("publish_rate", 1.0);
         

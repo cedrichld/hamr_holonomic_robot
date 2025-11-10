@@ -2,6 +2,7 @@
 #include <mutex>
 #include <string>
 #include <chrono>
+#include <filesystem>  // C++17 for directory creation
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -17,10 +18,10 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/memory.h>
-#include <memory>   
 
 using namespace std::chrono_literals;
 using PointT = pcl::PointXYZRGB;
+namespace fs = std::filesystem;
 
 class PclMapper : public rclcpp::Node {
 public:
@@ -35,6 +36,9 @@ public:
     save_interval_s_= this->declare_parameter<int>("save_interval_s", 0); // 0 = off
     output_pcd_path_= this->declare_parameter<std::string>("output_pcd_path", "map.pcd");
     publish_map_    = this->declare_parameter<bool>("publish_map", true);
+
+    // Create output directory if it doesn't exist
+    createOutputDirectory();
 
     sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
       input_topic_, rclcpp::SensorDataQoS(),
@@ -62,9 +66,25 @@ public:
 
     RCLCPP_INFO(get_logger(), "PCL mapper started. Subscribing: %s, target_frame: %s",
                 input_topic_.c_str(), target_frame_.c_str());
+    RCLCPP_INFO(get_logger(), "Output: %s, leaf_size: %.3f m, auto_save: %d s",
+                output_pcd_path_.c_str(), leaf_size_, save_interval_s_);
   }
 
 private:
+  void createOutputDirectory() {
+    try {
+      fs::path output_path(output_pcd_path_);
+      fs::path parent_dir = output_path.parent_path();
+      
+      if (!parent_dir.empty() && !fs::exists(parent_dir)) {
+        fs::create_directories(parent_dir);
+        RCLCPP_INFO(get_logger(), "Created output directory: %s", parent_dir.c_str());
+      }
+    } catch (const fs::filesystem_error& e) {
+      RCLCPP_ERROR(get_logger(), "Failed to create output directory: %s", e.what());
+    }
+  }
+
   void cloudCb(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     // Transform to target frame
     sensor_msgs::msg::PointCloud2 cloud_tf;
@@ -82,6 +102,11 @@ private:
     pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>());
     pcl::fromROSMsg(cloud_tf, *cloud);
 
+    if (cloud->empty()) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "Received empty point cloud");
+      return;
+    }
+
     // Downsample
     pcl::PointCloud<PointT>::Ptr cloud_ds(new pcl::PointCloud<PointT>());
     pcl::VoxelGrid<PointT> vg;
@@ -93,11 +118,19 @@ private:
     std::lock_guard<std::mutex> lock(mutex_);
     *global_map_ += *cloud_ds;
     dirty_ = true;
+    
+    // Log progress occasionally
+    static size_t last_logged_size = 0;
+    if (global_map_->size() - last_logged_size > 10000) {
+      RCLCPP_INFO(get_logger(), "Map now contains %zu points", global_map_->size());
+      last_logged_size = global_map_->size();
+    }
   }
 
   void publishMap() {
     std::lock_guard<std::mutex> lock(mutex_);
     if (!dirty_ || global_map_->empty()) return;
+    
     sensor_msgs::msg::PointCloud2 msg;
     pcl::toROSMsg(*global_map_, msg);
     msg.header.stamp = now();
@@ -111,6 +144,7 @@ private:
       RCLCPP_WARN(get_logger(), "Map empty—nothing to save.");
       return false;
     }
+    
     // Optional final downsample before save
     pcl::PointCloud<PointT>::Ptr map_final(new pcl::PointCloud<PointT>());
     pcl::VoxelGrid<PointT> vg;
@@ -118,10 +152,14 @@ private:
     vg.setLeafSize(static_cast<float>(leaf_size_), static_cast<float>(leaf_size_), static_cast<float>(leaf_size_));
     vg.filter(*map_final);
 
+    // Ensure directory exists (in case it was deleted during runtime)
+    createOutputDirectory();
+
     int ret = pcl::io::savePCDFileBinary(output_pcd_path_, *map_final);
     if (ret == 0) {
-      RCLCPP_INFO(get_logger(), "Saved PCD: %s (%zu points)",
-                  output_pcd_path_.c_str(), map_final->size());
+      RCLCPP_INFO(get_logger(), "✓ Saved PCD: %s (%zu points, %.2f MB)",
+                  output_pcd_path_.c_str(), map_final->size(),
+                  fs::file_size(output_pcd_path_) / (1024.0 * 1024.0));
       return true;
     } else {
       RCLCPP_ERROR(get_logger(), "PCD save failed (%d) -> %s", ret, output_pcd_path_.c_str());
