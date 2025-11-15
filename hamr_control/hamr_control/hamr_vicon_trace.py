@@ -43,7 +43,7 @@ class OdomGraphNode(Node):
         self.init_x = 0.0
         self.init_y = 0.0
         self.init_yaw = 0.0
-        self.init_pose_set = True # assume known start
+        self.init_pose_set = False # assume known start
 
         self.reference_x = 0.0
         self.reference_y = 0.0
@@ -114,7 +114,7 @@ def main(args=None):
 
     ax.legend()
     ax.set_xlim(-3, 3)
-    ax.set_ylim(2, 6)
+    ax.set_ylim(-2, 2)
 
     # --- DRAW WAYPOINT SQUARE (once) ---
     # wps = node.waypoints
