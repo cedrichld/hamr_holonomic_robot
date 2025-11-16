@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hamr_pcl_mapping</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+  <maintainer email="gbemigao@seas.upenn.edu">bemi</maintainer>
+  <license>TODO: License declaration</license>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
+
+
+
+<?xml version="1.0"?>
+<package format="3">
+  <name>my_mapping_bringup</name>
+  <version>0.0.1</version>
+  <description>Map generation pipeline</description>
+
+  <maintainer email="gbemigao@seas.upenn.edu">bemi</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <!-- Run-time dependencies -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>realsense2_camera</exec_depend>
+  <exec_depend>rtabmap_launch</exec_depend>
+  <exec_depend>rtabmap_ros</exec_depend>
+  <exec_depend>grid_map_pcl</exec_depend>
+  <exec_depend>grid_map_ros</exec_depend>
+  <exec_depend>grid_map_msgs</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

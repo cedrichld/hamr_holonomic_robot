@@ -1,0 +1,21 @@
+pcl_grid_map_extraction:
+  num_processing_threads: 8
+
+  grid_map:
+    resolution: 0.05                 # cell size [m]
+    min_num_points_per_cell: 3
+    height_type: 1                   # 0: smallest cluster, 1: densest cluster mean
+    height_thresh: 1.0
+
+  cloud_transform:
+    translation: [0.0, 0.0, 0.0]     # adjust if you want to re-center the map
+    rotation: [0.0, 0.0, 0.0]        # roll, pitch, yaw (rad); ensure Z is "up"
+
+  downsampling:
+    is_downsample_cloud: true
+    voxel_size: [0.02, 0.02, 0.02]
+
+  outlier_removal:
+    is_remove_outliers: true
+    mean_K: 20
+    stddev_threshold: 1.0
