@@ -6,7 +6,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('my_mapping_bringup')
+    pkg_share = get_package_share_directory('hamr_pcl_mapping')
 
     maps_dir = os.path.join(pkg_share, 'maps')
     config_path = os.path.join(pkg_share, 'config', 'pcd_to_gridmap.yaml')
@@ -18,7 +18,7 @@ def generate_launch_description():
             name='grid_map_pcl_loader_node',
             output='screen',
             parameters=[{
-                # folder containing PCD + output grid_map bag
+                # PCD &  output grid_map bag in same folder
                 'folder_path': maps_dir,
                 'pcd_filename': 'global_map.pcd',
                 'output_grid_map': 'global_elevation.bag',
