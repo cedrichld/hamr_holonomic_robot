@@ -20,5 +20,5 @@ setup(
     maintainer='bemi',
     maintainer_email='gbemigao@seas.upenn.edu',
     description='Mapping bringup pipeline: RealSense -> SLAM -> PCD -> grid_map',
-    license='MIT',
+    license='TODO: License',
 )
