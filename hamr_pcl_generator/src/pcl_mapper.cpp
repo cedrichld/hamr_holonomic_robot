@@ -1,197 +1,152 @@
-#include <memory>
-#include <mutex>
-#include <string>
-#include <chrono>
-#include <filesystem>  // C++17 for directory creation
-
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <std_srvs/srv/trigger.hpp>
 
-#include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.hpp>
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl_conversions/pcl_conversions.h>
-#include <pcl/memory.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+
+#include <mutex>
+#include <optional>
+#include <string>
+#include <chrono>
+#include <filesystem>
 
 using namespace std::chrono_literals;
-using PointT = pcl::PointXYZRGB;
-namespace fs = std::filesystem;
 
-class PclMapper : public rclcpp::Node {
+class PclMapper : public rclcpp::Node
+{
 public:
-  PclMapper() : Node("pcl_mapper"),
-                tf_buffer_(this->get_clock()),
-                tf_listener_(tf_buffer_) {
+  PclMapper()
+  : Node("pcl_mapper"),
+    tf_buffer_(this->get_clock()),
+    tf_listener_(tf_buffer_)
+  {
+    // Parameters
+    input_topic_ = this->declare_parameter<std::string>(
+      "input_topic", "/rtabmap/cloud_map");
+    target_frame_ = this->declare_parameter<std::string>(
+      "target_frame", "map");
+    output_dir_ = this->declare_parameter<std::string>(
+      "output_dir", "/home/kartik/maps/pcd");
+    filename_prefix_ = this->declare_parameter<std::string>(
+      "filename_prefix", "hamr_room_");
+    save_on_shutdown_ = this->declare_parameter<bool>(
+      "save_on_shutdown", true);
 
-    // Params
-    target_frame_   = this->declare_parameter<std::string>("target_frame", "map");
-    input_topic_    = this->declare_parameter<std::string>("input_topic", "/camera/depth/color/points");
-    leaf_size_      = this->declare_parameter<double>("leaf_size", 0.03); // 3 cm
-    save_interval_s_= this->declare_parameter<int>("save_interval_s", 0); // 0 = off
-    output_pcd_path_= this->declare_parameter<std::string>("output_pcd_path", "map.pcd");
-    publish_map_    = this->declare_parameter<bool>("publish_map", true);
+    RCLCPP_INFO(get_logger(), "PclMapper subscribing to: %s", input_topic_.c_str());
+    RCLCPP_INFO(get_logger(), "Target frame: %s", target_frame_.c_str());
+    RCLCPP_INFO(get_logger(), "Output dir: %s", output_dir_.c_str());
+    RCLCPP_INFO(get_logger(), "Save on shutdown: %s", save_on_shutdown_ ? "true" : "false");
 
-    // Create output directory if it doesn't exist
-    createOutputDirectory();
-
-    sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      input_topic_, rclcpp::SensorDataQoS(),
-      std::bind(&PclMapper::cloudCb, this, std::placeholders::_1));
-
-    if (publish_map_) {
-      pub_map_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("pcl_map", 1);
-      pub_timer_ = this->create_wall_timer(500ms, [this] { publishMap(); });
+    // Ensure output dir exists
+    std::error_code ec;
+    std::filesystem::create_directories(output_dir_, ec);
+    if (ec) {
+      RCLCPP_WARN(get_logger(), "Could not create output dir %s: %s",
+                  output_dir_.c_str(), ec.message().c_str());
     }
 
-    save_srv_ = this->create_service<std_srvs::srv::Trigger>(
-      "save_pcd",
-      [this](const std::shared_ptr<std_srvs::srv::Trigger::Request>,
-             std::shared_ptr<std_srvs::srv::Trigger::Response> res) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        res->success = savePCDUnlocked();
-        res->message = res->success ? "Saved PCD" : "Save failed";
-      });
+    cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+      input_topic_, rclcpp::QoS(10),
+      std::bind(&PclMapper::cloudCallback, this, std::placeholders::_1));
+  }
 
-    if (save_interval_s_ > 0) {
-      save_timer_ = this->create_wall_timer(
-        std::chrono::seconds(save_interval_s_),
-        [this]{ std::lock_guard<std::mutex> lock(mutex_); savePCDUnlocked(); });
+  ~PclMapper() override
+  {
+    if (save_on_shutdown_) {
+      RCLCPP_INFO(get_logger(), "Node shutting down, saving final colored pointcloud...");
+      saveFinalCloud();
     }
-
-    RCLCPP_INFO(get_logger(), "PCL mapper started. Subscribing: %s, target_frame: %s",
-                input_topic_.c_str(), target_frame_.c_str());
-    RCLCPP_INFO(get_logger(), "Output: %s, leaf_size: %.3f m, auto_save: %d s",
-                output_pcd_path_.c_str(), leaf_size_, save_interval_s_);
   }
 
 private:
-  void createOutputDirectory() {
-    try {
-      fs::path output_path(output_pcd_path_);
-      fs::path parent_dir = output_path.parent_path();
-      
-      if (!parent_dir.empty() && !fs::exists(parent_dir)) {
-        fs::create_directories(parent_dir);
-        RCLCPP_INFO(get_logger(), "Created output directory: %s", parent_dir.c_str());
+  void cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
+  {
+    std::lock_guard<std::mutex> lock(mutex_);
+    latest_cloud_ = *msg;
+  }
+
+  void saveFinalCloud()
+  {
+    sensor_msgs::msg::PointCloud2 cloud;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (!latest_cloud_.has_value()) {
+        RCLCPP_WARN(get_logger(), "No pointcloud received, nothing to save.");
+        return;
       }
-    } catch (const fs::filesystem_error& e) {
-      RCLCPP_ERROR(get_logger(), "Failed to create output directory: %s", e.what());
+      cloud = latest_cloud_.value();
     }
-  }
 
-  void cloudCb(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-    // Transform to target frame
+    // Transform to target frame if needed
     sensor_msgs::msg::PointCloud2 cloud_tf;
-    try {
-      geometry_msgs::msg::TransformStamped tf =
-        tf_buffer_.lookupTransform(target_frame_, msg->header.frame_id, msg->header.stamp, 100ms);
-      tf2::doTransform(*msg, cloud_tf, tf);
-    } catch (const tf2::TransformException &ex) {
-      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000,
-                           "TF unavailable: %s", ex.what());
-      return;
-    }
-
-    // Convert to PCL
-    pcl::PointCloud<PointT>::Ptr cloud(new pcl::PointCloud<PointT>());
-    pcl::fromROSMsg(cloud_tf, *cloud);
-
-    if (cloud->empty()) {
-      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "Received empty point cloud");
-      return;
-    }
-
-    // Downsample
-    pcl::PointCloud<PointT>::Ptr cloud_ds(new pcl::PointCloud<PointT>());
-    pcl::VoxelGrid<PointT> vg;
-    vg.setInputCloud(cloud);
-    vg.setLeafSize(static_cast<float>(leaf_size_), static_cast<float>(leaf_size_), static_cast<float>(leaf_size_));
-    vg.filter(*cloud_ds);
-
-    // Accumulate
-    std::lock_guard<std::mutex> lock(mutex_);
-    *global_map_ += *cloud_ds;
-    dirty_ = true;
-    
-    // Log progress occasionally
-    static size_t last_logged_size = 0;
-    if (global_map_->size() - last_logged_size > 10000) {
-      RCLCPP_INFO(get_logger(), "Map now contains %zu points", global_map_->size());
-      last_logged_size = global_map_->size();
-    }
-  }
-
-  void publishMap() {
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (!dirty_ || global_map_->empty()) return;
-    
-    sensor_msgs::msg::PointCloud2 msg;
-    pcl::toROSMsg(*global_map_, msg);
-    msg.header.stamp = now();
-    msg.header.frame_id = target_frame_;
-    pub_map_->publish(msg);
-    dirty_ = false;
-  }
-
-  bool savePCDUnlocked() {
-    if (global_map_->empty()) {
-      RCLCPP_WARN(get_logger(), "Map empty—nothing to save.");
-      return false;
-    }
-    
-    // Optional final downsample before save
-    pcl::PointCloud<PointT>::Ptr map_final(new pcl::PointCloud<PointT>());
-    pcl::VoxelGrid<PointT> vg;
-    vg.setInputCloud(global_map_);
-    vg.setLeafSize(static_cast<float>(leaf_size_), static_cast<float>(leaf_size_), static_cast<float>(leaf_size_));
-    vg.filter(*map_final);
-
-    // Ensure directory exists (in case it was deleted during runtime)
-    createOutputDirectory();
-
-    int ret = pcl::io::savePCDFileBinary(output_pcd_path_, *map_final);
-    if (ret == 0) {
-      RCLCPP_INFO(get_logger(), "✓ Saved PCD: %s (%zu points, %.2f MB)",
-                  output_pcd_path_.c_str(), map_final->size(),
-                  fs::file_size(output_pcd_path_) / (1024.0 * 1024.0));
-      return true;
+    if (target_frame_.empty() || cloud.header.frame_id == target_frame_) {
+      cloud_tf = cloud;
     } else {
-      RCLCPP_ERROR(get_logger(), "PCD save failed (%d) -> %s", ret, output_pcd_path_.c_str());
-      return false;
+      try {
+        auto tf = tf_buffer_.lookupTransform(
+          target_frame_, cloud.header.frame_id,
+          cloud.header.stamp, 200ms);
+
+        tf2::doTransform(cloud, cloud_tf, tf);
+      } catch (const tf2::TransformException & ex) {
+        RCLCPP_WARN(get_logger(),
+                    "TF unavailable (%s -> %s): %s. Saving in original frame.",
+                    cloud.header.frame_id.c_str(),
+                    target_frame_.c_str(),
+                    ex.what());
+        cloud_tf = cloud; // fallback
+      }
+    }
+
+    // Convert to PCL *with color* (XYZRGB)
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZRGB>());
+    pcl::fromROSMsg(cloud_tf, *pcl_cloud);
+
+    if (pcl_cloud->empty()) {
+      RCLCPP_WARN(get_logger(), "Final cloud is empty, not saving.");
+      return;
+    }
+
+    // Filename with timestamp
+    auto now = this->get_clock()->now().nanoseconds();
+    std::string filename = output_dir_ + "/" + filename_prefix_ + std::to_string(now) + ".pcd";
+
+    int ret = pcl::io::savePCDFileBinary(filename, *pcl_cloud);
+    if (ret == 0) {
+      RCLCPP_INFO(get_logger(), "Saved final colored PCD: %s (%zu points)",
+                  filename.c_str(), pcl_cloud->size());
+    } else {
+      RCLCPP_ERROR(get_logger(), "Failed to save PCD file: %s", filename.c_str());
     }
   }
 
-  // Params
-  std::string target_frame_, input_topic_, output_pcd_path_;
-  double leaf_size_;
-  int save_interval_s_;
-  bool publish_map_;
+  // Parameters
+  std::string input_topic_;
+  std::string target_frame_;
+  std::string output_dir_;
+  std::string filename_prefix_;
+  bool save_on_shutdown_;
 
   // ROS
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr sub_;
-  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_map_;
-  rclcpp::TimerBase::SharedPtr save_timer_, pub_timer_;
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_srv_;
-
-  // TF
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
 
-  // Map
-  pcl::PointCloud<PointT>::Ptr global_map_ = pcl::make_shared<pcl::PointCloud<PointT>>();
-  bool dirty_ = false;
+  // Data
   std::mutex mutex_;
+  std::optional<sensor_msgs::msg::PointCloud2> latest_cloud_;
 };
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv)
+{
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<PclMapper>());
+  auto node = std::make_shared<PclMapper>();
+  rclcpp::spin(node);
   rclcpp::shutdown();
   return 0;
 }

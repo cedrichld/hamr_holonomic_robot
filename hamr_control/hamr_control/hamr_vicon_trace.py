@@ -114,7 +114,7 @@ def main(args=None):
 
     ax.legend()
     ax.set_xlim(-3, 3)
-    ax.set_ylim(2, 6)
+    ax.set_ylim(-3, 6)
 
     # --- DRAW WAYPOINT SQUARE (once) ---
     # wps = node.waypoints
