@@ -59,7 +59,7 @@ bool ImageToGridmap::readParameters()
   if (has_map_width && has_img_px_res) {
     resolution_ = map_width_ / img_px_res_;
   } else if (img_px_res_ == 0 || map_width_ == 0) {
-    RCLCPP_ERROR(this->get_logger(), "img_px_res (%d) and map_width (%d) must be non-zero", img_px_res_, map_width_);
+    RCLCPP_ERROR(this->get_logger(), "img_px_res (%d) and map_width (%.3f) must be non-zero", img_px_res_, map_width_);
   }
 
   RCLCPP_INFO(
