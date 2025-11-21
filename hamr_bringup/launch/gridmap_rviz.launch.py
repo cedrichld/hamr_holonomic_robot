@@ -47,12 +47,12 @@ def generate_launch_description():
         description='Heightmap image pixel resolution (square)'
     )
     declare_map_width = DeclareLaunchArgument(
-        'map_width', default_value='45.0',  # meters
+        'map_width', default_value='45.0', # meters
         description='Map width in meters'
     )
     declare_map_height = DeclareLaunchArgument(
-        'map_height', default_value='4.5',  # meters
-        description='Map height range (min→max) in meters'
+        'map_height', default_value='4.5', # meters
+        description='Map height range (min to max) in meters'
     )
 
     img_px_res_str = LaunchConfiguration('img_px_res')
