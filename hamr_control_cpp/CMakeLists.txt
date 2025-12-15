@@ -110,12 +110,26 @@ endif()
 add_executable(astar_search
   src/astar_search.cpp
 )
+add_executable(astar_traversability
+  src/astar_traversability.cpp
+)
 ament_target_dependencies(astar_search
   rclcpp
   nav_msgs
   geometry_msgs
   visualization_msgs
   tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
+ament_target_dependencies(astar_traversability
+  rclcpp
+  grid_map_ros
+  grid_map_core
+  grid_map_msgs
+  nav_msgs
+  geometry_msgs
+  visualization_msgs
   tf2_ros
   tf2_geometry_msgs
 )
@@ -169,6 +183,7 @@ install(TARGETS
   cost_map_publisher
   prm_builder
   astar_search
+  astar_traversability
   or_planner
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )

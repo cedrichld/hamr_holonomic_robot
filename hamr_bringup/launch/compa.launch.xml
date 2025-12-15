@@ -59,9 +59,9 @@
     <!-- <node pkg="compa_control_py" exec="compa_pid_graph">
         <param name="use_sim_time" value="true" />
     </node> -->
-    <node pkg="compa_control_py" exec="rpy_tf_graph">
+    <!-- <node pkg="compa_control_py" exec="rpy_tf_graph">
         <param name="use_sim_time" value="true" />
-    </node>
+    </node> -->
 
 
     <!-- TRACERS -->
@@ -82,8 +82,10 @@
         <arg name="map_height" value="4.5"/>
     </include>
 
-    <!-- <node pkg="reference_trajectory" exec="waypoint_traj_simple">
+    <node pkg="reference_trajectory" exec="waypoint_traj">
         <param name="use_sim_time" value="true" />
-    </node> -->
+    </node>
+
+    <node pkg="hamr_control_cpp" exec="astar_traversability" />
 
 </launch>
