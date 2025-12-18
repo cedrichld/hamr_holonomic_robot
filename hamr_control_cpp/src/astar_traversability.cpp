@@ -791,29 +791,53 @@ private:
     path.header.stamp = now();
     path.header.frame_id = map_frame_;
 
-    for (int idx : path_linear) {
+    for (int idx : path_linear)
+    {
+      // Recover grid indices (row = ix, col = iy).
       int ix = idx / size_y;
       int iy = idx % size_y;
 
-      grid_map::Index gi(ix, iy);
-      grid_map::Position p_gm;
-      if (!grid_map_.getPosition(gi, p_gm)) continue;
+      // manual bounds check using size_x / size_y
+      if (ix < 0 || ix >= size_x || iy < 0 || iy >= size_y) {
+        continue;
+      }
 
+      grid_map::Index gi(ix, iy);
+
+      // Elevation at this cell (grid_map frame).
+      float z = 0.0f;
+      if (grid_map_.isValid(gi, "elevation_inpainted")) {
+        z = grid_map_.at("elevation_inpainted", gi);
+        if (!std::isfinite(z)) {
+          z = 0.0f;
+        }
+      }
+
+      // Position (x,y) in grid_map frame.
+      grid_map::Position p_gm;
+      if (!grid_map_.getPosition(gi, p_gm)) {
+        continue;  // out of bounds or invalid
+      }
+
+      // Transform (x,y) into map frame.
       grid_map::Position p_map;
-      if (!transformPosition(grid_map_frame_, map_frame_, p_gm, p_map)) continue;
+      if (!transformPosition(grid_map_frame_, map_frame_, p_gm, p_map)) {
+        continue;
+      }
 
       geometry_msgs::msg::PoseStamped ps;
       ps.header = path.header;
       ps.pose.position.x = p_map.x();
       ps.pose.position.y = p_map.y();
+      ps.pose.position.z = z; // path follows terrain height
 
-      ps.pose.position.z = 0.0;
       ps.pose.orientation.w = 1.0;
       path.poses.push_back(ps);
     }
 
     path_pub_->publish(path);
   }
+
 
   void publishExplored(const std::vector<int>& explored_linear, int size_x, int size_y)
   {

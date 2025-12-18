@@ -71,8 +71,8 @@ class LocalTraversabilityCost(Node):
         self.elevation_layer = self.declare_parameter("elevation_layer", "elevation_inpainted").get_parameter_value().string_value
 
         # Local window size (meters)
-        self.local_size_x = float(self.declare_parameter("local_size_x", 5.0).value)
-        self.local_size_y = float(self.declare_parameter("local_size_y", 5.0).value)
+        self.local_size_x = float(self.declare_parameter("local_size_x", 8.0).value)
+        self.local_size_y = float(self.declare_parameter("local_size_y", 8.0).value)
 
         # Where to publish local map
         self.base_frame = self.declare_parameter("base_frame", "base_footprint").get_parameter_value().string_value
@@ -164,7 +164,7 @@ class LocalTraversabilityCost(Node):
         cy = float(info.pose.position.y)
         q = info.pose.orientation
 
-        self.get_logger().info(f"gridmap pose yaw = {quat_to_yaw(q)}")
+        # self.get_logger().info(f"gridmap pose yaw = {quat_to_yaw(q)}")
         yaw = quat_to_yaw(q)
 
         # Transform world point into map-local coordinates (centered at map center)
@@ -330,7 +330,7 @@ class LocalTraversabilityCost(Node):
             rows = int(round(float(msg.info.length_x) / res))
             cols = int(round(float(msg.info.length_y) / res))
 
-        self.get_logger().info(f"robot in {gridmap_frame}: rx={rx:.3f}, ry={ry:.3f}")
+        # self.get_logger().info(f"robot in {gridmap_frame}: rx={rx:.3f}, ry={ry:.3f}")
 
 
         elev_global = parse_layer_to_mat(elev_msg, rows, cols)
@@ -349,9 +349,9 @@ class LocalTraversabilityCost(Node):
 
         # Center index (row,col) for robot in global map
         center_rc = self.world_to_map_indices(rx, ry, msg.info, elev_global.shape[0], elev_global.shape[1])
-        self.get_logger().info(
-            f"rx={rx:.3f}, ry={ry:.3f} -> center_rc(row=x, col=y)=({center_rc[0]}, {center_rc[1]})"
-        )
+        # self.get_logger().info(
+        #     f"rx={rx:.3f}, ry={ry:.3f} -> center_rc(row=x, col=y)=({center_rc[0]}, {center_rc[1]})"
+        # )
 
 
         # elev_local = self.crop_window(elev_global, center_rc, win_rows, win_cols)
