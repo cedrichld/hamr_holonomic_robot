@@ -39,7 +39,7 @@ The result is an off-road holonomic base that can execute **arbitrary trajectori
 ## COMPA Hardware and Simulation Overview
 
 <p align="center">
-  <img src="img/compa_hardware.png" alt="COMPA Hardware Overview" width="700">
+  <img src="img/compa_hardware.png" alt="COMPA Hardware Overview" width="85%">
 </p>
 
 * **Mobile base**: Two powered drive wheels on a rocker suspension, plus rear casters for support.

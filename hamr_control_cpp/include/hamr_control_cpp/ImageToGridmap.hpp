@@ -62,6 +62,8 @@ private:
 
   //! Resolution of the grid map.
   double resolution_;
+  double map_width_;
+  int img_px_res_;
 
   //! Range of the height values.
   double minHeight_;

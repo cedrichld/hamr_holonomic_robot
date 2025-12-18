@@ -39,15 +39,28 @@ bool ImageToGridmap::readParameters()
 {
   this->declare_parameter("image_topic", std::string("/image"));
   this->declare_parameter("resolution", rclcpp::ParameterValue(0.03));
+  this->declare_parameter("map_width", rclcpp::ParameterValue(-1.0));
+  this->declare_parameter<int>("img_px_res", -1);
   this->declare_parameter("min_height", rclcpp::ParameterValue(0.0));
   this->declare_parameter("max_height", rclcpp::ParameterValue(1.0));
   this->declare_parameter("map_frame_id", std::string("map"));
 
   this->get_parameter("image_topic", imageTopic_);
   this->get_parameter("resolution", resolution_);
+  this->get_parameter("map_width", map_width_);
+  this->get_parameter("img_px_res", img_px_res_);
   this->get_parameter("min_height", minHeight_);
   this->get_parameter("max_height", maxHeight_);
   this->get_parameter("map_frame_id", mapFrameId_);
+
+  bool has_map_width = map_width_ > 0.0;
+  bool has_img_px_res = img_px_res_ > 0;
+
+  if (has_map_width && has_img_px_res) {
+    resolution_ = map_width_ / img_px_res_;
+  } else if (img_px_res_ == 0 || map_width_ == 0) {
+    RCLCPP_ERROR(this->get_logger(), "img_px_res (%d) and map_width (%.3f) must be non-zero", img_px_res_, map_width_);
+  }
 
   RCLCPP_INFO(
     this->get_logger(),
