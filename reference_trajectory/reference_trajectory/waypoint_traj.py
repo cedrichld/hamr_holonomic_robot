@@ -57,7 +57,7 @@ class TrajectoryNode(Node):
             y = ps.pose.position.y
             yaw = quat_to_angle(ps.pose.orientation)
             pts.append([x, y, yaw])
-            self.get_logger().info("Received path point: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
+            # self.get_logger().info("Received path point: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
             # self.get_logger().info("Orientation: w=%.2f, x=%.2f, y=%.2f, z=%.2f" % \
             #                        (ps.pose.orientation.w, ps.pose.orientation.x, ps.pose.orientation.y, ps.pose.orientation.z))
 

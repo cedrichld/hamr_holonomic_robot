@@ -33,7 +33,7 @@ public:
     traversability_topic_   = declare_parameter<std::string>("traversability_topic", "/filtered_map");
     traversability_layer_   = declare_parameter<std::string>("traversability_layer", "traversability_custom");
 
-    // Interpretation: traversability [0-1], higher is better
+    // Interpretation: traversability [0-1] higher = more traverable
     traversability_threshold_ = declare_parameter<double>("traversability_threshold", 0.35);
     alpha_traversability_     = declare_parameter<double>("alpha_traversability", 5.0);
 
@@ -41,6 +41,7 @@ public:
     heuristic_weight_       = declare_parameter<double>("heuristic_weight", 0.1);
 
     // Inflation not used rn
+    using_inflation_  = declare_parameter<double>("using_inflation_", false);
     inflation_radius_ = declare_parameter<double>("inflation_radius", 0.5);
     inflation_weight_ = declare_parameter<double>("inflation_weight", 5.0);
     inflation_decay_  = declare_parameter<double>("inflation_decay", 0.15);
@@ -491,7 +492,7 @@ private:
         difficulty = std::clamp(difficulty, 0.0f, 1.0f);
 
         float mult = 1.0f + float(alpha_traversability_) * difficulty;
-        const float pen = 0; // clearancePenalty(nbr, size_x, size_y, toIndex2, toLinear, isBlocked);
+        const float pen = using_inflation_ ? clearancePenalty(nbr, size_x, size_y, toIndex2, toLinear, isBlocked) : 0;
         float edge_cost = step_d * mult;
 
         const float g_new = rec[cur].g + edge_cost * (1.0f + pen);
@@ -867,6 +868,7 @@ private:
   bool allow_diagonal_;
   double heuristic_weight_;
 
+  bool using_inflation_;
   double inflation_radius_;
   double inflation_weight_;
   double inflation_decay_;

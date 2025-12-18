@@ -17,13 +17,6 @@ def generate_launch_description():
     grid_map_demos_dir = get_package_share_directory('grid_map_demos')
     hamr_bringup_dir = get_package_share_directory('hamr_bringup')
 
-    # testing_terrain = True
-    # visualize_rviz = True
-
-    # img_px_res = 1025  # pixels
-    # map_width = 45.0
-    # map_height = 4.5 # meters
-
     # Declare launch configuration variables that can access the launch arguments values
     testing_terrain = LaunchConfiguration('testing_terrain')
     visualize_rviz = LaunchConfiguration('visualize_rviz')
@@ -139,8 +132,8 @@ def generate_launch_description():
         parameters=[filters_config_file]
     )
 
-    # if IfCondition(testing_terrain):
-    #     print(f"ifcond: {IfCondition(testing_terrain)}")
+    # ============================================================================
+    # IfCondition(testing_terrain):
     image_publisher_node_testing = Node(
         condition=IfCondition(testing_terrain),
         package='grid_map_demos',
@@ -160,9 +153,10 @@ def generate_launch_description():
         output='screen',
         parameters=[visualization_config_file]
     )
+
     # else:
     image_publisher_node = Node(
-    condition=UnlessCondition(testing_terrain),
+        condition=UnlessCondition(testing_terrain),
         package='grid_map_demos',
         executable='image_publisher.py',
         name='image_publisher',
@@ -173,7 +167,7 @@ def generate_launch_description():
         }]
     )
     image_to_gridmap_demo_node = Node(
-    condition=UnlessCondition(testing_terrain),
+        condition=UnlessCondition(testing_terrain),
         package='hamr_control_cpp',
         executable='image_to_gridmap',
         name='image_to_gridmap',
@@ -187,7 +181,8 @@ def generate_launch_description():
             'img_px_res': img_px_res
         }] # meters per cell -> img_res / map_xy: 45m / 1025px
     )
-
+    # ========================================================
+    
     grid_map_visualization_node = Node(
         package='grid_map_visualization',
         executable='grid_map_visualization',

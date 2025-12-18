@@ -1,0 +1,22 @@
+local_traversability_cost:
+  ros__parameters:
+    input_topic: /filtered_map
+    output_topic: /local_costmap
+    elevation_layer: elevation_inpainted
+    local_size_x: 5.0
+    local_size_y: 5.0
+    base_frame: base_footprint
+    publish_in_base_frame: false
+
+    # cost_base tuning
+    use_roughness: true
+    slope_max: 0.6
+    roughness_max: 0.05
+    w_slope: 0.7
+    w_rough: 0.3
+    rough_radius: 0.15
+
+    # debug if map looks transposed/flipped
+    swap_xy: false
+    flip_x: false
+    flip_y: false
