@@ -76,6 +76,11 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
 </p>
 <p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Trajectory Optimized for Holonomic Traversability</em></p>
 
+<p align="center">
+  <img src="img/ARA_star_implementation2.png" alt="Global Traversability with ARA*" height="210">
+  <img src="img/global_and_local_traversability_maps.png" alt="Local+Global Traversability Map Computations" height="210">
+</p>
+<p align="center"><em>Left: Global Traversability with ARA*, Right: Local+Global Traversability Map Computations</em></p>
 
 ### Results (sim & hardware)
 | Path      | RMSE (sim, m) | RMSE (hw, m) | Yaw Std (rad, hw) |
