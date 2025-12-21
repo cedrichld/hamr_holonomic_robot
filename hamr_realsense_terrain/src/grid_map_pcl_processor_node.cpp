@@ -18,7 +18,7 @@ public:
     declare_parameter<std::string>("points_topic", "/camera/camera/depth/color/points");
     declare_parameter<std::string>("map_topic", "/elevation_map");
     declare_parameter<std::string>("params_file", "");
-    declare_parameter<std::string>("map_frame", "map"); // or base_link if you prefer local
+    declare_parameter<std::string>("map_frame", "map");
     get_parameter("points_topic", points_topic_);
     get_parameter("map_topic", map_topic_);
     get_parameter("params_file", params_file_);
@@ -53,10 +53,6 @@ private:
     pcl::PointCloud<Point>::Ptr cloud(new pcl::PointCloud<Point>());
     pcl::fromROSMsg(*msg, *cloud);
 
-    // (Optional) transform cloud to target frame before processing if you want a world-fixed map.
-    // You can also use gm::transformCloud(...) from helpers.hpp given a rigid transform.
-    // For TF-based transforms, integrate tf2 before this step.
-
     // 2) Live processing through GridMapPclLoader API (supports raw clouds)
     loader_->setInputCloud(cloud);                                  // feed input cloud
     loader_->preProcessInputCloud();                                 // filters/outlier removal/downsample
@@ -69,7 +65,7 @@ private:
     // grid_map_msgs::msg::GridMap out;
     // grid_map::GridMapRosConverter::toMessage(gridMap, out);
     // pub_->publish(out);
-    auto msg_ptr = grid_map::GridMapRosConverter::toMessage(gridMap);           // or toMessage(gridMap, {"elevation"})
+    auto msg_ptr = grid_map::GridMapRosConverter::toMessage(gridMap); // or toMessage(gridMap, {"elevation"})
     pub_->publish(std::move(*msg_ptr));
   }
 

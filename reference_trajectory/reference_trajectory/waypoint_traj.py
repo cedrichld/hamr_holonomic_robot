@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from hamr_interfaces.msg import StateError
-from hamr_interfaces.msg import ReferenceTraj
+from hamr_interfaces.msg import ReferenceTraj   
 
 from nav_msgs.msg import Path
 

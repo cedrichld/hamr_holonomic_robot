@@ -15,6 +15,8 @@ import tf_transformations # for quaternion operations
 
 from hamr_interfaces.msg import LiveGains, ReferenceTraj # could create a compa interface later
 
+from .mpc_compa import CompaMPC
+
 
 ### - - UTILITIES - - ###
 def wrap_angle(a):
@@ -47,6 +49,7 @@ class CompaControlNode(Node):
         default_compa_config = {"r_wheel": 0.1075,
                                 "a_wheel": 0.331643,
                                 "b_wheel": 0.274986, 
+                                "controller_type": 'mpc',
                                 "mode": "auto"} # "auto" or "manual"
         for a, b in default_compa_config.items():
             self.declare_parameter(a, b)
@@ -54,6 +57,7 @@ class CompaControlNode(Node):
             "r_wheel": self.get_parameter("r_wheel").value,
             "a_wheel": self.get_parameter("a_wheel").value,
             "b_wheel": self.get_parameter("b_wheel").value,
+            "controller_type": self.get_parameter("controller_type").value,
             "mode": self.get_parameter("mode").value
         }
         
@@ -176,6 +180,8 @@ class CompaControlNode(Node):
         self.roll_pitch_dot_limit = 2.0 * math.pi * (240.0 / 360.0) 
         self.yaw_dot_limit = 2.0
 
+        self.mpc = CompaMPC(N=20, dt=1.0 / self.control_rate_hz)
+
         self.get_logger().info("COMPA Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
                                ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
                                 + "; P_y: " + str(self.gains["y"]["P"]) + 
@@ -183,81 +189,72 @@ class CompaControlNode(Node):
                                 + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
                                 str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
 
+    def compute_orientation(self): 
+        ''' Find the distance error to target '''
+        yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
+
+        # world->base
+        q_w_b = [self.pose_base_.pose.orientation.x,
+                self.pose_base_.pose.orientation.y,
+                self.pose_base_.pose.orientation.z,
+                self.pose_base_.pose.orientation.w]
+
+        # base->roll
+        q_b_r = [self.roll_link_base_orientation_.x,
+                self.roll_link_base_orientation_.y,
+                self.roll_link_base_orientation_.z,
+                self.roll_link_base_orientation_.w]
+        
+        # base->pitch
+        q_b_p = [self.pitch_link_base_orientation_.x,
+                self.pitch_link_base_orientation_.y,
+                self.pitch_link_base_orientation_.z,
+                self.pitch_link_base_orientation_.w]
+
+        # base->yaw
+        q_b_y = [self.yaw_link_base_orientation_.x,
+                self.yaw_link_base_orientation_.y,
+                self.yaw_link_base_orientation_.z,
+                self.yaw_link_base_orientation_.w]
+
+        # world->roll,pitch,yaw
+        q_w_r = tf_transformations.quaternion_multiply(q_w_b, q_b_r)
+        q_w_p = tf_transformations.quaternion_multiply(q_w_b, q_b_p)
+        q_w_y = tf_transformations.quaternion_multiply(q_w_b, q_b_y)
+
+        # Extract WORLD roll, pitch, yaw
+        roll_w = math.atan2(
+            2.0*(q_w_r[3]*q_w_r[0] + q_w_r[1]*q_w_r[2]),
+            1.0 - 2.0*(q_w_r[0]*q_w_r[0] + q_w_r[1]*q_w_r[1])
+        )
+        pitch_w = math.asin(
+            2.0*(q_w_p[3]*q_w_p[1] - q_w_p[2]*q_w_p[0])
+        )
+        yaw_turret_w = math.atan2(
+            2.0*(q_w_y[3]*q_w_y[2] + q_w_y[0]*q_w_y[1]),
+            1.0 - 2.0*(q_w_y[1]*q_w_y[1] + q_w_y[2]*q_w_y[2])
+        )
+
+        return yaw_base_w, roll_w, pitch_w, yaw_turret_w # yaw_base_w passed to jacobian later 
+    
     def pid_step(self):
         ''' Autonomous Mode - compute velocities based on PID Controller Logic:
             - Compute errors based on pose
             - Compute desired velocities based on (a) feed-forward (b) PID corrections from pose errors
             - Feed desired velocities to jacobian (to get joint commands)
         '''
-        def compute_errors(): 
-            ''' Find the distance error to target '''
-            err_x = self.reference_.x - self.pose_base_.pose.position.x
-            err_y = self.reference_.y - self.pose_base_.pose.position.y
+        err_x = self.reference_.x - self.pose_base_.pose.position.x
+        err_y = self.reference_.y - self.pose_base_.pose.position.y
+        
+        roll_des = self.reference_.roll # desired roll for the turret wrt to world frame (used for error) - 0.0 for now
+        pitch_des = self.reference_.pitch # desired pitch for the turret wrt to world frame (used for error) - 0.0 for now
+        yaw_des = self.reference_.yaw # desired yaw for the turret wrt to world frame (used for error)
+        yaw_base_w, roll_w, pitch_w, yaw_turret_w = self.compute_orientation()
 
-
-            roll_des = self.reference_.roll # desired roll for the turret wrt to world frame (used for error) - 0.0 for now
-            pitch_des = self.reference_.pitch # desired pitch for the turret wrt to world frame (used for error) - 0.0 for now
-            yaw_des = self.reference_.yaw # desired yaw for the turret wrt to world frame (used for error)
-            yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
-            # yaw_turret_b = quat_to_yaw(self.yaw_link_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
-            
-            # world->base
-            q_w_b = [self.pose_base_.pose.orientation.x,
-                    self.pose_base_.pose.orientation.y,
-                    self.pose_base_.pose.orientation.z,
-                    self.pose_base_.pose.orientation.w]
-
-            # base->roll
-            q_b_r = [self.roll_link_base_orientation_.x,
-                    self.roll_link_base_orientation_.y,
-                    self.roll_link_base_orientation_.z,
-                    self.roll_link_base_orientation_.w]
-            
-            # base->pitch
-            q_b_p = [self.pitch_link_base_orientation_.x,
-                    self.pitch_link_base_orientation_.y,
-                    self.pitch_link_base_orientation_.z,
-                    self.pitch_link_base_orientation_.w]
-
-            # base->yaw
-            q_b_y = [self.yaw_link_base_orientation_.x,
-                    self.yaw_link_base_orientation_.y,
-                    self.yaw_link_base_orientation_.z,
-                    self.yaw_link_base_orientation_.w]
-
-            # world->roll,pitch,yaw
-            q_w_r = tf_transformations.quaternion_multiply(q_w_b, q_b_r)
-            q_w_p = tf_transformations.quaternion_multiply(q_w_b, q_b_p)
-            q_w_y = tf_transformations.quaternion_multiply(q_w_b, q_b_y)
-
-            # Extract WORLD roll, pitch, yaw
-            roll_w = math.atan2(
-                2.0*(q_w_r[3]*q_w_r[0] + q_w_r[1]*q_w_r[2]),
-                1.0 - 2.0*(q_w_r[0]*q_w_r[0] + q_w_r[1]*q_w_r[1])
-            )
-            pitch_w = math.asin(
-                2.0*(q_w_p[3]*q_w_p[1] - q_w_p[2]*q_w_p[0])
-            )
-            # roll_w = math.atan2(
-            #     2.0*(q_w_y[3]*q_w_y[0] + q_w_y[1]*q_w_y[2]),
-            #     1.0 - 2.0*(q_w_y[0]*q_w_y[0] + q_w_y[1]*q_w_y[1])
-            # )
-            # pitch_w = math.asin(
-            #     2.0*(q_w_y[3]*q_w_y[1] - q_w_y[2]*q_w_y[0])
-            # )
-            yaw_turret_w = math.atan2(
-                2.0*(q_w_y[3]*q_w_y[2] + q_w_y[0]*q_w_y[1]),
-                1.0 - 2.0*(q_w_y[1]*q_w_y[1] + q_w_y[2]*q_w_y[2])
-            )
-            
-            # yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
-            err_roll = wrap_angle(roll_des - roll_w)
-            err_pitch = wrap_angle(pitch_des - pitch_w)
-            err_yaw = wrap_angle(yaw_des - yaw_turret_w)
-
-            return err_x, err_y, err_roll, err_pitch, err_yaw, yaw_base_w # yaw_base_w passed to jacobian later
-
-        err_x, err_y, err_roll, err_pitch, err_yaw, yaw_base_w = compute_errors()
+        # yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
+        err_roll = wrap_angle(roll_des - roll_w)
+        err_pitch = wrap_angle(pitch_des - pitch_w)
+        err_yaw = wrap_angle(yaw_des - yaw_turret_w)
 
         # For debugging and publishing gains
         P_x = D_x = I_x_term = 0.0
@@ -387,6 +384,41 @@ class CompaControlNode(Node):
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, desired_roll_dot, 
                                          desired_pitch_dot, desired_yaw_dot]), yaw_base_w)
 
+    def mpc_step(self):
+        # Build current state x0
+        x = self.pose_base_.pose.position.x
+        y = self.pose_base_.pose.position.y
+        yaw_base_w, roll_w, pitch_w, yaw_turret_w = self.compute_orientation()
+
+        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w])
+
+        # Build reference sequence over horizon
+        # Simple for now: hold the same reference over the horizon
+        x_ref = self.reference_.x
+        y_ref = self.reference_.y
+        roll_ref = self.reference_.roll
+        pitch_ref = self.reference_.pitch
+        yaw_ref = self.reference_.yaw
+
+        x_ref_vec = np.array([x_ref, y_ref, roll_ref, pitch_ref,yaw_ref])
+        x_ref_seq = np.tile(x_ref_vec, (self.mpc.N + 1, 1))  # (N+1, 3)
+
+        # Solve MPC
+        u0 = self.mpc.solve(x0, x_ref_seq)  # shape (3,)
+
+        vx_base, vy_base, roll_dot_gimbal, pitch_dot_gimbal, yaw_dot_turret = u0
+
+        desired_velocity = np.array([
+            vx_base,
+            vy_base,
+            roll_dot_gimbal,
+            pitch_dot_gimbal,
+            yaw_dot_turret,
+        ])
+
+        # 5) Use existing Jacobian + publishers
+        self.publish_joint_cmd(desired_velocity, yaw_base_w)
+
     def manual_mode_callback(self, msg: Twist):
         ''' Manual Mode - directly compute joint commands from terminal inputs '''
         yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation)
@@ -408,19 +440,21 @@ class CompaControlNode(Node):
 
     def control_tick(self):
         ''' Send command every (1 / control_rate_hz)[s] '''
-        now = self.get_clock().now()
-        dur = (now - self.last_control_time) # rclpy.duration.Duration
-        self.last_control_time = now
-
-        dt = dur.nanoseconds * 1e-9
-        if not math.isfinite(dt) or dt <= 0.0:
-            return
-        
-        self.dt = max(1e-4, min(dt, 0.1))
-
         if (self.pose_base_ is not None and self.reference_ is not None 
                 and self.yaw_link_base_orientation_ is not None):
-            self.pid_step()
+            if self.compa_config["controller_type"] == 'pid':
+                now = self.get_clock().now()
+                dur = (now - self.last_control_time) # rclpy.duration.Duration
+                self.last_control_time = now
+
+                dt = dur.nanoseconds * 1e-9
+                if not math.isfinite(dt) or dt <= 0.0:
+                    return
+                
+                self.dt = max(1e-4, min(dt, 0.1))
+                self.pid_step()
+            elif self.compa_config["controller_type"] == 'mpc':
+                self.mpc_step()
 
     def _quat_normalized(self, q_xyzw):
         x, y, z, w = q_xyzw

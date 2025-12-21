@@ -31,7 +31,7 @@ public:
     // Parameters
     // -----------------------
     traversability_topic_   = declare_parameter<std::string>("traversability_topic", "/filtered_map");
-    traversability_layer_   = declare_parameter<std::string>("traversability_layer", "traversability_custom");
+    traversability_layer_   = declare_parameter<std::string>("traversability_layer", "traversability");
 
     // Interpretation: traversability [0-1] higher = more traverable
     traversability_threshold_ = declare_parameter<double>("traversability_threshold", 0.35);

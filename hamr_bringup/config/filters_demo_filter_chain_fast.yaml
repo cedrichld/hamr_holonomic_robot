@@ -8,7 +8,7 @@ grid_map_filters:
       filter1:
         name: buffer_normalizer
         type: gridMapFilters/BufferNormalizerFilter
-      
+
       filter2:  # Delete color layer.
         name: delete_original_layers
         type: gridMapFilters/DeletionFilter
@@ -30,7 +30,7 @@ grid_map_filters:
           input_layer: elevation_inpainted
           output_layer: elevation_smooth
           radius: 0.3
-        
+
       filter5:  # Compute surface normals.
         name: surface_normals
         type: gridMapFilters/NormalVectorsFilter
@@ -66,9 +66,7 @@ grid_map_filters:
         type: gridMapFilters/MathExpressionFilter
         params:
           output_layer: traversability
-          # max slope of 0.5rad (30deg) and 3cm max bump height
-          expression: 0.9 * exp(-square(square(slope / 0.4))) +
-            0.1 * exp(-square(roughness / 0.03))
+          expression: 0.9 * (1.0 - (slope / 0.6)) + 0.1 * (1.0 - (roughness / 0.05)) # max slope of 0.6rad, roughness max at 5cm
 
       filter10:  # Set lower threshold on traversability.
         name: traversability_lower_threshold

@@ -85,38 +85,6 @@ def generate_launch_description():
             hamr_bringup_dir, 'config', 'filters_demo.yaml'),
         description='Full path to the Gridmap visualization config file to use')
     
-    '''
-    The filters_demo.yaml:
-    ---------------------
-    image_to_gridmap:
-        ros__parameters:
-            image_topic: "/image"
-            resolution: 0.02
-            map_frame_id: "map"
-            min_height: -0.5
-            max_height: 1.0
-
-        grid_map_visualization:
-        ros__parameters:
-            grid_map_topic: /filtered_map
-            grid_map_visualizations: [surface_normals, traversability_grid] 
-            surface_normals:
-            type: vectors
-            params:
-                layer_prefix: normal_vectors_
-                position_layer: elevation
-                scale: 0.06
-                line_width: 0.005
-                color: 15600153 # red
-            traversability_grid:
-            type: occupancy_grid
-            params:
-                layer: traversability
-                data_min: 0.0
-                data_max: 1.0
-    ----------------------
-    '''
-
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config',
         default_value=os.path.join(

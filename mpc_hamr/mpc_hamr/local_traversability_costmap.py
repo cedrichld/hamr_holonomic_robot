@@ -13,7 +13,7 @@ from geometry_msgs.msg import PointStamped
 import tf2_ros
 from tf2_ros import TransformException
 
-from tf2_geometry_msgs import do_transform_point  # install tf2_geometry_msgs if needed
+from tf2_geometry_msgs import do_transform_point
 
 
 def quat_to_yaw(q):
@@ -31,18 +31,13 @@ def make_float32_multiarray(mat_2d: np.ndarray, label0="column_index", label1="r
         MultiArrayDimension(label=label1, size=cols, stride=cols),
     ]
     msg.layout.data_offset = 0
-    msg.data = mat_2d.astype(np.float32).ravel(order="F").tolist() # column-major (Eigen) - what gridmap is requiring in rviz
+    msg.data = mat_2d.astype(np.float32).ravel(order="F").tolist() # column-major (Eigen)
 
     return msg
 
 def parse_layer_to_mat(layer_msg: Float32MultiArray, rows: int, cols: int) -> np.ndarray:
-    # Try to reshape using layout dims if present; fallback to (rows, cols)
     data = np.array(layer_msg.data, dtype=np.float32)
-    # if len(layer_msg.layout.dim) >= 2:
-    #     r0 = int(layer_msg.layout.dim[0].size)
-    #     c0 = int(layer_msg.layout.dim[1].size)
-    #     if r0 * c0 == data.size:
-    #         return data.reshape((r0, c0), order="F")
+    
     if rows * cols != data.size:
         raise RuntimeError(f"Layer data size mismatch: expected {rows*cols}, got {data.size}")
     return data.reshape((rows, cols), order="F")
@@ -80,20 +75,15 @@ class LocalTraversabilityCost(Node):
 
         self.publish_in_base_frame = bool(self.declare_parameter("publish_in_base_frame", False).value)
 
-        # Cost settings
+        # Cost settings - TUNE MORE
         self.use_roughness = bool(self.declare_parameter("use_roughness", True).value)
-        self.slope_max = float(self.declare_parameter("slope_max", 0.6).value) # radians-ish threshold
-        self.roughness_max = float(self.declare_parameter("roughness_max", 0.05).value) # meters (tune)
+        self.slope_max = float(self.declare_parameter("slope_max", 0.6).value) # rad-ish threshold
+        self.roughness_max = float(self.declare_parameter("roughness_max", 0.05).value) # meters
         self.w_slope = float(self.declare_parameter("w_slope", 0.9).value)
         self.w_rough = float(self.declare_parameter("w_rough", 0.1).value)
 
         # Roughness computation radius (meters) (local std / mean abs deviation)
         self.rough_radius = float(self.declare_parameter("rough_radius", 0.3).value)
-
-        # Debug axes handling 
-        self.swap_xy = bool(self.declare_parameter("swap_xy", True).value)
-        self.flip_x = bool(self.declare_parameter("flip_x", False).value)
-        self.flip_y = bool(self.declare_parameter("flip_y", False).value)
 
         # -------------------------
         # TF
@@ -111,7 +101,6 @@ class LocalTraversabilityCost(Node):
         self.last_pub_xy = None
 
         self.timer = self.create_timer(1.0 / max(0.1, self.publish_rate_hz), self.on_timer)
-
 
         # -------------------------
         # Pub/Sub
@@ -180,17 +169,9 @@ class LocalTraversabilityCost(Node):
         lx = float(info.length_x)
         ly = float(info.length_y)
 
-        # Convert to indices (col along x, row along y)
-        # x in [-lx/2, lx/2)
-        # y in [-ly/2, ly/2)
-        # col = int(math.floor((x_m + lx / 2.0) / res)) # x -> col
-        # row = int(math.floor((y_m + ly / 2.0) / res)) # y-> row
-
-        # row = int(math.floor((x_m + lx / 2.0) / res)) # x -> row
-        # col = int(math.floor((y_m + ly / 2.0) / res)) # y -> col
+        # Convert to indices
         row = int(math.floor((lx / 2.0 - x_m) / res))  # x -> row, flipped
         col = int(math.floor((ly / 2.0 - y_m) / res))  # y -> col, flipped
-
 
         # Clamp
         row = max(0, min(rows - 1, row))
@@ -280,18 +261,6 @@ class LocalTraversabilityCost(Node):
         rough[mask < 0.5] = np.nan
         return rough.astype(np.float32)
 
-    def apply_axis_debug(self, mat: np.ndarray) -> np.ndarray:
-        out = mat
-        if self.swap_xy:
-            out = out.T
-        if self.flip_x:
-            # x corresponds to columns
-            out = np.flip(out, axis=1)
-        if self.flip_y:
-            # y corresponds to rows
-            out = np.flip(out, axis=0)
-        return out
-
     def on_map(self, msg: GridMap):
         self.last_msg = msg
 
@@ -331,10 +300,7 @@ class LocalTraversabilityCost(Node):
             cols = int(round(float(msg.info.length_y) / res))
 
         # self.get_logger().info(f"robot in {gridmap_frame}: rx={rx:.3f}, ry={ry:.3f}")
-
-
         elev_global = parse_layer_to_mat(elev_msg, rows, cols)
-        # elev_global = self.apply_axis_debug(elev_global)
 
         res = float(msg.info.resolution)
 
@@ -353,100 +319,6 @@ class LocalTraversabilityCost(Node):
         #     f"rx={rx:.3f}, ry={ry:.3f} -> center_rc(row=x, col=y)=({center_rc[0]}, {center_rc[1]})"
         # )
 
-
-        # elev_local = self.crop_window(elev_global, center_rc, win_rows, win_cols)
-
-        # # Compute cost_base
-        # slope = self.compute_slope_mag(elev_local, res)
-        # if self.use_roughness:
-        #     rough = self.compute_roughness(elev_local, res)
-        # else:
-        #     rough = np.zeros_like(elev_local, dtype=np.float32)
-
-        # slope_n = np.clip(slope / max(1e-6, self.slope_max), 0.0, 1.0)
-        # if self.use_roughness:
-        #     rough_n = np.clip(rough / max(1e-6, self.roughness_max), 0.0, 1.0)
-        # else:
-        #     rough_n = 0.0
-
-        # cost = self.w_slope * slope_n + self.w_rough * rough_n
-        # cost[~np.isfinite(elev_local)] = np.nan
-        # cost = np.clip(cost, 0.0, 1.0).astype(np.float32)
-
-        # # Build output GridMap
-        # out = GridMap()
-        # out.header.stamp = self.get_clock().now().to_msg()
-
-        # # Publish in base frame (centered at robot)
-        # if self.publish_in_base_frame:
-        #     out.header.frame_id = self.base_frame
-        #     out.info.pose.position.x = 0.0
-        #     out.info.pose.position.y = 0.0
-        #     out.info.pose.position.z = 0.0
-        #     out.info.pose.orientation.w = 1.0
-        # else:
-        #     out.header.frame_id = gridmap_frame
-        #     out.info.pose.position.x = float(rx)
-        #     out.info.pose.position.y = float(ry)
-        #     out.info.pose.position.z = 0.0
-        #     out.info.pose.orientation.w = 1.0
-
-        # out.info.resolution = res
-        # out.info.length_x = float(win_cols) * res
-        # out.info.length_y = float(win_rows) * res
-
-        # out.layers = ["elevation_local", "cost_base"]
-        # out.basic_layers = ["elevation_local"]
-
-        # # Use incoming layout (the exact way RViz expect it)
-        # layout = msg.data[elev_layer_idx].layout
-
-        # # Make a deep-ish copy and edit dims
-        # layout_out = Float32MultiArray().layout
-        # layout_out.dim = [MultiArrayDimension(), MultiArrayDimension()]
-        # layout_out.data_offset = 0
-
-        # # grid_map expects dim[0]=cols, dim[1]=rows with Eigen column-major
-        # layout_out.dim[0].label = layout.dim[0].label
-        # layout_out.dim[1].label = layout.dim[1].label
-
-        # rows, cols = elev_local.shape
-        # layout_out.dim[0].size = cols
-        # layout_out.dim[1].size = rows
-        # layout_out.dim[0].stride = cols * rows
-        # layout_out.dim[1].stride = rows
-
-
-        # elev_out = Float32MultiArray()
-        # elev_out.layout = layout_out
-        # elev_out.data = elev_local.astype(np.float32).ravel(order="F").tolist()
-
-        # cost_out = Float32MultiArray()
-        # cost_out.layout = layout_out
-        # cost_out.data = cost.astype(np.float32).ravel(order="F").tolist()
-
-        # out.data = [elev_out, cost_out]
-
-
-        # # out.data = [
-        # #     make_float32_multiarray(elev_local, "row_index", "col_index"),
-        # #     make_float32_multiarray(cost, "row_index", "col_index"),
-        # # ]
-
-        # out.outer_start_index = 0
-        # out.inner_start_index = 0
-
-        # out.info.pose.orientation.x = 0.0
-        # out.info.pose.orientation.y = 0.0
-        # out.info.pose.orientation.z = 0.0
-        # out.info.pose.orientation.w = 1.0
-
-
-        # self.pub.publish(out)
-
-
-        # - - - - - - - - - - - - - - - - - -
-        # same r0/c0 math as crop_window
         cr, cc = center_rc
         r0 = cr - win_rows // 2
         c0 = cc - win_cols // 2
@@ -469,7 +341,6 @@ class LocalTraversabilityCost(Node):
         elev_local_vis = elev_local_full.copy()
         mask = np.isfinite(elev_local_vis)
         elev_local_vis[mask] += z_offset
-
 
         # compute slope/cost **on the window**, then embed back too
         slope_window = self.compute_slope_mag(elev_window, res)
@@ -528,8 +399,6 @@ class LocalTraversabilityCost(Node):
         out.inner_start_index = 0
 
         self.pub.publish(out)
-
-
 
 
 def main():

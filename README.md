@@ -83,7 +83,7 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
 <p align="center"><em>Left: Global Traversability with ARA*, Right: Local+Global Traversability Map Computations</em></p>
 
 ### Results (sim & hardware)
-| Path      | RMSE (sim, m) | RMSE (hw, m) | Yaw Std (rad, hw) |
+| Path      | RMSE (sim, m)  | RMSE (hw, m) | Yaw Std (rad, hw) |
 |-----------|----------------|--------------|-------------------|
 | Square    | 0.040          | 0.178        | 0.107             |
 | Triangle  | 0.041          | 0.197        | 0.160             |
@@ -214,4 +214,13 @@ Run the bridge in a separate terminal (or include in launch):
 
 ```bash
 ros2 run hamr_uros_bridge relay_node
+```
+
+For pydrake, we need to run a venv which has pydrake installed. Then run:
+```bash
+cd ~/ros2_ws/hamr_ws
+FILE=install/compa_control_py/lib/compa_control_py/compa_controller
+sed -i '1 s|^.*$|#!/home/cedric/ros2_ws/hamr_ws/env/bin/python3|' "$FILE"
+head -1 install/compa_control_py/lib/compa_control_py/compa_controller
+# should return: ~/ros2_ws/hamr_ws/env/bin/python3
 ```
