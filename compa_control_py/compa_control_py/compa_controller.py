@@ -180,7 +180,8 @@ class CompaControlNode(Node):
         self.roll_pitch_dot_limit = 2.0 * math.pi * (240.0 / 360.0) 
         self.yaw_dot_limit = 2.0
 
-        self.mpc = CompaMPC(N=20, dt=1.0 / self.control_rate_hz)
+        self.mpc = CompaMPC(self.compa_config["r_wheel"], self.compa_config["b_wheel"], self.compa_config["a_wheel"], 
+                            N=20, dt=1.0 / self.control_rate_hz)
 
         self.get_logger().info("COMPA Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
                                ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
@@ -390,7 +391,7 @@ class CompaControlNode(Node):
         y = self.pose_base_.pose.position.y
         yaw_base_w, roll_w, pitch_w, yaw_turret_w = self.compute_orientation()
 
-        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w])
+        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w, yaw_base_w])
 
         # Build reference sequence over horizon
         # Simple for now: hold the same reference over the horizon
@@ -400,11 +401,11 @@ class CompaControlNode(Node):
         pitch_ref = self.reference_.pitch
         yaw_ref = self.reference_.yaw
 
-        x_ref_vec = np.array([x_ref, y_ref, roll_ref, pitch_ref,yaw_ref])
-        x_ref_seq = np.tile(x_ref_vec, (self.mpc.N + 1, 1))  # (N+1, 3)
+        x_ref_vec = np.array([x_ref, y_ref, roll_ref, pitch_ref, yaw_ref])
+        x_ref_seq = np.tile(x_ref_vec, (self.mpc.N + 1, 1))
 
         # Solve MPC
-        u0 = self.mpc.solve(x0, x_ref_seq)  # shape (3,)
+        u0 = self.mpc.solve(x0, x_ref_seq)
 
         vx_base, vy_base, roll_dot_gimbal, pitch_dot_gimbal, yaw_dot_turret = u0
 
@@ -416,7 +417,7 @@ class CompaControlNode(Node):
             yaw_dot_turret,
         ])
 
-        # 5) Use existing Jacobian + publishers
+        # Jacobian
         self.publish_joint_cmd(desired_velocity, yaw_base_w)
 
     def manual_mode_callback(self, msg: Twist):
@@ -424,6 +425,41 @@ class CompaControlNode(Node):
         yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation)
         self.publish_joint_cmd(np.array([msg.linear.x, msg.linear.y, msg.angular.x, 
                                          msg.angular.y, msg.angular.z]), yaw_base_w)
+
+    def compute_velocities(self, desired_velocity, yaw):
+        ''' Derived Jacobian based on dynamics - returns angular velocities for:
+                1. right_wheel
+                2. left_wheel
+                3. turret 
+                4. roll
+                5. pitch
+        '''
+        r_w, b, a = self.compa_config["r_wheel"], \
+            self.compa_config["b_wheel"], self.compa_config["a_wheel"]
+        c, s = np.cos(yaw), np.sin(yaw)
+
+        J = np.array([
+            [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0, 0, 0],
+            [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0, 0, 0],
+            [0, 0, 1, 0, 0],
+            [0, 0, 0, 1, 0],
+            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],
+        ])
+
+        return np.linalg.solve(J, desired_velocity) # will return angular vels for joints
+
+    def publish_joint_cmd(self, desired_velocity, yaw):
+        right_wheel_omega, left_wheel_omega, \
+            roll_omega, pitch_omega, yaw_omega = Float64(), Float64(), Float64(), Float64(), Float64()
+        omegas = self.compute_velocities(desired_velocity, yaw)
+        # self.get_logger().info(f"Computed omegas: {omegas}")
+        right_wheel_omega.data, left_wheel_omega.data, roll_omega.data, pitch_omega.data, yaw_omega.data = omegas
+
+        self.right_wheel_vel_.publish(right_wheel_omega)
+        self.left_wheel_vel_.publish(left_wheel_omega)
+        self.roll_vel_.publish(roll_omega)
+        self.pitch_vel_.publish(pitch_omega)
+        self.yaw_vel_.publish(yaw_omega)
 
     def publish_live_gains(self, P_x, D_x, I_x, 
                            P_y, D_y, I_y, 
@@ -508,38 +544,6 @@ class CompaControlNode(Node):
 
     def callback_reference(self, msg: ReferenceTraj):
         self.reference_ = msg
-
-    def compute_velocities(self, desired_velocity, yaw):
-        ''' Derived Jacobian based on dynamics - returns angular velocities for:
-                1. right_wheel
-                2. left_wheel
-                3. turret 
-        '''
-        r_w, b, a = self.compa_config["r_wheel"], \
-            self.compa_config["b_wheel"], self.compa_config["a_wheel"]
-        c, s = np.cos(yaw), np.sin(yaw)
-
-        J = np.array([
-            [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0, 0, 0],
-            [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0, 0, 0],
-            [0, 0, 1, 0, 0],
-            [0, 0, 0, 1, 0],
-            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],
-        ])
-
-        return np.linalg.solve(J, desired_velocity) # will return angular vels for joints
-
-    def publish_joint_cmd(self, desired_velocity, yaw):
-        right_wheel_omega, left_wheel_omega, roll_omega, pitch_omega, yaw_omega = Float64(), Float64(), Float64(), Float64(), Float64()
-        omegas = self.compute_velocities(desired_velocity, yaw)
-        # self.get_logger().info(f"Computed omegas: {omegas}")
-        right_wheel_omega.data, left_wheel_omega.data, roll_omega.data, pitch_omega.data, yaw_omega.data = omegas
-
-        self.right_wheel_vel_.publish(right_wheel_omega)
-        self.left_wheel_vel_.publish(left_wheel_omega)
-        self.roll_vel_.publish(roll_omega)
-        self.pitch_vel_.publish(pitch_omega)
-        self.yaw_vel_.publish(yaw_omega)
 
     # Used if we want to change parameter during runtime
     def parameters_callback(self, params: list[Parameter]): 
