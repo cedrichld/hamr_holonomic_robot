@@ -15,7 +15,7 @@ class CompaMPC:
         self.r_wheel, self.b_wheel, self.a_wheel = r_wheel, b_wheel, a_wheel
         self.N = N
         self.dt = dt
-
+        #        x, y, roll_w, pitch_w, yaw_turret_w, yaw_base_w
         # State: [x, y, roll, pitch, yaw_turret, yaw_base_w]; 
         # Input: [vx_base, vy_base, roll_dot_gimbal, pitch_dot_gimbal, yaw_dot_turret]
         self.nx = nx
@@ -34,8 +34,8 @@ class CompaMPC:
         self.qdot_min = np.array([-8.0, -8.0, -1.0, -1.0, -2.0])
         self.qdot_max = np.array([+8.0, +8.0, +1.0, +1.0, +2.0])
 
-        self.max_pitch = np.deg2rad(35.0)
-        self.max_roll  = np.deg2rad(35.0)
+        self.max_pitch = np.deg2rad(55.0)
+        self.max_roll  = np.deg2rad(55.0)
 
         # Keep last u delta_u cost later
         self.u_last = np.zeros(self.nu)
@@ -51,7 +51,7 @@ class CompaMPC:
 
         prog = MathematicalProgram()
 
-        M = self.build_J(x0[-1], x0[-2], self.r_wheel, self.b_wheel, self.a_wheel)
+        M = self.build_J(x0[-2], x0[-1], self.r_wheel, self.b_wheel, self.a_wheel)
 
         # Decision variables
         X = prog.NewContinuousVariables(self.nx, self.N + 1, "x")
@@ -72,12 +72,12 @@ class CompaMPC:
             )
 
             # Plug in jacobian to get actuator constraints
-            qdot_expr = M @ uk # each entry is a pydrake.symbolic.Expression
+            # qdot_expr = M @ uk # each entry is a pydrake.symbolic.Expression
 
-            for i in range(self.nu):
-                prog.AddLinearConstraint(qdot_expr[i],
-                                        self.qdot_min[i],
-                                        self.qdot_max[i])
+            # for i in range(self.nu):
+            #     prog.AddLinearConstraint(qdot_expr[i],
+            #                             self.qdot_min[i],
+            #                             self.qdot_max[i])
 
         # Initial condition: x_0 = x0
         prog.AddLinearEqualityConstraint(X[:, 0] - x0[:5], np.zeros(self.nx))

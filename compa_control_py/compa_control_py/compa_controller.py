@@ -391,7 +391,7 @@ class CompaControlNode(Node):
         y = self.pose_base_.pose.position.y
         yaw_base_w, roll_w, pitch_w, yaw_turret_w = self.compute_orientation()
 
-        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w, yaw_base_w,])
+        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w, yaw_base_w])
 
         # Build reference sequence over horizon
         # Simple for now: hold the same reference over the horizon

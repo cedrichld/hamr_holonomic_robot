@@ -67,7 +67,7 @@ public:
     heuristic_weight_       = declare_parameter<double>("heuristic_weight", 0.1);
 
     // Inflation not used rn
-    using_inflation_  = declare_parameter<double>("using_inflation_", false);
+    using_inflation_  = declare_parameter<bool>("using_inflation", false);
     inflation_radius_ = declare_parameter<double>("inflation_radius", 0.5);
     inflation_weight_ = declare_parameter<double>("inflation_weight", 5.0);
     inflation_decay_  = declare_parameter<double>("inflation_decay", 0.15);

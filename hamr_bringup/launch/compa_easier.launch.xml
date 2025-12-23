@@ -58,15 +58,6 @@
         <param from="$(var pid_config_path)" />
     </node> -->
 
-    <!-- ODOM and PID Graphs -->
-    <!-- <node pkg="compa_control_py" exec="compa_pid_graph">
-        <param name="use_sim_time" value="true" />
-    </node> -->
-    <!-- <node pkg="compa_control_py" exec="rpy_tf_graph">
-        <param name="use_sim_time" value="true" />
-    </node> -->
-
-
     <!-- TRACERS -->
     <node pkg="compa_control_py" exec="tf_trail_node" />
 
@@ -85,7 +76,15 @@
         <param name="use_sim_time" value="true" />
     </node>
 
-    <node pkg="hamr_control_cpp" exec="astar_traversability" />
+    <!-- <node pkg="hamr_control_cpp" exec="astar_traversability">
+        <param name="epsilon_start" value="3.0" />
+        <param name="epsilon_min" value="1.0" />
+        <param name="epsilon_step" value="0.25" />
+        <param name="max_expansions_total" value="1000000" />
+        <param name="publish_on_improve" value="true" />
+        <param name="min_improvement_ratio" value="0.0" />
+    </node> -->
+
     <node pkg="mpc_hamr" exec="local_traversability_costmap" />
 
 </launch>

@@ -452,7 +452,7 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0 0 0.127371508973676"
         rpy="0 0 0" />
       <geometry>
         <!-- <mesh
