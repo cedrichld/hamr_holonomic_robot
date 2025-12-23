@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Plot traversability T as a function of slope with a dashed line showing
-the maximum COMPA slope (0.6 rad ≈ 35°).
+the maximum COMPA slope (0.5 rad ≈ 30°).
 
 Equation:
     T = 0.9 * exp(-(slope / 0.4)^4) + 0.1 * exp(-(roughness / 0.03)^4)

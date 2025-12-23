@@ -66,7 +66,7 @@ grid_map_filters:
         type: gridMapFilters/MathExpressionFilter
         params:
           output_layer: traversability
-          expression: 0.9 * (1.0 - (slope / 0.6)) + 0.1 * (1.0 - (roughness / 0.05)) # max slope of 0.6rad, roughness max at 5cm
+          expression: 0.9 * (1.0 - (slope / 0.6)) + 0.1 * (1.0 - (roughness / 0.03)) # max slope of 0.6rad, roughness max at 5cm
 
       filter10:  # Set lower threshold on traversability.
         name: traversability_lower_threshold

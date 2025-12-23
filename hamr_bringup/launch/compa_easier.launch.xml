@@ -9,7 +9,7 @@
         value="$(find-pkg-share hamr_bringup)/config/compa_pid_params.yaml" />
     <!-- For faster gridmap calculations when developing -->
     <let name="gridmap_filters_file"
-        value="$(find-pkg-share hamr_bringup)/config/filters_demo_filter_chain_fast.yaml" />
+        value="$(find-pkg-share hamr_bringup)/config/filters_demo_filter_chain.yaml" />
 
     <!-- Robot Spawn Properties -->
     <let name="spawn_x"   value="0.0"/>
@@ -76,7 +76,7 @@
         <arg name="testing_terrain" value="false"/>
         <arg name="visualize_rviz" value="false"/>
         <arg name="filters_config" value="$(var gridmap_filters_file)"/>
-        <arg name="img_px_res" value="1025"/>
+        <arg name="img_px_res" value="513"/>
         <arg name="map_width" value="45.0"/>
         <arg name="map_height" value="4.5"/>
     </include>

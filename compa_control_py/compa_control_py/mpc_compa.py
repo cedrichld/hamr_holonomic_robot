@@ -22,7 +22,7 @@ class CompaMPC:
         self.nu = nu
 
         # Cost weights
-        self.Q = np.diag([5.0, 5.0, 3.0, 2.0, 2.0])    # tracking       5x5
+        self.Q = np.diag([5.0, 5.0, 2.0, 2.0, 4.0])    # tracking       5x5
         self.R = np.diag([0.1, 0.1, 0.2, 0.5, 0.5])    # control effort 5x5 
         self.P = np.diag([8.0, 8.0, 10.0, 10.0, 10.0]) # terminal       5x5
 
@@ -33,6 +33,9 @@ class CompaMPC:
         # - - - - - - - - - - - - L      R      Roll  Pitch Yaw  #
         self.qdot_min = np.array([-8.0, -8.0, -1.0, -1.0, -2.0])
         self.qdot_max = np.array([+8.0, +8.0, +1.0, +1.0, +2.0])
+
+        self.max_pitch = np.deg2rad(30.0)
+        self.max_roll  = np.deg2rad(30.0)
 
         # Keep last u delta_u cost later
         self.u_last = np.zeros(self.nu)
@@ -62,14 +65,14 @@ class CompaMPC:
             expr = xk1 - (self.A @ xk + self.B @ uk)
             prog.AddLinearEqualityConstraint(expr, np.zeros(self.nx))
 
-            # max_roll  = np.deg2rad(20.0)
-            # max_pitch = np.deg2rad(20.0)
-            # prog.AddBoundingBoxConstraint(
-            #     [-np.inf, -np.inf, -np.inf, -max_roll, -max_pitch],
-            #     [ np.inf,  np.inf,  np.inf,  max_roll,  max_pitch],
-            #     X[:, k]
-            # )
-            prog.AddLinearConstraint(M, self.qdot_min, self.qdot_max, uk)
+            prog.AddBoundingBoxConstraint(
+                [-np.inf, -np.inf, -self.max_roll, -self.max_pitch, -np.inf],
+                [ np.inf,  np.inf,  self.max_roll,  self.max_pitch,  np.inf],
+                X[:, k]
+            )
+
+            # Right now jacobian + actuator constraints somehow breaks the system - to fix later.
+            # prog.AddLinearConstraint(M, self.qdot_min, self.qdot_max, uk)
 
         # Initial condition: x_0 = x0
         prog.AddLinearEqualityConstraint(X[:, 0] - x0[:5], np.zeros(self.nx))
