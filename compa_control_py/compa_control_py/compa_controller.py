@@ -383,7 +383,7 @@ class CompaControlNode(Node):
         # self.get_logger().info(f"Desired x: {desired_x_dot:.3f}, y: {desired_y_dot:.3f}, yaw: {desired_yaw_dot:.3f}")
         self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, desired_roll_dot, 
-                                         desired_pitch_dot, desired_yaw_dot]), yaw_base_w)
+                                         desired_pitch_dot, desired_yaw_dot]), yaw_base_w, yaw_turret_w)
 
     def mpc_step(self):
         # Build current state x0
@@ -391,7 +391,7 @@ class CompaControlNode(Node):
         y = self.pose_base_.pose.position.y
         yaw_base_w, roll_w, pitch_w, yaw_turret_w = self.compute_orientation()
 
-        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w, yaw_base_w])
+        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w, yaw_base_w,])
 
         # Build reference sequence over horizon
         # Simple for now: hold the same reference over the horizon
@@ -418,40 +418,41 @@ class CompaControlNode(Node):
         ])
 
         # Jacobian
-        self.publish_joint_cmd(desired_velocity, yaw_base_w)
+        self.publish_joint_cmd(desired_velocity, yaw_base_w, yaw_turret_w)
 
     def manual_mode_callback(self, msg: Twist):
         ''' Manual Mode - directly compute joint commands from terminal inputs '''
-        yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation)
+        yaw_base_w, _, _, yaw_turret_w = self.compute_orientation()
         self.publish_joint_cmd(np.array([msg.linear.x, msg.linear.y, msg.angular.x, 
-                                         msg.angular.y, msg.angular.z]), yaw_base_w)
+                                         msg.angular.y, msg.angular.z]), yaw_base_w, yaw_turret_w)
 
-    def compute_velocities(self, desired_velocity, yaw):
+    def compute_velocities(self, desired_velocity, yaw_base_w, yaw_turret_w):
         ''' Derived Jacobian based on dynamics - returns angular velocities for:
-                1. right_wheel
-                2. left_wheel
-                3. roll
-                4. pitch
-                5. turret
+                1. right_wheel (base) 
+                2. left_wheel  (base)
+                3. roll        (base->turret->gimbal)
+                4. pitch       (base->turret->gimbal)
+                5. yaw         (base->turret)
         '''
         r_w, b, a = self.compa_config["r_wheel"], \
             self.compa_config["b_wheel"], self.compa_config["a_wheel"]
-        c, s = np.cos(yaw), np.sin(yaw)
+        c1, s1 = np.cos(yaw_base_w), np.sin(yaw_base_w)
+        c2, s2 = np.cos(yaw_turret_w), np.sin(yaw_turret_w)
 
         J = np.array([
-            [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0, 0, 0],
-            [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0, 0, 0],
-            [0, 0, 1, 0, 0],
-            [0, 0, 0, 1, 0],
-            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],
+            [r_w/2 * (c1 - s1*b/a), r_w/2 * (c1 + s1*b/a), 0, 0, 0], # right_wheel (base) 
+            [r_w/2 * (s1 + c1*b/a), r_w/2 * (s1 - c1*b/a), 0, 0, 0], # left_wheel  (base)
+            [0, 0, c2, -s2, 0],                                      # roll        (base->turret->gimbal)
+            [0, 0, s2, c2, 0],                                       # pitch       (base->turret->gimbal)
+            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],                        # yaw         (base->turret)
         ])
 
         return np.linalg.solve(J, desired_velocity) # will return angular vels for joints
 
-    def publish_joint_cmd(self, desired_velocity, yaw):
+    def publish_joint_cmd(self, desired_velocity, yaw_base_w, yaw_turret_w):
         right_wheel_omega, left_wheel_omega, \
             roll_omega, pitch_omega, yaw_omega = Float64(), Float64(), Float64(), Float64(), Float64()
-        omegas = self.compute_velocities(desired_velocity, yaw)
+        omegas = self.compute_velocities(desired_velocity, yaw_base_w, yaw_turret_w)
         # self.get_logger().info(f"Computed omegas: {omegas}")
         right_wheel_omega.data, left_wheel_omega.data, roll_omega.data, pitch_omega.data, yaw_omega.data = omegas
 

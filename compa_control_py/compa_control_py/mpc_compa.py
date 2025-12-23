@@ -21,10 +21,10 @@ class CompaMPC:
         self.nx = nx
         self.nu = nu
 
-        # Cost weights
-        self.Q = np.diag([5.0, 5.0, 3.0, 3.0, 6.0])    # tracking       5x5
-        self.R = np.diag([0.1, 0.1, 0.2, 0.5, 0.5])    # control effort 5x5 
-        self.P = np.diag([8.0, 8.0, 10.0, 10.0, 10.0]) # terminal       5x5
+        # Cost weights:   x_ref y_ref roll_ref pitch_ref yaw_ref
+        self.Q = np.diag([1.0,  1.0,  4.0,     4.0,      6.0])  # tracking       5x5
+        self.R = np.diag([0.1,  0.1,  0.2,     0.5,      0.5])  # control effort 5x5 
+        self.P = np.diag([3.0,  3.0,  10.0,    10.0,     10.0]) # terminal       5x5
 
         # System matrices (simple integrator model)
         self.A = np.eye(self.nx)                    # 5x5
@@ -51,7 +51,7 @@ class CompaMPC:
 
         prog = MathematicalProgram()
 
-        M = self.build_J(x0[-1], self.r_wheel, self.b_wheel, self.a_wheel)
+        M = self.build_J(x0[-1], x0[-2], self.r_wheel, self.b_wheel, self.a_wheel)
 
         # Decision variables
         X = prog.NewContinuousVariables(self.nx, self.N + 1, "x")
@@ -71,8 +71,13 @@ class CompaMPC:
                 X[:, k]
             )
 
-            # Right now jacobian + actuator constraints somehow breaks the system - to fix later.
-            # prog.AddLinearConstraint(M, self.qdot_min, self.qdot_max, uk)
+            # Plug in jacobian to get actuator constraints
+            qdot_expr = M @ uk # each entry is a pydrake.symbolic.Expression
+
+            for i in range(self.nu):
+                prog.AddLinearConstraint(qdot_expr[i],
+                                        self.qdot_min[i],
+                                        self.qdot_max[i])
 
         # Initial condition: x_0 = x0
         prog.AddLinearEqualityConstraint(X[:, 0] - x0[:5], np.zeros(self.nx))
@@ -105,23 +110,25 @@ class CompaMPC:
         self.u_last = u0.copy()
         return u0
     
-    def build_J(self, yaw, r_wheel, b_wheel, a_wheel):
+    def build_J(self, yaw_base_w, yaw_turret_w, r_wheel, b_wheel, a_wheel):
         ''' Derived Jacobian based on dynamics - returns angular velocities for:
-                1. right_wheel
-                2. left_wheel
-                3. roll
-                4. pitch
-                5. turret
+                1. right_wheel (base) 
+                2. left_wheel  (base)
+                3. roll        (base->turret->gimbal)
+                4. pitch       (base->turret->gimbal)
+                5. yaw         (base->turret)
         '''
         r_w, b, a = r_wheel, b_wheel, a_wheel
-        c, s = np.cos(yaw), np.sin(yaw)
+        c1, s1 = np.cos(yaw_base_w), np.sin(yaw_base_w)
+        yaw_turret_w = 0
+        c2, s2 = np.cos(yaw_turret_w), np.sin(yaw_turret_w)
 
         J = np.array([
-            [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0, 0, 0],
-            [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0, 0, 0],
-            [r_w/(2*a), -r_w/(2*a), 1, 0, 1],
-            [r_w/(2*a), -r_w/(2*a), 0, 1, 1],
-            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],
+            [r_w/2 * (c1 - s1*b/a), r_w/2 * (c1 + s1*b/a), 0, 0, 0], # right_wheel (base) 
+            [r_w/2 * (s1 + c1*b/a), r_w/2 * (s1 - c1*b/a), 0, 0, 0], # left_wheel  (base)
+            [0, 0, c2, -s2, 0],                                      # roll        (base->turret->gimbal)
+            [0, 0, s2, c2, 0],                                       # pitch       (base->turret->gimbal)
+            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],                        # yaw         (base->turret)
         ])
 
         return np.linalg.inv(J)
