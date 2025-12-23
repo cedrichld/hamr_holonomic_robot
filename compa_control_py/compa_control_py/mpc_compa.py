@@ -22,7 +22,7 @@ class CompaMPC:
         self.nu = nu
 
         # Cost weights
-        self.Q = np.diag([5.0, 5.0, 2.0, 2.0, 4.0])    # tracking       5x5
+        self.Q = np.diag([5.0, 5.0, 3.0, 3.0, 6.0])    # tracking       5x5
         self.R = np.diag([0.1, 0.1, 0.2, 0.5, 0.5])    # control effort 5x5 
         self.P = np.diag([8.0, 8.0, 10.0, 10.0, 10.0]) # terminal       5x5
 
@@ -34,8 +34,8 @@ class CompaMPC:
         self.qdot_min = np.array([-8.0, -8.0, -1.0, -1.0, -2.0])
         self.qdot_max = np.array([+8.0, +8.0, +1.0, +1.0, +2.0])
 
-        self.max_pitch = np.deg2rad(30.0)
-        self.max_roll  = np.deg2rad(30.0)
+        self.max_pitch = np.deg2rad(35.0)
+        self.max_roll  = np.deg2rad(35.0)
 
         # Keep last u delta_u cost later
         self.u_last = np.zeros(self.nu)
@@ -109,9 +109,9 @@ class CompaMPC:
         ''' Derived Jacobian based on dynamics - returns angular velocities for:
                 1. right_wheel
                 2. left_wheel
-                3. turret 
-                4. roll
-                5. pitch
+                3. roll
+                4. pitch
+                5. turret
         '''
         r_w, b, a = r_wheel, b_wheel, a_wheel
         c, s = np.cos(yaw), np.sin(yaw)
@@ -119,8 +119,8 @@ class CompaMPC:
         J = np.array([
             [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0, 0, 0],
             [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0, 0, 0],
-            [0, 0, 1, 0, 0],
-            [0, 0, 0, 1, 0],
+            [r_w/(2*a), -r_w/(2*a), 1, 0, 1],
+            [r_w/(2*a), -r_w/(2*a), 0, 1, 1],
             [r_w/(2*a), -r_w/(2*a), 0, 0, 1],
         ])
 

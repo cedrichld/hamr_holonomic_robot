@@ -23,6 +23,32 @@
 #include <algorithm>
 #include <unordered_set>
 
+// quat -> yaw (radians)
+double quat_to_yaw(const geometry_msgs::msg::Quaternion& q_in) {
+    const double n = std::sqrt(q_in.x*q_in.x + q_in.y*q_in.y +
+                               q_in.z*q_in.z + q_in.w*q_in.w);
+    if (n == 0.0) return 0.0; // fallback
+    const double x = q_in.x / n;
+    const double y = q_in.y / n;
+    const double z = q_in.z / n;
+    const double w = q_in.w / n;
+
+    const double siny_cosp = 2.0 * (w*z + x*y);
+    const double cosy_cosp = 1.0 - 2.0 * (y*y + z*z);
+    return std::atan2(siny_cosp, cosy_cosp); // in [-pi, pi]
+}
+
+// yaw -> quat
+geometry_msgs::msg::Quaternion yaw_to_quat(double yaw) {
+    geometry_msgs::msg::Quaternion q;
+    const double h = 0.5 * yaw;
+    q.x = 0.0;
+    q.y = 0.0;
+    q.z = std::sin(h);
+    q.w = std::cos(h);
+    return q;
+}
+
 class TraversabilityAStarNode final : public rclcpp::Node {
 public:
   TraversabilityAStarNode() : Node("traversability_astar")
@@ -282,6 +308,7 @@ private:
     // Convert world -> grid_map::Index
     grid_map::Position ps(start_map.pose.position.x, start_map.pose.position.y);
     grid_map::Position pg(goal_map.pose.position.x, goal_map.pose.position.y);
+    const double goal_yaw = quat_to_yaw(goal_map.pose.orientation);
 
     grid_map::Position ps_gm, pg_gm;
     if (!transformPosition(map_frame_, grid_map_frame_, ps, ps_gm)) return;
@@ -333,9 +360,9 @@ private:
 
     bool ok = false;
     if (use_anytime_) {
-      ok = araStar(size_x, size_y, start_idx, goal_idx, toIndex2, toLinear, path_linear, explored_linear);
+      ok = araStar(size_x, size_y, start_idx, goal_idx, toIndex2, toLinear, path_linear, explored_linear, goal_yaw);
     } else {
-      ok = astar(size_x, size_y, start_idx, goal_idx, toIndex2, toLinear, path_linear, explored_linear);
+      ok = astar(size_x, size_y, start_idx, goal_idx, toIndex2, toLinear, path_linear, explored_linear, goal_yaw);
     }
 
 
@@ -345,7 +372,7 @@ private:
       return;
     }
 
-    publishPath(path_linear, size_x, size_y);
+    publishPath(path_linear, size_x, size_y, goal_yaw);
     publishExplored(explored_linear, size_x, size_y);
   }
 
@@ -386,7 +413,8 @@ private:
     ToIndex2 toIndex2,
     ToLinear toLinear,
     std::vector<int>& out_path,
-    std::vector<int>& out_explored
+    std::vector<int>& out_explored,
+    double goal_yaw
   )
   {
     const int N = size_x * size_y;
@@ -520,7 +548,8 @@ private:
     ToIndex2 toIndex2,
     ToLinear toLinear,
     std::vector<int>& out_path,
-    std::vector<int>& out_explored
+    std::vector<int>& out_explored,
+    double goal_yaw
   )
   {
     const int N = size_x * size_y;
@@ -609,7 +638,7 @@ private:
 
       std::vector<int> tmp_path;
       reconstruct(rec, goal_idx, tmp_path);
-      publishPath(tmp_path, size_x, size_y);
+      publishPath(tmp_path, size_x, size_y, goal_yaw);
     };
 
     auto improvePath = [&]() {
@@ -741,7 +770,7 @@ private:
   }
 
   // ============================================================
-  // Inflation
+  // Inflation - not being used right now
   // ============================================================
   
   template <typename ToIndex2, typename ToLinear>
@@ -785,7 +814,7 @@ private:
   // ============================================================
   // Publishing
   // ============================================================
-  void publishPath(const std::vector<int>& path_linear, int size_x, int size_y)
+  void publishPath(const std::vector<int>& path_linear, int size_x, int size_y, double goal_yaw)
   {
     nav_msgs::msg::Path path;
     path.header.stamp = now();
@@ -831,7 +860,7 @@ private:
       ps.pose.position.y = p_map.y();
       ps.pose.position.z = z; // path follows terrain height
 
-      ps.pose.orientation.w = 1.0;
+      ps.pose.orientation = yaw_to_quat(goal_yaw);
       path.poses.push_back(ps);
     }
 

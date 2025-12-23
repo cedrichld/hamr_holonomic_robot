@@ -1,7 +1,7 @@
 /compa_controller_node:
   ros__parameters:
     ## Overall Controller params:
-    "controller_type": 'mpc'
+    "controller_type": 'pid'
     control_rate_hz: 100.0
     mode: auto
     use_sim_time: true

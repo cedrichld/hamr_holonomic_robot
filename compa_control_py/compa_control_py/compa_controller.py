@@ -430,9 +430,9 @@ class CompaControlNode(Node):
         ''' Derived Jacobian based on dynamics - returns angular velocities for:
                 1. right_wheel
                 2. left_wheel
-                3. turret 
-                4. roll
-                5. pitch
+                3. roll
+                4. pitch
+                5. turret
         '''
         r_w, b, a = self.compa_config["r_wheel"], \
             self.compa_config["b_wheel"], self.compa_config["a_wheel"]
