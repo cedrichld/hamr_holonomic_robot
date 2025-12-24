@@ -72,12 +72,12 @@ class CompaMPC:
             )
 
             # Plug in jacobian to get actuator constraints
-            # qdot_expr = M @ uk # each entry is a pydrake.symbolic.Expression
+            qdot_expr = M @ uk # each entry is a pydrake.symbolic.Expression
 
-            # for i in range(self.nu):
-            #     prog.AddLinearConstraint(qdot_expr[i],
-            #                             self.qdot_min[i],
-            #                             self.qdot_max[i])
+            for i in range(self.nu):
+                prog.AddLinearConstraint(qdot_expr[i],
+                                        self.qdot_min[i],
+                                        self.qdot_max[i])
 
         # Initial condition: x_0 = x0
         prog.AddLinearEqualityConstraint(X[:, 0] - x0[:5], np.zeros(self.nx))
@@ -117,11 +117,12 @@ class CompaMPC:
                 3. roll        (base->turret->gimbal)
                 4. pitch       (base->turret->gimbal)
                 5. yaw         (base->turret)
+            No need for the yaw_turret for COMPA since it comes last if not:
+            c2, s2 = np.cos(yaw_turret_w), np.sin(yaw_turret_w)
         '''
         r_w, b, a = r_wheel, b_wheel, a_wheel
         c1, s1 = np.cos(yaw_base_w), np.sin(yaw_base_w)
-        yaw_turret_w = 0
-        c2, s2 = np.cos(yaw_turret_w), np.sin(yaw_turret_w)
+        c2, s2 = np.cos(yaw_base_w), np.sin(yaw_base_w)
 
         J = np.array([
             [r_w/2 * (c1 - s1*b/a), r_w/2 * (c1 + s1*b/a), 0, 0, 0], # right_wheel (base) 

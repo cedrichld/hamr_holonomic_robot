@@ -171,7 +171,7 @@ class CompaControlNode(Node):
 
         ## - - Thresholds - - ##
         self.threshold_x_y = 0.005 # 0.5cm
-        self.threshold_roll_pitch = 0.15 # 7 deg
+        self.threshold_roll_pitch = 0.035 # 2 deg
         self.threshold_yaw = 0.05 # 2.86 deg
 
         ## - - Velocity Limits (Magnitude) - - ##
@@ -199,41 +199,27 @@ class CompaControlNode(Node):
                 self.pose_base_.pose.orientation.y,
                 self.pose_base_.pose.orientation.z,
                 self.pose_base_.pose.orientation.w]
-
-        # base->roll
-        q_b_r = [self.roll_link_base_orientation_.x,
-                self.roll_link_base_orientation_.y,
-                self.roll_link_base_orientation_.z,
-                self.roll_link_base_orientation_.w]
         
-        # base->pitch
-        q_b_p = [self.pitch_link_base_orientation_.x,
-                self.pitch_link_base_orientation_.y,
-                self.pitch_link_base_orientation_.z,
-                self.pitch_link_base_orientation_.w]
-
-        # base->yaw
-        q_b_y = [self.yaw_link_base_orientation_.x,
+        # base->top frame (turret for COMPA)
+        q_b_gimbal = [self.yaw_link_base_orientation_.x,
                 self.yaw_link_base_orientation_.y,
                 self.yaw_link_base_orientation_.z,
                 self.yaw_link_base_orientation_.w]
 
         # world->roll,pitch,yaw
-        q_w_r = tf_transformations.quaternion_multiply(q_w_b, q_b_r)
-        q_w_p = tf_transformations.quaternion_multiply(q_w_b, q_b_p)
-        q_w_y = tf_transformations.quaternion_multiply(q_w_b, q_b_y)
+        q_w_gimbal = tf_transformations.quaternion_multiply(q_w_b, q_b_gimbal)
 
         # Extract WORLD roll, pitch, yaw
         roll_w = math.atan2(
-            2.0*(q_w_r[3]*q_w_r[0] + q_w_r[1]*q_w_r[2]),
-            1.0 - 2.0*(q_w_r[0]*q_w_r[0] + q_w_r[1]*q_w_r[1])
+            2.0*(q_w_gimbal[3]*q_w_gimbal[0] + q_w_gimbal[1]*q_w_gimbal[2]),
+            1.0 - 2.0*(q_w_gimbal[0]*q_w_gimbal[0] + q_w_gimbal[1]*q_w_gimbal[1])
         )
         pitch_w = math.asin(
-            2.0*(q_w_p[3]*q_w_p[1] - q_w_p[2]*q_w_p[0])
+            2.0*(q_w_gimbal[3]*q_w_gimbal[1] - q_w_gimbal[2]*q_w_gimbal[0])
         )
         yaw_turret_w = math.atan2(
-            2.0*(q_w_y[3]*q_w_y[2] + q_w_y[0]*q_w_y[1]),
-            1.0 - 2.0*(q_w_y[1]*q_w_y[1] + q_w_y[2]*q_w_y[2])
+            2.0*(q_w_gimbal[3]*q_w_gimbal[2] + q_w_gimbal[0]*q_w_gimbal[1]),
+            1.0 - 2.0*(q_w_gimbal[1]*q_w_gimbal[1] + q_w_gimbal[2]*q_w_gimbal[2])
         )
 
         return yaw_base_w, roll_w, pitch_w, yaw_turret_w # yaw_base_w passed to jacobian later 
@@ -314,7 +300,8 @@ class CompaControlNode(Node):
         
         
         ## Roll loop
-        if abs(err_roll) < self.threshold_roll_pitch:
+        self.get_logger().info(f"Roll error: {err_roll}")
+        if abs(math.hypot(err_roll, err_pitch)) < self.threshold_roll_pitch:
             ## Check if at target
             desired_roll_dot = self.reference_.roll_dot
             self.err_roll_prev = err_roll
@@ -433,11 +420,13 @@ class CompaControlNode(Node):
                 3. roll        (base->turret->gimbal)
                 4. pitch       (base->turret->gimbal)
                 5. yaw         (base->turret)
+            No need for the yaw_turret for COMPA since it comes last if not:
+            c2, s2 = np.cos(yaw_turret_w), np.sin(yaw_turret_w)
         '''
         r_w, b, a = self.compa_config["r_wheel"], \
             self.compa_config["b_wheel"], self.compa_config["a_wheel"]
         c1, s1 = np.cos(yaw_base_w), np.sin(yaw_base_w)
-        c2, s2 = np.cos(yaw_turret_w), np.sin(yaw_turret_w)
+        c2, s2 = np.cos(yaw_base_w), np.sin(yaw_base_w)
 
         J = np.array([
             [r_w/2 * (c1 - s1*b/a), r_w/2 * (c1 + s1*b/a), 0, 0, 0], # right_wheel (base) 

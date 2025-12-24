@@ -357,7 +357,7 @@
   <joint name="base_roll_joint"
     type="continuous">
     <origin
-      xyz="0 0 0.03826"
+      xyz="0 0 0.036"
       rpy="0 0 0" />
     <parent
       link="base_link" />
@@ -411,8 +411,8 @@
   <joint name="roll_pitch_joint"
     type="continuous">
     <origin
-      xyz="-0.0035 0 0"
-      rpy="0 0 0" />
+      xyz="0 0 0" 
+      rpy="0 0 0" /> <!-- was xyz=-0.0035 0 0 -->
     <parent
       link="roll_link" />
     <child

@@ -10,8 +10,8 @@
     # P gains: 
     P_x: 1.0
     P_y: 1.0
-    P_roll: 8.0
-    P_pitch: 8.0
+    P_roll: 1.5
+    P_pitch: 1.5
     P_yaw: 8.0
     # D gains:
     D_x: 0.25
