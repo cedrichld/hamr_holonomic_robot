@@ -7,7 +7,7 @@ from pydrake.solvers import (
 
 class CompaMPC:
     def __init__(self, r_wheel, b_wheel, a_wheel, 
-                 N=20, dt=0.01, nx: int = 5, nu: int = 5):
+                 N=20, dt=0.05, nx: int = 5, nu: int = 5):
         """
         N : horizon length (timesteps)
         dt: sampling period (s) = 1/hz
@@ -22,20 +22,20 @@ class CompaMPC:
         self.nu = nu
 
         # Cost weights:   x_ref y_ref roll_ref pitch_ref yaw_ref
-        self.Q = np.diag([0.5,  0.5,  8.0,     8.0,      4.0])  # tracking       5x5
-        self.R = np.diag([0.1,  0.1,  2.0,     2.0,      1.0])  # control effort 5x5 
-        self.P = np.diag([4.0,  4.0,  12.0,    12.0,     10.0]) # terminal       5x5
+        self.Q = np.diag([0.1,  0.1,  10.0,    10.0,     8.0])  # tracking       5x5
+        self.R = np.diag([0.1,  0.1,  2.0,     2.0,      1.25]) # control effort 5x5 
+        self.P = np.diag([2.0,  2.0,  20.0,    20.0,     15.0]) # terminal       5x5
 
         # System matrices (simple integrator model)
         self.A = np.eye(self.nx)                    # 5x5
         self.B = self.dt * np.eye(self.nx, self.nu) # 5x5
 
-        # - - - - - - - - - - - - L      R      Roll  Pitch Yaw  #
-        self.qdot_min = np.array([-8.0, -8.0, -1.0, -1.0, -3.0])
-        self.qdot_max = np.array([+8.0, +8.0, +1.0, +1.0, +3.0])
+        # - - - - - - - - - - - - L&R: 2.1m/s   Roll  Pitch Yaw  #
+        self.qdot_min = np.array([-20.0, -20.0, -2.0, -2.0, -4.0])
+        self.qdot_max = np.array([+20.0, +20.0, +2.0, +2.0, +4.0])
 
-        self.max_pitch = np.deg2rad(55.0)
-        self.max_roll  = np.deg2rad(55.0)
+        self.max_pitch = np.deg2rad(105.0)
+        self.max_roll  = np.deg2rad(105.0)
 
         # Keep last u delta_u cost later
         self.u_last = np.zeros(self.nu)
@@ -72,6 +72,7 @@ class CompaMPC:
             )
 
             # Plug in jacobian to get actuator constraints
+            
             qdot_expr = M @ uk # each entry is a pydrake.symbolic.Expression
 
             for i in range(self.nu):

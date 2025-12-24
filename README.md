@@ -11,6 +11,11 @@
 </p>
 <p align="center"><em>Left: COMPA Physical robot, Right: COMPA Simulated robot.</em></p>
 
+<p align="center">
+  <img src="img/COMPA_MPC_Off_Road.gif" alt=".gif showing MPC Traversability Optimizer" height="300">
+</p>
+<p align="center"><em>Optimizing Traversability while constraining holonomic turret motion with MPC and ARA*.</em></p>
+
 ---
 
 ## Introduction

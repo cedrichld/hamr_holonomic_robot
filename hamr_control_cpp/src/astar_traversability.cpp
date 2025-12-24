@@ -79,7 +79,7 @@ public:
     epsilon_step_          = declare_parameter<double>("epsilon_step", 0.25);
     max_expansions_total_  = declare_parameter<int>("max_expansions_total", 1000000);
     publish_on_improve_    = declare_parameter<bool>("publish_on_improve", true);
-    min_improvement_ratio_ = declare_parameter<double>("min_improvement_ratio", 0.0); // eg 0.01 for 1%
+    min_improvement_ratio_ = declare_parameter<double>("min_improvement_ratio", 0.05); // eg 0.01 for 1%
 
 
     unknown_is_obstacle_    = declare_parameter<bool>("unknown_is_obstacle", true);
