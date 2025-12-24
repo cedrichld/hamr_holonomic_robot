@@ -71,7 +71,7 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
   <img src="img/2.5D_Consecutive_Poses_Square.png" alt="2.5D Consecutive TFs - Square" height="210">
 <p>
 
-<p align="center"><em>Left: Holonomy test on an uneven maze heightmap, using PRM and A*, Right: TFs during an Off-Road Square Trajectory.</em></p>
+<p align="center"><em>Left: Holonomy test on uneven maze heightmap, with PRM and A*, Right: TFs during Off-Road Square Trajectory.</em></p>
 
 
 ## 2.5D Traversability (Holonomic Traversability Optimization Algorithm in the works)
