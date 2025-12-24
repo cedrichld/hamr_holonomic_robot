@@ -22,17 +22,17 @@ class CompaMPC:
         self.nu = nu
 
         # Cost weights:   x_ref y_ref roll_ref pitch_ref yaw_ref
-        self.Q = np.diag([1.0,  1.0,  4.0,     4.0,      6.0])  # tracking       5x5
-        self.R = np.diag([0.1,  0.1,  0.2,     0.5,      0.5])  # control effort 5x5 
-        self.P = np.diag([3.0,  3.0,  10.0,    10.0,     10.0]) # terminal       5x5
+        self.Q = np.diag([0.5,  0.5,  8.0,     8.0,      4.0])  # tracking       5x5
+        self.R = np.diag([0.1,  0.1,  2.0,     2.0,      1.0])  # control effort 5x5 
+        self.P = np.diag([4.0,  4.0,  12.0,    12.0,     10.0]) # terminal       5x5
 
         # System matrices (simple integrator model)
         self.A = np.eye(self.nx)                    # 5x5
         self.B = self.dt * np.eye(self.nx, self.nu) # 5x5
 
         # - - - - - - - - - - - - L      R      Roll  Pitch Yaw  #
-        self.qdot_min = np.array([-8.0, -8.0, -1.0, -1.0, -2.0])
-        self.qdot_max = np.array([+8.0, +8.0, +1.0, +1.0, +2.0])
+        self.qdot_min = np.array([-8.0, -8.0, -1.0, -1.0, -3.0])
+        self.qdot_max = np.array([+8.0, +8.0, +1.0, +1.0, +3.0])
 
         self.max_pitch = np.deg2rad(55.0)
         self.max_roll  = np.deg2rad(55.0)

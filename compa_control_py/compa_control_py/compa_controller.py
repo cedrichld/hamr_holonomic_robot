@@ -183,12 +183,13 @@ class CompaControlNode(Node):
         self.mpc = CompaMPC(self.compa_config["r_wheel"], self.compa_config["b_wheel"], self.compa_config["a_wheel"], 
                             N=20, dt=1.0 / self.control_rate_hz)
 
-        self.get_logger().info("COMPA Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
-                               ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
-                                + "; P_y: " + str(self.gains["y"]["P"]) + 
-                               ", I_y: " + str(self.gains["y"]["I"]) + ", D_y: " + str(self.gains["y"]["D"])
-                                + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
-                                str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
+        self.get_logger().info(f"COMPA Controller has been started in mode '{self.compa_config["mode"]}', controller: '{self.compa_config["controller_type"]}'")
+        # "P_x: " + str(self.gains["x"]["P"]) + 
+        #                        ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
+        #                         + "; P_y: " + str(self.gains["y"]["P"]) + 
+        #                        ", I_y: " + str(self.gains["y"]["I"]) + ", D_y: " + str(self.gains["y"]["D"])
+        #                         + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
+        #                         str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
 
     def compute_orientation(self): 
         ''' Find the distance error to target '''
@@ -300,7 +301,7 @@ class CompaControlNode(Node):
         
         
         ## Roll loop
-        self.get_logger().info(f"Roll error: {err_roll}")
+        # self.get_logger().info(f"Roll error: {err_roll}")
         if abs(math.hypot(err_roll, err_pitch)) < self.threshold_roll_pitch:
             ## Check if at target
             desired_roll_dot = self.reference_.roll_dot
