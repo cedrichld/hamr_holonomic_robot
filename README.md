@@ -79,7 +79,7 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
   <img src="img/2.5D_Traversability_Rough_Terrain_Viz.png" alt="2.5D_Traversability_Rough_Terrain_Viz" height="210">
   <img src="img/2.5D_manual_traversability_viz.png" alt="2.5D_manual_traversability_viz" height="210">
 </p>
-<p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Trajectory Optimized for Holonomic Traversability</em></p>
+<p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Traversability optimized trajectory </em></p>
 
 <p align="center">
   <img src="img/ARA_star_implementation2.png" alt="Global Traversability with ARA*" height="210">
