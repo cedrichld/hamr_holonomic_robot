@@ -42,7 +42,7 @@ private:
     bool map_loaded_;
     bool grid_ready_{false};
 
-public:
+public: 
     PngCostmapPublisher() : Node("png_costmap_publisher"), map_loaded_(false)
     {
         // Declare parameters with default values

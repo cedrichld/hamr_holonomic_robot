@@ -1,0 +1,46 @@
+<launch>
+  <!-- Argument: where to save this session's RTAB-Map database -->
+  <arg name="db_path" default="/home/kartik/maps/rtabmap.db" />
+
+  <!-- Argument: directory for final PCD map -->
+  <arg name="pcd_output_dir" default="/home/kartik/maps/pcd" />
+
+  <!-- ========== RealSense D455 (realsense2_camera) ========== -->
+  <include file="$(find-pkg-share realsense2_camera)/launch/rs_launch.py">
+    <arg name="pointcloud.enable" value="true"/>
+    <arg name="align_depth.enable" value="true"/>
+    <arg name="depth_fps" value="60"/>
+    <arg name="rgb_fps" value="60"/>
+    <arg name="initial_reset" value="true"/>
+  </include>
+
+  <!-- ========== RTAB-Map SLAM ========== -->
+  <include file="$(find-pkg-share rtabmap_launch)/launch/rtabmap.launch.py">
+    <!-- D455 topics -->
+    <arg name="rgb_topic" value="/camera/camera/color/image_raw"/>
+    <arg name="depth_topic" value="/camera/camera/aligned_depth_to_color/image_raw"/>
+    <arg name="camera_info_topic" value="/camera/camera/color/camera_info"/>
+    <arg name="frame_id" value="camera_link"/>
+    <arg name="approx_sync" value="true"/>
+    <!-- Timestamped DB path will be passed from CLI via db_path -->
+    <arg name="database_path" value="$(var db_path)"/>
+  </include>
+
+  <!-- ========== RViz2 ========== -->
+  <node pkg="rviz2" exec="rviz2" name="rviz2" output="screen" />
+
+  <!-- ========== Your PCL mapper node ========== -->
+  <node pkg="hamr_pcl_generator"
+        exec="pcl_mapper"
+        name="pcl_mapper"
+        output="screen">
+    <!-- Subscribe to RTAB-Map's merged map -->
+    <param name="input_topic" value="/rtabmap/cloud_map"/>
+    <!-- Save in map frame if TF is available -->
+    <param name="target_frame" value="map"/>
+    <!-- Directory for final PCD -->
+    <param name="output_dir" value="$(var pcd_output_dir)"/>
+    <param name="filename_prefix" value="hamr_room_"/>
+    <param name="save_on_shutdown" value="true"/>
+  </node>
+</launch>
