@@ -22,9 +22,9 @@ class CompaMPC:
         self.nu = nu
 
         # Cost weights:   x_ref y_ref roll_ref pitch_ref yaw_ref
-        self.Q = np.diag([0.1,  0.1,  10.0,    10.0,     8.0])  # tracking       5x5
-        self.R = np.diag([0.1,  0.1,  2.0,     2.0,      1.25]) # control effort 5x5 
-        self.P = np.diag([2.0,  2.0,  20.0,    20.0,     15.0]) # terminal       5x5
+        self.Q = np.diag([0.1,  0.1,  15.0,    15.0,     12.0])  # tracking       5x5
+        self.R = np.diag([0.1,  0.1,  1.0,     1.0,      0.5]) # control effort 5x5 
+        self.P = np.diag([2.0,  2.0,  20.0,    20.0,     20.0]) # terminal       5x5
 
         # System matrices (simple integrator model)
         self.A = np.eye(self.nx)                    # 5x5
