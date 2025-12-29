@@ -178,7 +178,16 @@ echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_bringup)/share":$GZ_SI
 
 ---
 
-## Running a Trajectory
+## Running COMPA Off-Road:
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash
+# grid_map less precise but generates 10x faster:
+ros2 launch hamr_bringup compa_easier.launch.xml 
+```
+Go to Rviz and select 2D Goal Pose and place it somewhere on the map.
+
+## Running a Trajectory (deprecated)
 
 **Terminal A** (Gazebo + bringup):
 
@@ -198,7 +207,7 @@ ros2 run reference_trajectory waypoint_traj_simple # square, triangle, or circle
 
 ---
 
-## Example Waypoints
+## Example Waypoints (deprecated)
 
 ```python
 # Square trajectory with constant heading
@@ -234,7 +243,7 @@ python3 -c "from pydrake.solvers import MathematicalProgram; print('pydrake OK')
 ```bash
 # or wherever your workspace is
 FILE=~/ros2_ws/hamr_ws/install/compa_control_py/lib/compa_control_py/compa_controller
-# or wherever your workspace is
+# or wherever your venv is
 sed -i '1 s|^.*$|#!/home/cedric/ros2_ws/hamr_ws/env/bin/python3|' "$FILE"
 # or wherever your workspace is
 head -1 install/compa_control_py/lib/compa_control_py/compa_controller
