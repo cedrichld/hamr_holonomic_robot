@@ -67,7 +67,7 @@ grid_map_filters:
         params:
           output_layer: traversability
           # max slope of 0.5rad (30deg) and 3cm max bump height
-          expression: 0.9 * exp(-square(square(slope / 0.4))) +
+          expression: 0.9 * exp(-square(square(slope / 0.5))) +
             0.1 * exp(-square(roughness / 0.03))
 
       filter10:  # Set lower threshold on traversability.

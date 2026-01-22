@@ -34,8 +34,8 @@ class CompaMPC:
         self.qdot_min = np.array([-20.0, -20.0, -2.0, -2.0, -4.0])
         self.qdot_max = np.array([+20.0, +20.0, +2.0, +2.0, +4.0])
 
-        self.max_pitch = np.deg2rad(105.0)
-        self.max_roll  = np.deg2rad(105.0)
+        self.max_pitch = np.deg2rad(55.0)
+        self.max_roll  = np.deg2rad(55.0)
 
         # Keep last u delta_u cost later
         self.u_last = np.zeros(self.nu)
@@ -107,9 +107,10 @@ class CompaMPC:
             return np.zeros(self.nu)
 
         U_opt = result.GetSolution(U) # shape (nu, N)
+        X_opt = result.GetSolution(X)
         u0 = U_opt[:, 0]
         self.u_last = u0.copy()
-        return u0
+        return u0, X_opt
     
     def build_J(self, yaw_base_w, yaw_turret_w, r_wheel, b_wheel, a_wheel):
         ''' Derived Jacobian based on dynamics - returns angular velocities for:

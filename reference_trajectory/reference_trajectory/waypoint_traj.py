@@ -28,7 +28,7 @@ class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_node")
         self.v_lin = self.declare_parameter("v_lin", 0.3).value # 0.3 m/s is the max our current HW can do
-        self.w_yaw = self.declare_parameter("w_yaw", 1.0).value # 1.0 rad/s
+        self.w_yaw = self.declare_parameter("w_yaw", 2.0).value # 1.0 rad/s
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
@@ -87,6 +87,7 @@ class TrajectoryNode(Node):
         #     self.last_reference_time = self.get_clock().now()
 
     # Used if we want to change parameter during runtime
+    # Not working rn.. ?
     def parameters_callback(self, params: list[Parameter]): 
         for p in params:
             if p.name == "v_lin":

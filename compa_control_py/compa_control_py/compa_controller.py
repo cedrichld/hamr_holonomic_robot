@@ -7,11 +7,13 @@ from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoS
 
 from std_msgs.msg import Float64 # to send velocity commands
 from nav_msgs.msg import Odometry # used to get the base current state (position in xyz)
-from geometry_msgs.msg import PoseWithCovariance # used for reference and current pose - not using covariance rn
+from nav_msgs.msg import Path # to view MPC
+from geometry_msgs.msg import PoseWithCovariance, PoseStamped # used for reference and current pose - not using covariance rn
 from geometry_msgs.msg import Quaternion # for the turret relative 
 from geometry_msgs.msg import Twist # for manual mode
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
 import tf_transformations # for quaternion operations
+from tf_transformations import quaternion_from_euler
 
 from hamr_interfaces.msg import LiveGains, ReferenceTraj # could create a compa interface later
 
@@ -181,7 +183,12 @@ class CompaControlNode(Node):
         self.yaw_dot_limit = 2.0
 
         self.mpc = CompaMPC(self.compa_config["r_wheel"], self.compa_config["b_wheel"], self.compa_config["a_wheel"], 
-                            N=20, dt=1.0 / self.control_rate_hz)
+                            N=2-0, dt=1.0 / self.control_rate_hz)
+        self.mpc_path_pub = self.create_publisher(
+            Path,
+            "/mpc/predicted_path",
+            10
+        )
 
         self.get_logger().info(f"COMPA Controller has been started in mode '{self.compa_config["mode"]}', controller: '{self.compa_config["controller_type"]}'")
         # "P_x: " + str(self.gains["x"]["P"]) + 
@@ -393,7 +400,8 @@ class CompaControlNode(Node):
         x_ref_seq = np.tile(x_ref_vec, (self.mpc.N + 1, 1))
 
         # Solve MPC
-        u0 = self.mpc.solve(x0, x_ref_seq)
+        u0, self.X_opt = self.mpc.solve(x0, x_ref_seq)
+        self.publish_mpc_path()
 
         vx_base, vy_base, roll_dot_gimbal, pitch_dot_gimbal, yaw_dot_turret = u0
 
@@ -482,6 +490,43 @@ class CompaControlNode(Node):
                 self.pid_step()
             elif self.compa_config["controller_type"] == 'mpc':
                 self.mpc_step()
+
+    def publish_mpc_path(self, frame_id: str = "map"):
+        """
+        Publish the MPC predicted horizon as a nav_msgs/Path.
+        Uses self.X_opt with state [x, y, roll, pitch, yaw].
+        """
+
+        if self.X_opt is None:
+            return
+
+        X = self.X_opt  # shape (5, N+1)
+
+        path_msg = Path()
+        path_msg.header.stamp = self.get_clock().now().to_msg()
+        path_msg.header.frame_id = frame_id
+
+        Np1 = X.shape[1]
+
+        for k in range(Np1):
+            x, y, roll, pitch, yaw = X[:, k]
+
+            pose = PoseStamped()
+            pose.header = path_msg.header
+
+            pose.pose.position.x = float(x)
+            pose.pose.position.y = float(y)
+            pose.pose.position.z = self.pose_base_.pose.position.z
+
+            qx, qy, qz, qw = quaternion_from_euler(roll, pitch, yaw)
+            pose.pose.orientation.x = qx
+            pose.pose.orientation.y = qy
+            pose.pose.orientation.z = qz
+            pose.pose.orientation.w = qw
+
+            path_msg.poses.append(pose)
+
+        self.mpc_path_pub.publish(path_msg)
 
     def _quat_normalized(self, q_xyzw):
         x, y, z, w = q_xyzw

@@ -224,7 +224,7 @@ private:
       return true;
     }
 
-    // Else use /initialpose
+    // else use /initialpose
     if (!have_start_pose_) return false;
 
     geometry_msgs::msg::PoseStamped sp;
