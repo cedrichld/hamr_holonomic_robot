@@ -226,20 +226,27 @@ waypoints = np.array([
 
 Run the bridge in a separate terminal (or include in launch):
 
+
 ```bash
 ros2 run hamr_uros_bridge relay_node
 ```
 
 ## Pydrake + .venv
+
+> [!NOTE]
+> Check every line with specific addresses maps correctly to your system
+
 To run MPC optimization we need pydrake which requires a virtual environment. Follow the following cmd:
 ```bash
 cd ~/ros2_ws/hamr_ws # or wherever you want your venv to be
 python3 -m venv env
+```
 ```bash
 source env/bin/activate
 pip install drake transforms3d
 python3 -c "import tf_transformations, transforms3d; print('tf + transforms3d OK')"
 python3 -c "from pydrake.solvers import MathematicalProgram; print('pydrake OK')"
+```
 ```bash
 # or wherever your workspace is
 FILE=~/ros2_ws/hamr_ws/install/compa_control_py/lib/compa_control_py/compa_controller
