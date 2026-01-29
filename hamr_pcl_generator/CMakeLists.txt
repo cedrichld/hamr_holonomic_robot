@@ -27,6 +27,19 @@ ament_target_dependencies(pcl_mapper
   PCL
 )
 
+add_executable(points_local_filtered_node src/points_local_filtered_node.cpp)
+ament_target_dependencies(points_local_filtered_node
+  rclcpp
+  sensor_msgs
+  tf2
+  tf2_ros
+  tf2_sensor_msgs
+  pcl_conversions
+  PCL
+  std_msgs
+  std_srvs
+)
+
 target_include_directories(pcl_mapper PUBLIC
   ${PCL_INCLUDE_DIRS}
 )
@@ -40,6 +53,10 @@ target_link_libraries(pcl_mapper
 
 install(
   TARGETS pcl_mapper
+  DESTINATION lib/${PROJECT_NAME}
+)
+install(
+  TARGETS points_local_filtered_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

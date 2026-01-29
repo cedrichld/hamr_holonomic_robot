@@ -1,0 +1,25 @@
+points_local_filtered:
+  ros__parameters:
+    input_topic: /camera/depth/color/points
+    output_topic: /points_local_filtered
+
+    target_frame: base_link
+    tf_timeout_ms: 100
+
+    # Forward-looking box around robot (good for navigation)
+    crop_min_x: 0.0
+    crop_max_x: 10.0
+    crop_min_y: -5.0
+    crop_max_y: 5.0
+    crop_min_z: -0.5
+    crop_max_z: 1.5
+
+    use_passthrough_z: true
+    pass_min_z: -0.5
+    pass_max_z: 1.5
+
+    voxel_leaf: 0.05
+
+    use_sor: false
+    sor_mean_k: 20
+    sor_stddev_mul: 1.0
