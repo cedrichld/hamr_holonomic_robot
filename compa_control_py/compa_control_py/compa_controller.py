@@ -3,7 +3,7 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy # not used yet
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, QoSHistoryPolicy # only used in gridmap for now
 
 from std_msgs.msg import Float64 # to send velocity commands
 from nav_msgs.msg import Odometry # used to get the base current state (position in xyz)
@@ -17,7 +17,9 @@ from tf_transformations import quaternion_from_euler
 
 from hamr_interfaces.msg import LiveGains, ReferenceTraj # could create a compa interface later
 
-from .mpc_compa import CompaMPC
+from .mpc_compa import CompaMPC # MPC Logic
+from grid_map_msgs.msg import GridMap # to get local_grid_map
+from std_msgs.msg import Float32MultiArray # for gridmap
 
 
 ### - - UTILITIES - - ###
@@ -102,7 +104,10 @@ class CompaControlNode(Node):
         }
 
         self.declare_parameter("control_rate_hz", 100.0)
+        self.declare_parameter("mpc_horizon", 40)
         self.declare_parameter("d_alpha", 0.4)
+        self.declare_parameter("local_gridmap_topic", "/local_costmap")
+        self.declare_parameter("local_gridmap_cost_layer_idx", 1)
 
         self.add_post_set_parameters_callback(self.parameters_callback)
 
@@ -126,6 +131,9 @@ class CompaControlNode(Node):
         # Control Rate
         self.control_rate_hz = self.get_parameter("control_rate_hz").value
         self.last_control_time = self.get_clock().now()
+        self.mpc_horizon = self.get_parameter("mpc_horizon").value
+        self.local_gridmap_topic = self.get_parameter("local_gridmap_topic").value
+        self.local_gridmap_cost_layer_idx = self.get_parameter("local_gridmap_cost_layer_idx").value
 
         if self.compa_config["mode"] == "auto":
             self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
@@ -183,12 +191,20 @@ class CompaControlNode(Node):
         self.yaw_dot_limit = 2.0
 
         self.mpc = CompaMPC(self.compa_config["r_wheel"], self.compa_config["b_wheel"], self.compa_config["a_wheel"], 
-                            N=2-0, dt=1.0 / self.control_rate_hz)
+                            N=self.mpc_horizon, dt=1.0 / self.control_rate_hz)
         self.mpc_path_pub = self.create_publisher(
             Path,
             "/mpc/predicted_path",
             10
         )
+
+        # local gridmap settings
+        local_gridmap_qos = QoSProfile(depth=1)
+        local_gridmap_qos.reliability = ReliabilityPolicy.RELIABLE
+        local_gridmap_qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
+        self.grid_map_sub_ = self.create_subscription(GridMap, self.local_gridmap_topic, self.on_local_gridmap, local_gridmap_qos)
+        self.local_gridmap = Float32MultiArray()
+        self.local_gridmap_res = None
 
         self.get_logger().info(f"COMPA Controller has been started in mode '{self.compa_config["mode"]}', controller: '{self.compa_config["controller_type"]}'")
         # "P_x: " + str(self.gains["x"]["P"]) + 
@@ -415,6 +431,11 @@ class CompaControlNode(Node):
 
         # Jacobian
         self.publish_joint_cmd(desired_velocity, yaw_base_w, yaw_turret_w)
+
+    def on_local_gridmap(self, msg: GridMap):
+        # Could check that layer of interest is indeed present (logic from local+_costmap
+        self.local_gridmap = msg.data[self.local_gridmap_cost_layer_idx].data
+        self.local_gridmap_res = msg.info.resolution
 
     def manual_mode_callback(self, msg: Twist):
         ''' Manual Mode - directly compute joint commands from terminal inputs '''

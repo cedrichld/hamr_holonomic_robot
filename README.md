@@ -234,11 +234,11 @@ ros2 run hamr_uros_bridge relay_node
 ## Pydrake + .venv
 
 > [!NOTE]
-> Check every line with specific addresses maps correctly to your system
+> Check every line which relies on a specific addresses maps correctly to your system!
 
 To run MPC optimization we need pydrake which requires a virtual environment. Follow the following cmd:
 ```bash
-cd ~/ros2_ws/hamr_ws # or wherever you want your venv to be
+cd ~/ros2_ws/hamr_ws # ! or wherever you want your venv to be
 python3 -m venv env
 ```
 ```bash
@@ -248,11 +248,11 @@ python3 -c "import tf_transformations, transforms3d; print('tf + transforms3d OK
 python3 -c "from pydrake.solvers import MathematicalProgram; print('pydrake OK')"
 ```
 ```bash
-# or wherever your workspace is
+# ! or wherever your workspace is
 FILE=~/ros2_ws/hamr_ws/install/compa_control_py/lib/compa_control_py/compa_controller
-# or wherever your venv is
+# ! or wherever your venv is
 sed -i '1 s|^.*$|#!/home/cedric/ros2_ws/hamr_ws/env/bin/python3|' "$FILE"
-# or wherever your workspace is
+# ! or wherever your workspace is
 head -1 install/compa_control_py/lib/compa_control_py/compa_controller
 # should return: ~/ros2_ws/hamr_ws/env/bin/python3
 ```

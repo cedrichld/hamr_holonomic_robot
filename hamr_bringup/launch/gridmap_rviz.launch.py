@@ -20,6 +20,7 @@ def generate_launch_description():
     # Declare launch configuration variables that can access the launch arguments values
     testing_terrain = LaunchConfiguration('testing_terrain')
     visualize_rviz = LaunchConfiguration('visualize_rviz')
+    terrain_name = LaunchConfiguration('terrain_name')
     img_px_res = LaunchConfiguration('img_px_res') # pixels
     map_width = LaunchConfiguration('map_width') # meters
     map_height = LaunchConfiguration('map_height') # meters
@@ -47,10 +48,14 @@ def generate_launch_description():
         'map_height', default_value='4.5', # meters
         description='Map height range (min to max) in meters'
     )
+    declare_terrain_name = DeclareLaunchArgument(
+        'terrain_name', default_value='terrain1', # meters
+        description='Name of the terrain. Ex: terrain1'
+    )
 
-    img_px_res_str = LaunchConfiguration('img_px_res')
+    # img_px_res_str = LaunchConfiguration('img_px_res')
     terrain_filename = PythonExpression([
-        '"terrain1_" + str(', img_px_res_str, ') + ".png"'
+        '"', terrain_name, '_" + str(', img_px_res, ') + ".png"'
     ])
 
     terrain_path = PathJoinSubstitution([
@@ -178,6 +183,7 @@ def generate_launch_description():
     ld.add_action(declare_img_px_res)
     ld.add_action(declare_map_width)
     ld.add_action(declare_map_height)
+    ld.add_action(declare_terrain_name)
     # Config files
     ld.add_action(declare_filters_config_file_cmd)
     ld.add_action(declare_visualization_config_file_cmd)

@@ -109,8 +109,8 @@ class LocalTraversabilityCost(Node):
         qos.reliability = ReliabilityPolicy.RELIABLE
         qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
 
-        self.pub = self.create_publisher(GridMap, self.output_topic, qos)
-        self.sub = self.create_subscription(GridMap, self.input_topic, self.on_map, qos)
+        self.pub_ = self.create_publisher(GridMap, self.output_topic, qos)
+        self.sub_ = self.create_subscription(GridMap, self.input_topic, self.on_map, qos)
 
         self.get_logger().info(
             f"LocalTraversabilityCost listening on {self.input_topic}, publishing {self.output_topic} "
@@ -293,6 +293,7 @@ class LocalTraversabilityCost(Node):
         if len(elev_msg.layout.dim) >= 2:
             cols = int(elev_msg.layout.dim[0].size)
             rows = int(elev_msg.layout.dim[1].size)
+            res = float(msg.info.resolution)
         else:
             # fallback
             res = float(msg.info.resolution)
@@ -301,8 +302,6 @@ class LocalTraversabilityCost(Node):
 
         # self.get_logger().info(f"robot in {gridmap_frame}: rx={rx:.3f}, ry={ry:.3f}")
         elev_global = parse_layer_to_mat(elev_msg, rows, cols)
-
-        res = float(msg.info.resolution)
 
         # Local window in cells
         win_cols = max(3, int(round(self.local_size_x / res)))
@@ -398,7 +397,7 @@ class LocalTraversabilityCost(Node):
         out.outer_start_index = 0
         out.inner_start_index = 0
 
-        self.pub.publish(out)
+        self.pub_.publish(out)
 
 
 def main():

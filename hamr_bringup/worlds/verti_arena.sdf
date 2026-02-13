@@ -44,9 +44,9 @@
           <geometry>
             <heightmap>
               <use_terrain_paging>true</use_terrain_paging>
-              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_1025.png</uri>
+              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/verti_elevation_grayscale_1025.png</uri>
 
-              <size>45 45 6</size>
+              <size>15 15 1</size>
               <pos>0 0 0</pos>
               
               <texture>
@@ -63,8 +63,8 @@
         <collision name="terrain_collision">
           <geometry>
             <heightmap>
-              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/terrain1_1025.png</uri>
-              <size>45 45 6</size>
+              <uri>file://hamr_bringup/terrain_assets/heightmaps/off_road_maps/verti_elevation_grayscale_1025.png</uri>
+              <size>15 15 1</size>
               <pos>0 0 0</pos>
             </heightmap>
           </geometry>

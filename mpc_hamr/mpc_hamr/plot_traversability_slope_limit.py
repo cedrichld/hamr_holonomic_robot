@@ -41,7 +41,7 @@ def traversability(slope, roughness):
     slope     : array-like, in radians
     roughness : scalar or array, same shape as slope
     """
-    term_slope = 0.9 * np.exp(- (slope / 0.4) ** 4)
+    term_slope = 0.9 * np.exp(- (slope / 0.5) ** 4)
     term_rough = 0.1 * np.exp(- (roughness / 0.03) ** 4)
     return term_slope + term_rough
 

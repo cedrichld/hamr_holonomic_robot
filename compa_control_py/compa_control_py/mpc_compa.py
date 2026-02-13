@@ -7,7 +7,7 @@ from pydrake.solvers import (
 
 class CompaMPC:
     def __init__(self, r_wheel, b_wheel, a_wheel, 
-                 N=20, dt=0.05, nx: int = 5, nu: int = 5):
+                 N=30, dt=0.03, nx: int = 5, nu: int = 5):
         """
         N : horizon length (timesteps)
         dt: sampling period (s) = 1/hz
@@ -22,9 +22,9 @@ class CompaMPC:
         self.nu = nu
 
         # Cost weights:   x_ref y_ref roll_ref pitch_ref yaw_ref
-        self.Q = np.diag([0.1,  0.1,  15.0,    15.0,     12.0])  # tracking       5x5
-        self.R = np.diag([0.1,  0.1,  1.0,     1.0,      0.5]) # control effort 5x5 
-        self.P = np.diag([2.0,  2.0,  20.0,    20.0,     20.0]) # terminal       5x5
+        self.Q = np.diag([0.1,  0.1,  15.0,    15.0,     12.0]) # tracking       5x5
+        self.R = np.diag([0.05,  0.05,  .5,     .5,      0.3])  # control effort 5x5 
+        self.P = np.diag([2.0,  2.0,  30.0,    30.0,     20.0]) # terminal       5x5
 
         # System matrices (simple integrator model)
         self.A = np.eye(self.nx)                    # 5x5
@@ -94,6 +94,10 @@ class CompaMPC:
 
             # Control effort: u_k^T R u_k
             prog.AddQuadraticCost(uk @ self.R @ uk)
+
+            if k > 0:
+                delta_uk = uk - U[:, k-1]
+                prog.AddQuadraticCost(delta_uk @ delta_uk.T)
 
             # TODO: later add delta_u cost + terrain/traversability cost
 

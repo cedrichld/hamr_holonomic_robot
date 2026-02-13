@@ -24,7 +24,7 @@
     <!-- To launch GZ -->
     <include file="$(find-pkg-share ros_gz_sim)/launch/gz_sim.launch.py">
         <!-- <arg name="gz_args" value="empty.sdf -r" /> -->
-        <arg name="gz_args" value="$(find-pkg-share hamr_bringup)/worlds/2.5D_rocky_intense.sdf -r" />
+        <arg name="gz_args" value="$(find-pkg-share hamr_bringup)/worlds/verti_arena.sdf -r" />
         <!-- <arg name="gz_args" value="$(find-pkg-share hamr_bringup)/worlds/emptyrr_world.sdf -r" /> -->
     </include>
     
@@ -68,10 +68,10 @@
         <arg name="testing_terrain" value="false"/>
         <arg name="visualize_rviz" value="false"/>
         <arg name="filters_config" value="$(var gridmap_filters_file)"/>
-        <arg name="terrain_name" value="terrain1"/>
+        <arg name="terrain_name" value="verti_elevation_grayscale"/>
         <arg name="img_px_res" value="513"/>
-        <arg name="map_width" value="45.0"/>
-        <arg name="map_height" value="6.0"/>
+        <arg name="map_width" value="15.0"/>
+        <arg name="map_height" value="1.0"/>
     </include>
 
     <node pkg="reference_trajectory" exec="waypoint_traj">
