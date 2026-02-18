@@ -83,4 +83,11 @@
 
     <node pkg="mpc_hamr" exec="local_traversability_costmap" />
 
+    <node pkg="tf2_ros" exec="static_transform_publisher"
+        name="l455_depth_frame_stitch"
+        output="screen"
+        args="--x 0 --y 0 --z 0 --roll 0 --pitch 0 --yaw 0 --frame-id l455_link --child-frame-id compa/yaw_plate_link/l455_cameradepth"
+    />
+
+
 </launch>

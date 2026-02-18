@@ -1,9 +1,16 @@
 /compa_controller_node:
   ros__parameters:
     ## Overall Controller params:
+
+    # Controller choice:
     controller_type: 'mpc'
-    mpc_horizon: 20
-    control_rate_hz: 40.0
+    # Without visualizing PCL:
+    # mpc_horizon: 20
+    # control_rate_hz: 40.0
+    # Visualizing PCL:
+    mpc_horizon: 4
+    control_rate_hz: 10.0
+    # --
     mode: auto
     use_sim_time: true
 

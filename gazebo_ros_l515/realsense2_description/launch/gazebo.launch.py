@@ -149,6 +149,15 @@ def generate_launch_description():
         '/world/empty/model/l515_camera/link/base_link/sensor/cameraired/image@sensor_msgs/msg/Image[gz.msgs.Image',
         '/world/empty/model/l515_camera/link/base_link/sensor/cameraired/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
         ],
+        remappings=[
+        ('/world/empty/model/l515_camera/link/base_link/sensor/cameracolor/image', '/camera/color/image_raw'),
+        ('/world/empty/model/l515_camera/link/base_link/sensor/cameracolor/camera_info', '/camera/color/camera_info'),
+        ('/world/empty/model/l515_camera/link/base_link/sensor/cameradepth/depth_image', '/camera/depth/image_raw'),
+        ('/world/empty/model/l515_camera/link/base_link/sensor/cameradepth/camera_info', '/camera/depth/camera_info'),
+        ('/world/empty/model/l515_camera/link/base_link/sensor/cameradepth/depth_image/points', '/camera/depth/color/points'),
+        ('/world/empty/model/l515_camera/link/base_link/sensor/cameraired/image', '/camera/infra/image_raw'),
+        ('/world/empty/model/l515_camera/link/base_link/sensor/cameraired/camera_info', '/camera/infra/camera_info'),
+        ],
         output='screen'
     )
 
