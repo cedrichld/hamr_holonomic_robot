@@ -12,9 +12,9 @@
 <p align="center"><em>Left: COMPA Physical robot, Right: COMPA Simulated robot.</em></p>
 
 <p align="center">
-  <img src="img/COMPA_MPC_Off_Road.gif" alt=".gif showing MPC Traversability Optimizer" height="300">
+  <img src="img/COMPA_MPC_Off_Road.gif" alt=".gif showing MPC Traversability Optimizer" height="240">
 </p>
-<p align="center"><em>Optimizing Traversability while constraining holonomic turret motion with MPC and ARA*.</em></p>
+<p align="center"><em>Left: Optimizing Traversability while constraining holonomic turret motion with MPC and ARA*.</em></p>
 
 ---
 
@@ -79,13 +79,19 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
   <img src="img/2.5D_Traversability_Rough_Terrain_Viz.png" alt="2.5D_Traversability_Rough_Terrain_Viz" height="210">
   <img src="img/2.5D_manual_traversability_viz.png" alt="2.5D_manual_traversability_viz" height="210">
 </p>
-<p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Traversability optimized trajectory </em></p>
+<p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Traversability optimized trajectory.</em></p>
 
 <p align="center">
   <img src="img/ARA_star_implementation2.png" alt="Global Traversability with ARA*" height="210">
-  <img src="img/global_and_local_traversability_maps.png" alt="Local+Global Traversability Map Computations" height="210">
+  <img src="img/global_and_local_traversability_maps.png" alt="Local+Global Traversability Map Computations." height="210">
 </p>
 <p align="center"><em>Left: Global Traversability with ARA*, Right: Local+Global Traversability Map Computations</em></p>
+
+## Simulating a RealSense Camera for algorithm refining (before field-testing)
+<p align="center">
+  <img src="img/PCL_Realsense_Simulating_Gazebo_RViz.gif" alt=".gif visualizing PCL from a simulated realsense." height="270">
+</p>
+<p align="center"><em>Visualizing PCL from a Simulated RealSense RGB-D Camera.</em></p>
 
 ### Results (sim & hardware)
 | Path      | RMSE (sim, m)  | RMSE (hw, m) | Yaw Std (rad, hw) |
