@@ -1,24 +1,36 @@
 /compa_controller_node:
   ros__parameters:
+    ## Overall Controller params:
+
+    # Controller choice:
+    controller_type: 'mpc'
+    # Without visualizing PCL:
+    # mpc_horizon: 20
+    # control_rate_hz: 40.0
+    # Visualizing PCL:
+    mpc_horizon: 4
+    control_rate_hz: 10.0
+    # --
+    mode: auto
+    use_sim_time: true
+
+    ## PID Controller gains:
+    # P gains: 
+    P_x: 1.0
+    P_y: 1.0
+    P_roll: 1.5
+    P_pitch: 1.5
+    P_yaw: 8.0
+    # D gains:
     D_x: 0.25
     D_y: 0.25
     D_roll: 0.1
     D_pitch: 0.1
     D_yaw: 0.1
-
+    d_alpha: 0.4
+    # I gains
     I_x: 0.4
     I_y: 0.4
     I_roll: 0.0
     I_pitch: 0.0
     I_yaw: 0.4
-
-    P_x: 1.0
-    P_y: 1.0
-    P_roll: 8.0
-    P_pitch: 8.0
-    P_yaw: 8.0
-
-    control_rate_hz: 100.0
-    d_alpha: 0.4
-    use_sim_time: true
-    mode: auto

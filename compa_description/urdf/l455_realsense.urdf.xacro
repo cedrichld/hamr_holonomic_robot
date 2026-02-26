@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:property name="l455_length" value="0.01" />
+    <xacro:property name="l455_width" value="0.1" />
+    <xacro:property name="l455_height" value="0.05" />
+
+    <link name="l455_link">
+        <visual>
+            <geometry>
+                <box size="${l455_length} ${l455_width} ${l455_height}" />
+            </geometry>
+            <origin xyz="${l455_length / 2.0} 0 0" rpy="0 0 0" />
+            <!-- <material name="black" /> -->
+        </visual>
+        <collision>
+            <geometry>
+                <box size="${l455_length} ${l455_width} ${l455_height}" />
+            </geometry>
+        </collision>
+        <xacro:box_inertia m="0.1" x="${l455_length}" y="${l455_width}" z="${l455_height}"
+                        o_xyz="${l455_length / 2.0} 0 0" o_rpy="0 0 0" />
+    </link>
+
+    <link name="l455_link_optical">
+    </link>
+
+    <joint name="yaw_plate_l455_joint" type="fixed">
+        <parent link="yaw_plate_link" />
+        <child link="l455_link" />
+        <origin xyz="0 0 0.25" rpy="0 0 0"/>
+    </joint>
+    
+    <!-- generate an optical frame 
+    http://www.ros.org/reps/rep-0103.html#suffix-frames
+    so that ros and opencv can operate on the l455 frame correctly 
+    -->
+    <joint name="l455_optical_joint" type="fixed">
+        <!-- these values have to be these values otherwise the gazebo l455
+            image won't be aligned properly with the frame it is supposedly
+            originating from -->
+        <parent link="l455_link"/>
+        <child link="l455_link_optical"/>
+        <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+
+    <gazebo reference="l455_link">
+        <sensor name="l455_cameracolor" type="camera">
+            <camera>
+                <horizontal_fov>1.22</horizontal_fov> <!-- approx - tune if necessary -->
+                <image><width>1280</width><height>720</height><format>RGB_INT8</format></image>
+                <clip><near>0.1</near><far>10</far></clip>
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.007</stddev>
+                </noise>
+            </camera>
+            <always_on>1</always_on>
+            <update_rate>10</update_rate>
+            <visualize>1</visualize>
+        </sensor>
+
+        <sensor name="l455_cameradepth" type="depth">
+            <camera>
+                <horizontal_fov>1.22</horizontal_fov> <!-- approx - tune if necessary -->
+                <image><width>1280</width><height>720</height><format>RGB_INT8</format></image>
+                <clip><near>0.1</near><far>10</far></clip>
+                <noise>
+                    <type>gaussian</type>
+                    <mean>0.0</mean>
+                    <stddev>0.007</stddev>
+                </noise>
+            </camera>
+            <always_on>1</always_on>
+            <update_rate>10</update_rate>
+            <visualize>0</visualize>
+        </sensor>
+    </gazebo>
+
+</robot>

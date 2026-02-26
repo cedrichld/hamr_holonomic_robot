@@ -8,14 +8,7 @@ grid_map_filters:
       filter1:
         name: buffer_normalizer
         type: gridMapFilters/BufferNormalizerFilter
-
-      # filter2: # Duplicate layer.
-      #   name: duplicate
-      #   type: gridMapFilters/DuplicationFilter
-      #   params:
-      #     input_layer: ...
-      #     output_layer: ...
-
+      
       filter2:  # Delete color layer.
         name: delete_original_layers
         type: gridMapFilters/DeletionFilter
@@ -37,18 +30,7 @@ grid_map_filters:
           input_layer: elevation_inpainted
           output_layer: elevation_smooth
           radius: 0.3
-
-      # filter5:  # Boxblur as an alternative to the inpaint and radial blurring filter above.
-      #   name: boxblur
-      #   type: gridMapFilters/SlidingWindowMathExpressionFilter
-      #   params:
-      #     input_layer: elevation
-      #     output_layer: elevation_smooth
-      #     expression: meanOfFinites(elevation)
-      #     compute_empty_cells: true
-      #     edge_handling: crop # options: inside, crop, empty, mean
-      #     window_size: 5 # optional
-
+        
       filter5:  # Compute surface normals.
         name: surface_normals
         type: gridMapFilters/NormalVectorsFilter
@@ -79,37 +61,16 @@ grid_map_filters:
           output_layer: roughness
           expression: abs(elevation_inpainted - elevation_smooth)
 
-      filter9:  # Edge detection by computing the standard deviation from slope.
-        name: edge_detection
-        type: gridMapFilters/SlidingWindowMathExpressionFilter
-        params:
-          input_layer: slope
-          output_layer: edges
-          expression: sqrt(sumOfFinites(square(slope - meanOfFinites(slope))) ./ numberOfFinites(slope)) # Standard deviation
-          compute_empty_cells: false
-          edge_handling: crop # options: inside, crop, empty, mean
-          window_length: 0.05
-
-      # filter11: # Edge detection on elevation layer with convolution filter as alternative to filter above.
-      #   name: edge_detection
-      #   type: gridMapFilters/SlidingWindowMathExpressionFilter
-      #   params:
-      #     input_layer: elevation_inpainted
-      #     output_layer: edges
-      #     expression: 'sumOfFinites([0,1,0;1,-4,1;0,1,0].*elevation_inpainted)' # Edge detection.
-      #     # expression: 'sumOfFinites([0,-1,0;-1,5,-1;0,-1,0].*elevation_inpainted)' # Sharpen.
-      #     compute_empty_cells: false
-      #     edge_handling: mean # options: inside, crop, empty, mean
-      #     window_size: 3 # Make sure to make this compatible with the kernel matrix.
-
-      filter10: # Compute traversability as normalized weighted sum of slope and roughness.
+      filter9: # Compute traversability as normalized weighted sum of slope and roughness.
         name: traversability
         type: gridMapFilters/MathExpressionFilter
         params:
           output_layer: traversability
-          expression: 0.5 * (1.0 - (slope / 0.6)) + 0.5 * (1.0 - (roughness / 0.1)) # max slope of 0.6rad
+          # max slope of 0.5rad (30deg) and 3cm max bump height
+          expression: 0.9 * exp(-square(square(slope / 0.5))) +
+            0.1 * exp(-square(roughness / 0.03))
 
-      filter11:  # Set lower threshold on traversability.
+      filter10:  # Set lower threshold on traversability.
         name: traversability_lower_threshold
         type: gridMapFilters/ThresholdFilter
         params:
@@ -117,82 +78,10 @@ grid_map_filters:
           lower_threshold: 0.0
           set_to: 0.0
 
-      filter12:  # Set upper threshold on traversability.
+      filter11:  # Set upper threshold on traversability.
         name: traversability_upper_threshold
         type: gridMapFilters/ThresholdFilter
         params:
           layer: traversability
           upper_threshold: 1.0
           set_to: 1.0 # Other uses: .nan, .inf
-
-
-      filter13: # Compute traversability_custom as normalized weighted sum of slope and roughness.
-        name: traversability_custom
-        type: gridMapFilters/MathExpressionFilter
-        params:
-          output_layer: traversability_custom
-          # max slope of 0.5rad (30deg) and 3cm max bump height
-          expression: 0.9 * exp(-square(square(slope / 0.4))) +
-            0.1 * exp(-square(roughness / 0.03))
-
-      filter14:  # Set lower threshold on traversability_custom.
-        name: traversability_custom_lower_threshold
-        type: gridMapFilters/ThresholdFilter
-        params:
-          layer: traversability_custom
-          lower_threshold: 0.0
-          set_to: 0.0
-
-      filter15:  # Set upper threshold on traversability_custom.
-        name: traversability_custom_upper_threshold
-        type: gridMapFilters/ThresholdFilter
-        params:
-          layer: traversability_custom
-          upper_threshold: 1.0
-          set_to: 1.0 # Other uses: .nan, .inf
-
-      # filter16:
-      #   name: difficulty_from_traversability
-      #   type: gridMapFilters/MathExpressionFilter
-      #   params:
-      #     output_layer: difficulty
-      #     expression: 1.0 - traversability_custom
-
-
-      # filter17:
-      #   name: difficulty_inflation_max
-      #   type: gridMapFilters/SlidingWindowMathExpressionFilter
-      #   params:
-      #     input_layer: difficulty
-      #     output_layer: difficulty_inflated
-      #     expression: maxOfFinites(difficulty)
-      #     compute_empty_cells: false
-      #     edge_handling: crop
-      #     window_length: 0.25   # inflation radius in meters (tune)
-
-
-      # filter18:
-      #   name: traversability_inflated_from_difficulty
-      #   type: gridMapFilters/MathExpressionFilter
-      #   params:
-      #     output_layer: traversability_inflated
-      #     expression: 1.0 - difficulty_inflated
-
-      # filter19:
-      #   name: traversability_inflated_lower
-      #   type: gridMapFilters/ThresholdFilter
-      #   params:
-      #     layer: traversability_inflated
-      #     lower_threshold: 0.0
-      #     set_to: 0.0
-
-      # filter20:
-      #   name: traversability_inflated_upper
-      #   type: gridMapFilters/ThresholdFilter
-      #   params:
-      #     layer: traversability_inflated
-      #     upper_threshold: 1.0
-      #     set_to: 1.0
-
-
-          

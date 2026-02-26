@@ -17,16 +17,10 @@ def generate_launch_description():
     grid_map_demos_dir = get_package_share_directory('grid_map_demos')
     hamr_bringup_dir = get_package_share_directory('hamr_bringup')
 
-    # testing_terrain = True
-    # visualize_rviz = True
-
-    # img_px_res = 1025  # pixels
-    # map_width = 45.0
-    # map_height = 4.5 # meters
-
     # Declare launch configuration variables that can access the launch arguments values
     testing_terrain = LaunchConfiguration('testing_terrain')
     visualize_rviz = LaunchConfiguration('visualize_rviz')
+    terrain_name = LaunchConfiguration('terrain_name')
     img_px_res = LaunchConfiguration('img_px_res') # pixels
     map_width = LaunchConfiguration('map_width') # meters
     map_height = LaunchConfiguration('map_height') # meters
@@ -54,10 +48,14 @@ def generate_launch_description():
         'map_height', default_value='4.5', # meters
         description='Map height range (min to max) in meters'
     )
+    declare_terrain_name = DeclareLaunchArgument(
+        'terrain_name', default_value='terrain1', # meters
+        description='Name of the terrain. Ex: terrain1'
+    )
 
-    img_px_res_str = LaunchConfiguration('img_px_res')
+    # img_px_res_str = LaunchConfiguration('img_px_res')
     terrain_filename = PythonExpression([
-        '"terrain1_" + str(', img_px_res_str, ') + ".png"'
+        '"', terrain_name, '_" + str(', img_px_res, ') + ".png"'
     ])
 
     terrain_path = PathJoinSubstitution([
@@ -92,38 +90,6 @@ def generate_launch_description():
             hamr_bringup_dir, 'config', 'filters_demo.yaml'),
         description='Full path to the Gridmap visualization config file to use')
     
-    '''
-    The filters_demo.yaml:
-    ---------------------
-    image_to_gridmap:
-        ros__parameters:
-            image_topic: "/image"
-            resolution: 0.02
-            map_frame_id: "map"
-            min_height: -0.5
-            max_height: 1.0
-
-        grid_map_visualization:
-        ros__parameters:
-            grid_map_topic: /filtered_map
-            grid_map_visualizations: [surface_normals, traversability_grid] 
-            surface_normals:
-            type: vectors
-            params:
-                layer_prefix: normal_vectors_
-                position_layer: elevation
-                scale: 0.06
-                line_width: 0.005
-                color: 15600153 # red
-            traversability_grid:
-            type: occupancy_grid
-            params:
-                layer: traversability
-                data_min: 0.0
-                data_max: 1.0
-    ----------------------
-    '''
-
     declare_rviz_config_file_cmd = DeclareLaunchArgument(
         'rviz_config',
         default_value=os.path.join(
@@ -139,8 +105,8 @@ def generate_launch_description():
         parameters=[filters_config_file]
     )
 
-    # if IfCondition(testing_terrain):
-    #     print(f"ifcond: {IfCondition(testing_terrain)}")
+    # ============================================================================
+    # IfCondition(testing_terrain):
     image_publisher_node_testing = Node(
         condition=IfCondition(testing_terrain),
         package='grid_map_demos',
@@ -160,9 +126,10 @@ def generate_launch_description():
         output='screen',
         parameters=[visualization_config_file]
     )
+
     # else:
     image_publisher_node = Node(
-    condition=UnlessCondition(testing_terrain),
+        condition=UnlessCondition(testing_terrain),
         package='grid_map_demos',
         executable='image_publisher.py',
         name='image_publisher',
@@ -173,7 +140,7 @@ def generate_launch_description():
         }]
     )
     image_to_gridmap_demo_node = Node(
-    condition=UnlessCondition(testing_terrain),
+        condition=UnlessCondition(testing_terrain),
         package='hamr_control_cpp',
         executable='image_to_gridmap',
         name='image_to_gridmap',
@@ -187,7 +154,8 @@ def generate_launch_description():
             'img_px_res': img_px_res
         }] # meters per cell -> img_res / map_xy: 45m / 1025px
     )
-
+    # ========================================================
+    
     grid_map_visualization_node = Node(
         package='grid_map_visualization',
         executable='grid_map_visualization',
@@ -215,6 +183,7 @@ def generate_launch_description():
     ld.add_action(declare_img_px_res)
     ld.add_action(declare_map_width)
     ld.add_action(declare_map_height)
+    ld.add_action(declare_terrain_name)
     # Config files
     ld.add_action(declare_filters_config_file_cmd)
     ld.add_action(declare_visualization_config_file_cmd)

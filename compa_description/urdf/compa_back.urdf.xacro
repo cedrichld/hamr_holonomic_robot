@@ -4,7 +4,8 @@
   
   <!-- To import ball joint, camera and more -->
   <xacro:include filename="common_properties.urdf.xacro" /> 
-  <xacro:include filename="camera.urdf.xacro" />
+  <!-- <xacro:include filename="camera.urdf.xacro" />  -->
+  <xacro:include filename="l455_realsense.urdf.xacro" />
   <xacro:include filename="compa_gazebo.urdf.xacro" /> 
 
   <!-- Base -->
@@ -357,7 +358,7 @@
   <joint name="base_roll_joint"
     type="continuous">
     <origin
-      xyz="0 0 0.03826"
+      xyz="0 0 0.036"
       rpy="0 0 0" />
     <parent
       link="base_link" />
@@ -411,8 +412,8 @@
   <joint name="roll_pitch_joint"
     type="continuous">
     <origin
-      xyz="-0.0035 0 0"
-      rpy="0 0 0" />
+      xyz="0 0 0" 
+      rpy="0 0 0" /> <!-- was xyz=-0.0035 0 0 -->
     <parent
       link="roll_link" />
     <child
@@ -452,7 +453,7 @@
     </visual>
     <collision>
       <origin
-        xyz="0 0 0"
+        xyz="0 0 0.127371508973676"
         rpy="0 0 0" />
       <geometry>
         <!-- <mesh

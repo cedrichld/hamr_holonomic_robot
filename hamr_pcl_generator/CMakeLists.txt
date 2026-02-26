@@ -27,6 +27,7 @@ ament_target_dependencies(pcl_mapper
   PCL
 )
 
+<<<<<<< HEAD
 add_executable(points_local_filtered_node src/points_local_filtered_node.cpp)
 ament_target_dependencies(points_local_filtered_node
   rclcpp
@@ -40,6 +41,8 @@ ament_target_dependencies(points_local_filtered_node
   std_srvs
 )
 
+=======
+>>>>>>> origin/main
 target_include_directories(pcl_mapper PUBLIC
   ${PCL_INCLUDE_DIRS}
 )
@@ -55,10 +58,13 @@ install(
   TARGETS pcl_mapper
   DESTINATION lib/${PROJECT_NAME}
 )
+<<<<<<< HEAD
 install(
   TARGETS points_local_filtered_node
   DESTINATION lib/${PROJECT_NAME}
 )
+=======
+>>>>>>> origin/main
 
 install(
   DIRECTORY launch config          

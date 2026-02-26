@@ -3,17 +3,23 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rclpy.qos import QoSProfile, QoSDurabilityPolicy, QoSReliabilityPolicy, QoSHistoryPolicy # not used yet
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy, QoSHistoryPolicy # only used in gridmap for now
 
 from std_msgs.msg import Float64 # to send velocity commands
 from nav_msgs.msg import Odometry # used to get the base current state (position in xyz)
-from geometry_msgs.msg import PoseWithCovariance # used for reference and current pose - not using covariance rn
+from nav_msgs.msg import Path # to view MPC
+from geometry_msgs.msg import PoseWithCovariance, PoseStamped # used for reference and current pose - not using covariance rn
 from geometry_msgs.msg import Quaternion # for the turret relative 
 from geometry_msgs.msg import Twist # for manual mode
 from tf2_msgs.msg import TFMessage # to access TFs (for turret relative angle) - could also be used for position esimation with "encoders"
 import tf_transformations # for quaternion operations
+from tf_transformations import quaternion_from_euler
 
 from hamr_interfaces.msg import LiveGains, ReferenceTraj # could create a compa interface later
+
+from .mpc_compa import CompaMPC # MPC Logic
+from grid_map_msgs.msg import GridMap # to get local_grid_map
+from std_msgs.msg import Float32MultiArray # for gridmap
 
 
 ### - - UTILITIES - - ###
@@ -47,6 +53,7 @@ class CompaControlNode(Node):
         default_compa_config = {"r_wheel": 0.1075,
                                 "a_wheel": 0.331643,
                                 "b_wheel": 0.274986, 
+                                "controller_type": 'mpc',
                                 "mode": "auto"} # "auto" or "manual"
         for a, b in default_compa_config.items():
             self.declare_parameter(a, b)
@@ -54,6 +61,7 @@ class CompaControlNode(Node):
             "r_wheel": self.get_parameter("r_wheel").value,
             "a_wheel": self.get_parameter("a_wheel").value,
             "b_wheel": self.get_parameter("b_wheel").value,
+            "controller_type": self.get_parameter("controller_type").value,
             "mode": self.get_parameter("mode").value
         }
         
@@ -96,7 +104,10 @@ class CompaControlNode(Node):
         }
 
         self.declare_parameter("control_rate_hz", 100.0)
+        self.declare_parameter("mpc_horizon", 40)
         self.declare_parameter("d_alpha", 0.4)
+        self.declare_parameter("local_gridmap_topic", "/local_costmap")
+        self.declare_parameter("local_gridmap_cost_layer_idx", 1)
 
         self.add_post_set_parameters_callback(self.parameters_callback)
 
@@ -120,6 +131,9 @@ class CompaControlNode(Node):
         # Control Rate
         self.control_rate_hz = self.get_parameter("control_rate_hz").value
         self.last_control_time = self.get_clock().now()
+        self.mpc_horizon = self.get_parameter("mpc_horizon").value
+        self.local_gridmap_topic = self.get_parameter("local_gridmap_topic").value
+        self.local_gridmap_cost_layer_idx = self.get_parameter("local_gridmap_cost_layer_idx").value
 
         if self.compa_config["mode"] == "auto":
             self.control_timer_ = self.create_timer(1.0 / self.control_rate_hz, self.control_tick)
@@ -167,7 +181,7 @@ class CompaControlNode(Node):
 
         ## - - Thresholds - - ##
         self.threshold_x_y = 0.005 # 0.5cm
-        self.threshold_roll_pitch = 0.15 # 7 deg
+        self.threshold_roll_pitch = 0.035 # 2 deg
         self.threshold_yaw = 0.05 # 2.86 deg
 
         ## - - Velocity Limits (Magnitude) - - ##
@@ -176,88 +190,82 @@ class CompaControlNode(Node):
         self.roll_pitch_dot_limit = 2.0 * math.pi * (240.0 / 360.0) 
         self.yaw_dot_limit = 2.0
 
-        self.get_logger().info("COMPA Controller has been started with P_x: " + str(self.gains["x"]["P"]) + 
-                               ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
-                                + "; P_y: " + str(self.gains["y"]["P"]) + 
-                               ", I_y: " + str(self.gains["y"]["I"]) + ", D_y: " + str(self.gains["y"]["D"])
-                                + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
-                                str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
+        self.mpc = CompaMPC(self.compa_config["r_wheel"], self.compa_config["b_wheel"], self.compa_config["a_wheel"], 
+                            N=self.mpc_horizon, dt=1.0 / self.control_rate_hz)
+        self.mpc_path_pub = self.create_publisher(
+            Path,
+            "/mpc/predicted_path",
+            10
+        )
 
+        # local gridmap settings
+        local_gridmap_qos = QoSProfile(depth=1)
+        local_gridmap_qos.reliability = ReliabilityPolicy.RELIABLE
+        local_gridmap_qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
+        self.grid_map_sub_ = self.create_subscription(GridMap, self.local_gridmap_topic, self.on_local_gridmap, local_gridmap_qos)
+        self.local_gridmap = Float32MultiArray()
+        self.local_gridmap_res = None
+
+        self.get_logger().info(f"COMPA Controller has been started in mode '{self.compa_config["mode"]}', controller: '{self.compa_config["controller_type"]}'")
+        # "P_x: " + str(self.gains["x"]["P"]) + 
+        #                        ", I_x: " + str(self.gains["x"]["I"]) + ", D_x: " + str(self.gains["x"]["D"])
+        #                         + "; P_y: " + str(self.gains["y"]["P"]) + 
+        #                        ", I_y: " + str(self.gains["y"]["I"]) + ", D_y: " + str(self.gains["y"]["D"])
+        #                         + "; P_yaw: " + str(self.gains["yaw"]["P"]) + ", I_yaw: " + 
+        #                         str(self.gains["yaw"]["I"]) + ", D_yaw: " + str(self.gains["yaw"]["D"]))
+
+    def compute_orientation(self): 
+        ''' Find the distance error to target '''
+        yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
+
+        # world->base
+        q_w_b = [self.pose_base_.pose.orientation.x,
+                self.pose_base_.pose.orientation.y,
+                self.pose_base_.pose.orientation.z,
+                self.pose_base_.pose.orientation.w]
+        
+        # base->top frame (turret for COMPA)
+        q_b_gimbal = [self.yaw_link_base_orientation_.x,
+                self.yaw_link_base_orientation_.y,
+                self.yaw_link_base_orientation_.z,
+                self.yaw_link_base_orientation_.w]
+
+        # world->roll,pitch,yaw
+        q_w_gimbal = tf_transformations.quaternion_multiply(q_w_b, q_b_gimbal)
+
+        # Extract WORLD roll, pitch, yaw
+        roll_w = math.atan2(
+            2.0*(q_w_gimbal[3]*q_w_gimbal[0] + q_w_gimbal[1]*q_w_gimbal[2]),
+            1.0 - 2.0*(q_w_gimbal[0]*q_w_gimbal[0] + q_w_gimbal[1]*q_w_gimbal[1])
+        )
+        pitch_w = math.asin(
+            2.0*(q_w_gimbal[3]*q_w_gimbal[1] - q_w_gimbal[2]*q_w_gimbal[0])
+        )
+        yaw_turret_w = math.atan2(
+            2.0*(q_w_gimbal[3]*q_w_gimbal[2] + q_w_gimbal[0]*q_w_gimbal[1]),
+            1.0 - 2.0*(q_w_gimbal[1]*q_w_gimbal[1] + q_w_gimbal[2]*q_w_gimbal[2])
+        )
+
+        return yaw_base_w, roll_w, pitch_w, yaw_turret_w # yaw_base_w passed to jacobian later 
+    
     def pid_step(self):
         ''' Autonomous Mode - compute velocities based on PID Controller Logic:
             - Compute errors based on pose
             - Compute desired velocities based on (a) feed-forward (b) PID corrections from pose errors
             - Feed desired velocities to jacobian (to get joint commands)
         '''
-        def compute_errors(): 
-            ''' Find the distance error to target '''
-            err_x = self.reference_.x - self.pose_base_.pose.position.x
-            err_y = self.reference_.y - self.pose_base_.pose.position.y
+        err_x = self.reference_.x - self.pose_base_.pose.position.x
+        err_y = self.reference_.y - self.pose_base_.pose.position.y
+        
+        roll_des = self.reference_.roll # desired roll for the turret wrt to world frame (used for error) - 0.0 for now
+        pitch_des = self.reference_.pitch # desired pitch for the turret wrt to world frame (used for error) - 0.0 for now
+        yaw_des = self.reference_.yaw # desired yaw for the turret wrt to world frame (used for error)
+        yaw_base_w, roll_w, pitch_w, yaw_turret_w = self.compute_orientation()
 
-
-            roll_des = self.reference_.roll # desired roll for the turret wrt to world frame (used for error) - 0.0 for now
-            pitch_des = self.reference_.pitch # desired pitch for the turret wrt to world frame (used for error) - 0.0 for now
-            yaw_des = self.reference_.yaw # desired yaw for the turret wrt to world frame (used for error)
-            yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation) # base orientation wrt to world frame (used for error)
-            # yaw_turret_b = quat_to_yaw(self.yaw_link_base_orientation_) # turret orientation wrt to base (used for error AND used in Jac)
-            
-            # world->base
-            q_w_b = [self.pose_base_.pose.orientation.x,
-                    self.pose_base_.pose.orientation.y,
-                    self.pose_base_.pose.orientation.z,
-                    self.pose_base_.pose.orientation.w]
-
-            # base->roll
-            q_b_r = [self.roll_link_base_orientation_.x,
-                    self.roll_link_base_orientation_.y,
-                    self.roll_link_base_orientation_.z,
-                    self.roll_link_base_orientation_.w]
-            
-            # base->pitch
-            q_b_p = [self.pitch_link_base_orientation_.x,
-                    self.pitch_link_base_orientation_.y,
-                    self.pitch_link_base_orientation_.z,
-                    self.pitch_link_base_orientation_.w]
-
-            # base->yaw
-            q_b_y = [self.yaw_link_base_orientation_.x,
-                    self.yaw_link_base_orientation_.y,
-                    self.yaw_link_base_orientation_.z,
-                    self.yaw_link_base_orientation_.w]
-
-            # world->roll,pitch,yaw
-            q_w_r = tf_transformations.quaternion_multiply(q_w_b, q_b_r)
-            q_w_p = tf_transformations.quaternion_multiply(q_w_b, q_b_p)
-            q_w_y = tf_transformations.quaternion_multiply(q_w_b, q_b_y)
-
-            # Extract WORLD roll, pitch, yaw
-            roll_w = math.atan2(
-                2.0*(q_w_r[3]*q_w_r[0] + q_w_r[1]*q_w_r[2]),
-                1.0 - 2.0*(q_w_r[0]*q_w_r[0] + q_w_r[1]*q_w_r[1])
-            )
-            pitch_w = math.asin(
-                2.0*(q_w_p[3]*q_w_p[1] - q_w_p[2]*q_w_p[0])
-            )
-            # roll_w = math.atan2(
-            #     2.0*(q_w_y[3]*q_w_y[0] + q_w_y[1]*q_w_y[2]),
-            #     1.0 - 2.0*(q_w_y[0]*q_w_y[0] + q_w_y[1]*q_w_y[1])
-            # )
-            # pitch_w = math.asin(
-            #     2.0*(q_w_y[3]*q_w_y[1] - q_w_y[2]*q_w_y[0])
-            # )
-            yaw_turret_w = math.atan2(
-                2.0*(q_w_y[3]*q_w_y[2] + q_w_y[0]*q_w_y[1]),
-                1.0 - 2.0*(q_w_y[1]*q_w_y[1] + q_w_y[2]*q_w_y[2])
-            )
-            
-            # yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
-            err_roll = wrap_angle(roll_des - roll_w)
-            err_pitch = wrap_angle(pitch_des - pitch_w)
-            err_yaw = wrap_angle(yaw_des - yaw_turret_w)
-
-            return err_x, err_y, err_roll, err_pitch, err_yaw, yaw_base_w # yaw_base_w passed to jacobian later
-
-        err_x, err_y, err_roll, err_pitch, err_yaw, yaw_base_w = compute_errors()
+        # yaw_turret_w = wrap_angle(yaw_base_w + yaw_turret_b) # turret orientation wrt to world frame (used for error)
+        err_roll = wrap_angle(roll_des - roll_w)
+        err_pitch = wrap_angle(pitch_des - pitch_w)
+        err_yaw = wrap_angle(yaw_des - yaw_turret_w)
 
         # For debugging and publishing gains
         P_x = D_x = I_x_term = 0.0
@@ -316,7 +324,8 @@ class CompaControlNode(Node):
         
         
         ## Roll loop
-        if abs(err_roll) < self.threshold_roll_pitch:
+        # self.get_logger().info(f"Roll error: {err_roll}")
+        if abs(math.hypot(err_roll, err_pitch)) < self.threshold_roll_pitch:
             ## Check if at target
             desired_roll_dot = self.reference_.roll_dot
             self.err_roll_prev = err_roll
@@ -385,13 +394,92 @@ class CompaControlNode(Node):
         # self.get_logger().info(f"Desired x: {desired_x_dot:.3f}, y: {desired_y_dot:.3f}, yaw: {desired_yaw_dot:.3f}")
         self.publish_live_gains(P_x, D_x, I_x_term, P_y, D_y, I_y_term, P_yaw, D_yaw, I_yaw_term)
         self.publish_joint_cmd(np.array([desired_x_dot, desired_y_dot, desired_roll_dot, 
-                                         desired_pitch_dot, desired_yaw_dot]), yaw_base_w)
+                                         desired_pitch_dot, desired_yaw_dot]), yaw_base_w, yaw_turret_w)
+
+    def mpc_step(self):
+        # Build current state x0
+        x = self.pose_base_.pose.position.x
+        y = self.pose_base_.pose.position.y
+        yaw_base_w, roll_w, pitch_w, yaw_turret_w = self.compute_orientation()
+
+        x0 = np.array([x, y, roll_w, pitch_w, yaw_turret_w, yaw_base_w])
+
+        # Build reference sequence over horizon
+        # Simple for now: hold the same reference over the horizon
+        x_ref = self.reference_.x
+        y_ref = self.reference_.y
+        roll_ref = self.reference_.roll
+        pitch_ref = self.reference_.pitch
+        yaw_ref = self.reference_.yaw
+
+        x_ref_vec = np.array([x_ref, y_ref, roll_ref, pitch_ref, yaw_ref])
+        x_ref_seq = np.tile(x_ref_vec, (self.mpc.N + 1, 1))
+
+        # Solve MPC
+        u0, self.X_opt = self.mpc.solve(x0, x_ref_seq)
+        self.publish_mpc_path()
+
+        vx_base, vy_base, roll_dot_gimbal, pitch_dot_gimbal, yaw_dot_turret = u0
+
+        desired_velocity = np.array([
+            vx_base,
+            vy_base,
+            roll_dot_gimbal,
+            pitch_dot_gimbal,
+            yaw_dot_turret,
+        ])
+
+        # Jacobian
+        self.publish_joint_cmd(desired_velocity, yaw_base_w, yaw_turret_w)
+
+    def on_local_gridmap(self, msg: GridMap):
+        # Could check that layer of interest is indeed present (logic from local+_costmap
+        self.local_gridmap = msg.data[self.local_gridmap_cost_layer_idx].data
+        self.local_gridmap_res = msg.info.resolution
 
     def manual_mode_callback(self, msg: Twist):
         ''' Manual Mode - directly compute joint commands from terminal inputs '''
-        yaw_base_w = quat_to_yaw(self.pose_base_.pose.orientation)
+        yaw_base_w, _, _, yaw_turret_w = self.compute_orientation()
         self.publish_joint_cmd(np.array([msg.linear.x, msg.linear.y, msg.angular.x, 
-                                         msg.angular.y, msg.angular.z]), yaw_base_w)
+                                         msg.angular.y, msg.angular.z]), yaw_base_w, yaw_turret_w)
+
+    def compute_velocities(self, desired_velocity, yaw_base_w, yaw_turret_w):
+        ''' Derived Jacobian based on dynamics - returns angular velocities for:
+                1. right_wheel (base) 
+                2. left_wheel  (base)
+                3. roll        (base->turret->gimbal)
+                4. pitch       (base->turret->gimbal)
+                5. yaw         (base->turret)
+            No need for the yaw_turret for COMPA since it comes last if not:
+            c2, s2 = np.cos(yaw_turret_w), np.sin(yaw_turret_w)
+        '''
+        r_w, b, a = self.compa_config["r_wheel"], \
+            self.compa_config["b_wheel"], self.compa_config["a_wheel"]
+        c1, s1 = np.cos(yaw_base_w), np.sin(yaw_base_w)
+        c2, s2 = np.cos(yaw_base_w), np.sin(yaw_base_w)
+
+        J = np.array([
+            [r_w/2 * (c1 - s1*b/a), r_w/2 * (c1 + s1*b/a), 0, 0, 0], # right_wheel (base) 
+            [r_w/2 * (s1 + c1*b/a), r_w/2 * (s1 - c1*b/a), 0, 0, 0], # left_wheel  (base)
+            [0, 0, c2, -s2, 0],                                      # roll        (base->turret->gimbal)
+            [0, 0, s2, c2, 0],                                       # pitch       (base->turret->gimbal)
+            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],                        # yaw         (base->turret)
+        ])
+
+        return np.linalg.solve(J, desired_velocity) # will return angular vels for joints
+
+    def publish_joint_cmd(self, desired_velocity, yaw_base_w, yaw_turret_w):
+        right_wheel_omega, left_wheel_omega, \
+            roll_omega, pitch_omega, yaw_omega = Float64(), Float64(), Float64(), Float64(), Float64()
+        omegas = self.compute_velocities(desired_velocity, yaw_base_w, yaw_turret_w)
+        # self.get_logger().info(f"Computed omegas: {omegas}")
+        right_wheel_omega.data, left_wheel_omega.data, roll_omega.data, pitch_omega.data, yaw_omega.data = omegas
+
+        self.right_wheel_vel_.publish(right_wheel_omega)
+        self.left_wheel_vel_.publish(left_wheel_omega)
+        self.roll_vel_.publish(roll_omega)
+        self.pitch_vel_.publish(pitch_omega)
+        self.yaw_vel_.publish(yaw_omega)
 
     def publish_live_gains(self, P_x, D_x, I_x, 
                            P_y, D_y, I_y, 
@@ -408,19 +496,58 @@ class CompaControlNode(Node):
 
     def control_tick(self):
         ''' Send command every (1 / control_rate_hz)[s] '''
-        now = self.get_clock().now()
-        dur = (now - self.last_control_time) # rclpy.duration.Duration
-        self.last_control_time = now
-
-        dt = dur.nanoseconds * 1e-9
-        if not math.isfinite(dt) or dt <= 0.0:
-            return
-        
-        self.dt = max(1e-4, min(dt, 0.1))
-
         if (self.pose_base_ is not None and self.reference_ is not None 
                 and self.yaw_link_base_orientation_ is not None):
-            self.pid_step()
+            if self.compa_config["controller_type"] == 'pid':
+                now = self.get_clock().now()
+                dur = (now - self.last_control_time) # rclpy.duration.Duration
+                self.last_control_time = now
+
+                dt = dur.nanoseconds * 1e-9
+                if not math.isfinite(dt) or dt <= 0.0:
+                    return
+                
+                self.dt = max(1e-4, min(dt, 0.1))
+                self.pid_step()
+            elif self.compa_config["controller_type"] == 'mpc':
+                self.mpc_step()
+
+    def publish_mpc_path(self, frame_id: str = "map"):
+        """
+        Publish the MPC predicted horizon as a nav_msgs/Path.
+        Uses self.X_opt with state [x, y, roll, pitch, yaw].
+        """
+
+        if self.X_opt is None:
+            return
+
+        X = self.X_opt  # shape (5, N+1)
+
+        path_msg = Path()
+        path_msg.header.stamp = self.get_clock().now().to_msg()
+        path_msg.header.frame_id = frame_id
+
+        Np1 = X.shape[1]
+
+        for k in range(Np1):
+            x, y, roll, pitch, yaw = X[:, k]
+
+            pose = PoseStamped()
+            pose.header = path_msg.header
+
+            pose.pose.position.x = float(x)
+            pose.pose.position.y = float(y)
+            pose.pose.position.z = self.pose_base_.pose.position.z
+
+            qx, qy, qz, qw = quaternion_from_euler(roll, pitch, yaw)
+            pose.pose.orientation.x = qx
+            pose.pose.orientation.y = qy
+            pose.pose.orientation.z = qz
+            pose.pose.orientation.w = qw
+
+            path_msg.poses.append(pose)
+
+        self.mpc_path_pub.publish(path_msg)
 
     def _quat_normalized(self, q_xyzw):
         x, y, z, w = q_xyzw
@@ -474,38 +601,6 @@ class CompaControlNode(Node):
 
     def callback_reference(self, msg: ReferenceTraj):
         self.reference_ = msg
-
-    def compute_velocities(self, desired_velocity, yaw):
-        ''' Derived Jacobian based on dynamics - returns angular velocities for:
-                1. right_wheel
-                2. left_wheel
-                3. turret 
-        '''
-        r_w, b, a = self.compa_config["r_wheel"], \
-            self.compa_config["b_wheel"], self.compa_config["a_wheel"]
-        c, s = np.cos(yaw), np.sin(yaw)
-
-        J = np.array([
-            [r_w/2 * (c - s*b/a), r_w/2 * (c + s*b/a), 0, 0, 0],
-            [r_w/2 * (s + c*b/a), r_w/2 * (s - c*b/a), 0, 0, 0],
-            [0, 0, 1, 0, 0],
-            [0, 0, 0, 1, 0],
-            [r_w/(2*a), -r_w/(2*a), 0, 0, 1],
-        ])
-
-        return np.linalg.solve(J, desired_velocity) # will return angular vels for joints
-
-    def publish_joint_cmd(self, desired_velocity, yaw):
-        right_wheel_omega, left_wheel_omega, roll_omega, pitch_omega, yaw_omega = Float64(), Float64(), Float64(), Float64(), Float64()
-        omegas = self.compute_velocities(desired_velocity, yaw)
-        # self.get_logger().info(f"Computed omegas: {omegas}")
-        right_wheel_omega.data, left_wheel_omega.data, roll_omega.data, pitch_omega.data, yaw_omega.data = omegas
-
-        self.right_wheel_vel_.publish(right_wheel_omega)
-        self.left_wheel_vel_.publish(left_wheel_omega)
-        self.roll_vel_.publish(roll_omega)
-        self.pitch_vel_.publish(pitch_omega)
-        self.yaw_vel_.publish(yaw_omega)
 
     # Used if we want to change parameter during runtime
     def parameters_callback(self, params: list[Parameter]): 

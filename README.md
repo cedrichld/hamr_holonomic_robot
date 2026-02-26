@@ -11,6 +11,11 @@
 </p>
 <p align="center"><em>Left: COMPA Physical robot, Right: COMPA Simulated robot.</em></p>
 
+<p align="center">
+  <img src="img/COMPA_MPC_Off_Road.gif" alt=".gif showing MPC Traversability Optimizer" height="240">
+</p>
+<p align="center"><em>Left: Optimizing Traversability while constraining holonomic turret motion with MPC and ARA*.</em></p>
+
 ---
 
 ## Introduction
@@ -66,7 +71,7 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
   <img src="img/2.5D_Consecutive_Poses_Square.png" alt="2.5D Consecutive TFs - Square" height="210">
 <p>
 
-<p align="center"><em>Left: Holonomy test on an uneven maze heightmap, using PRM and A*, Right: TFs during an Off-Road Square Trajectory.</em></p>
+<p align="center"><em>Left: Holonomy test on uneven maze heightmap, with PRM and A*, Right: TFs during Off-Road Square Trajectory.</em></p>
 
 
 ## 2.5D Traversability (Holonomic Traversability Optimization Algorithm in the works)
@@ -74,11 +79,22 @@ Canonical experiments included **square, triangle, and circle trajectories**, as
   <img src="img/2.5D_Traversability_Rough_Terrain_Viz.png" alt="2.5D_Traversability_Rough_Terrain_Viz" height="210">
   <img src="img/2.5D_manual_traversability_viz.png" alt="2.5D_manual_traversability_viz" height="210">
 </p>
-<p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Trajectory Optimized for Holonomic Traversability</em></p>
+<p align="center"><em>Left: 2.5D Holonomic Traversability in very Rough Terrain, Right: 2.5D Traversability optimized trajectory.</em></p>
 
+<p align="center">
+  <img src="img/ARA_star_implementation2.png" alt="Global Traversability with ARA*" height="210">
+  <img src="img/global_and_local_traversability_maps.png" alt="Local+Global Traversability Map Computations." height="210">
+</p>
+<p align="center"><em>Left: Global Traversability with ARA*, Right: Local+Global Traversability Map Computations</em></p>
+
+## Simulating a RealSense Camera for algorithm refining (before field-testing)
+<p align="center">
+  <img src="img/PCL_Realsense_Simulating_Gazebo_RViz.gif" alt=".gif visualizing PCL from a simulated realsense." height="270">
+</p>
+<p align="center"><em>Visualizing PCL from a Simulated RealSense RGB-D Camera.</em></p>
 
 ### Results (sim & hardware)
-| Path      | RMSE (sim, m) | RMSE (hw, m) | Yaw Std (rad, hw) |
+| Path      | RMSE (sim, m)  | RMSE (hw, m) | Yaw Std (rad, hw) |
 |-----------|----------------|--------------|-------------------|
 | Square    | 0.040          | 0.178        | 0.107             |
 | Triangle  | 0.041          | 0.197        | 0.160             |
@@ -168,7 +184,16 @@ echo 'export GZ_SIM_RESOURCE_PATH="$(ros2 pkg prefix hamr_bringup)/share":$GZ_SI
 
 ---
 
-## Running a Trajectory
+## Running COMPA Off-Road:
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/ros2_ws/install/setup.bash
+# grid_map less precise but generates 10x faster:
+ros2 launch hamr_bringup compa_easier.launch.xml 
+```
+Go to Rviz and select 2D Goal Pose and place it somewhere on the map.
+
+## Running a Trajectory (deprecated)
 
 **Terminal A** (Gazebo + bringup):
 
@@ -188,7 +213,7 @@ ros2 run reference_trajectory waypoint_traj_simple # square, triangle, or circle
 
 ---
 
-## Example Waypoints
+## Example Waypoints (deprecated)
 
 ```python
 # Square trajectory with constant heading
@@ -207,6 +232,33 @@ waypoints = np.array([
 
 Run the bridge in a separate terminal (or include in launch):
 
+
 ```bash
 ros2 run hamr_uros_bridge relay_node
+```
+
+## Pydrake + .venv
+
+> [!NOTE]
+> Check every line which relies on a specific addresses maps correctly to your system!
+
+To run MPC optimization we need pydrake which requires a virtual environment. Follow the following cmd:
+```bash
+cd ~/ros2_ws/hamr_ws # ! or wherever you want your venv to be
+python3 -m venv env
+```
+```bash
+source env/bin/activate
+pip install drake transforms3d
+python3 -c "import tf_transformations, transforms3d; print('tf + transforms3d OK')"
+python3 -c "from pydrake.solvers import MathematicalProgram; print('pydrake OK')"
+```
+```bash
+# ! or wherever your workspace is
+FILE=~/ros2_ws/hamr_ws/install/compa_control_py/lib/compa_control_py/compa_controller
+# ! or wherever your venv is
+sed -i '1 s|^.*$|#!/home/cedric/ros2_ws/hamr_ws/env/bin/python3|' "$FILE"
+# ! or wherever your workspace is
+head -1 install/compa_control_py/lib/compa_control_py/compa_controller
+# should return: ~/ros2_ws/hamr_ws/env/bin/python3
 ```
