@@ -11,6 +11,16 @@
         <mu2 value="1.0" />
     </gazebo>
 
+    <gazebo reference="left_caster_wheel_link">
+        <mu1 value="0.00002" />
+        <mu2 value="0.00002" />
+    </gazebo>
+
+    <gazebo reference="right_caster_wheel_link">
+        <mu1 value="0.00002" />
+        <mu2 value="0.00002" />
+    </gazebo>
+
     <!-- COMPA PLUGINS -->
     <!-- To close the structure loop (base - - - - - > rockers) -->
     <!--                               ⤷ leverage -> rods ⤴ -->
@@ -115,7 +125,7 @@
 
 
     <!-- Wheel slip -->
-    <gazebo> 
+    <!-- <gazebo> 
         <plugin filename="libgz-sim-wheel-slip-system.so"
                     name="gz::sim::systems::WheelSlip">
             <wheel link_name="left_wheel_link">
@@ -131,7 +141,7 @@
                 <wheel_radius>0.1075</wheel_radius>
             </wheel>
         </plugin>
-    </gazebo>
+    </gazebo> -->
 
 
     <!-- Odometry -->
