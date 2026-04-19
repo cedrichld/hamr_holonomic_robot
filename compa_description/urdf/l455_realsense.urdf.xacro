@@ -69,11 +69,11 @@
                 <noise>
                     <type>gaussian</type>
                     <mean>0.0</mean>
-                    <stddev>0.007</stddev>
+                    <stddev>0.02</stddev>
                 </noise>
             </camera>
             <always_on>1</always_on>
-            <update_rate>10</update_rate>
+            <update_rate>5</update_rate>
             <visualize>0</visualize>
         </sensor>
     </gazebo>

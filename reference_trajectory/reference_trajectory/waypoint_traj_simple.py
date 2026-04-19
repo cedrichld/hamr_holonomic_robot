@@ -22,8 +22,8 @@ import numpy as np
 class TrajectoryNode(Node):
     def __init__(self):
         super().__init__("waypoint_traj_simple_node")
-        v_lin = self.declare_parameter("v_lin", 0.2).value
-        w_yaw = self.declare_parameter("w_yaw", 0.5).value
+        v_lin = self.declare_parameter("v_lin", 0.3).value
+        w_yaw = self.declare_parameter("w_yaw", 0.75).value
 
         self.reference_timer_hz = self.declare_parameter("reference_timer_hz", 100).value
 
@@ -53,6 +53,8 @@ class TrajectoryNode(Node):
 
         max_point = 5.0
         origin = 0.0
+
+        self.looping = False
 
         def generate_ccw_circle_points(radius=5.0, steps_between=10):
             cx = 0.0
@@ -89,11 +91,11 @@ class TrajectoryNode(Node):
 
         # waypoints = np.array([ # x, y, yaw
 
-        #     # [0.0, 0.0, 0.0], # SQUARE
-        #     # [5.75, 0.0, 0.0],
-        #     # [5.75, 5.75, 0.0],
-        #     # [0.0, 5.75, 0.0],
-        #     # [0.0, 0.0, 0.0],
+            # [0.0, 0.0, 0.0], # SQUARE
+            # [5.75, 0.0, 0.0],
+            # [5.75, 5.75, 0.0],
+            # [0.0, 5.75, 0.0],
+            # [0.0, 0.0, 0.0],
 
 
         #     [-1.0, 3.0, 0.0], # HW SQUARE
@@ -115,10 +117,11 @@ class TrajectoryNode(Node):
         #     # [1.0, 0.0, 0.0],
         #     # [0.0, 0.0, 0.0],
 
-        #     # [0.0, 0.0, 0.0], # TRIANGLE
-        #     # [9.0, 4.5, 0.0],
-        #     # [0.0, 9.0, 0.0],
-        #     # [0.0, 0.0, 0.0],
+            # [0.0, 0.0, 0.0], # TRIANGLE
+            # [8.0, 4.0, 0.0],
+            # [0.0, 8.0, 0.0],
+            # [0.0, 0.0, 0.0],
+
         # ])
         
         self.trajectory = WaypointTraj(waypoints, v_lin=v_lin, w_yaw=w_yaw)
@@ -164,7 +167,7 @@ class TrajectoryNode(Node):
         pose.x, pose.y, pose.yaw, pose.x_dot, pose.y_dot, pose.yaw_dot = float(x), float(y), float(yaw), float(x_dot), float(y_dot), float(yaw_dot)
         self.reference_trajectory_pub_.publish(pose)
         self.get_logger().info("pose: x=%.2f, y=%.2f, yaw=%.2f" % (x, y, yaw))
-        if t >= self.trajectory.total_time:
+        if t >= self.trajectory.total_time and self.looping:
             self.get_logger().info("Resetting traj")
             self.last_reference_time = self.get_clock().now()
 

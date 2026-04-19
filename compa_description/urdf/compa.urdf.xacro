@@ -118,7 +118,7 @@
         iyz="3.15796027624797E-08"
         izz="0.00876696237942707" />
     </inertial> -->
-    <xacro:cylinder_inertia m="20.74378098590227" r="0.1075" h="0.083"
+    <xacro:cylinder_inertia m="2.74378098590227" r="0.1075" h="0.083"
                         o_xyz="0 0 0"
                         o_rpy="${pi/2} 0 0" />
     <visual>
@@ -257,7 +257,7 @@
         iyz="3.1579602755194E-08"
         izz="0.00876696237942706" />
     </inertial> -->    
-    <xacro:cylinder_inertia m="20.74378098590227" r="0.1075" h="0.083"
+    <xacro:cylinder_inertia m="2.74378098590227" r="0.1075" h="0.083"
                         o_xyz="0 0 0"
                         o_rpy="${pi/2} 0 0" />
     <visual>

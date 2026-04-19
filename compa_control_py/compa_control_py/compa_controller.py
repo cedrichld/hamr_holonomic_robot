@@ -456,13 +456,12 @@ class CompaControlNode(Node):
         r_w, b, a = self.compa_config["r_wheel"], \
             self.compa_config["b_wheel"], self.compa_config["a_wheel"]
         c1, s1 = np.cos(yaw_base_w), np.sin(yaw_base_w)
-        c2, s2 = np.cos(yaw_base_w), np.sin(yaw_base_w)
 
         J = np.array([
             [r_w/2 * (c1 - s1*b/a), r_w/2 * (c1 + s1*b/a), 0, 0, 0], # right_wheel (base) 
             [r_w/2 * (s1 + c1*b/a), r_w/2 * (s1 - c1*b/a), 0, 0, 0], # left_wheel  (base)
-            [0, 0, c2, -s2, 0],                                      # roll        (base->turret->gimbal)
-            [0, 0, s2, c2, 0],                                       # pitch       (base->turret->gimbal)
+            [0, 0, c1, -s1, 0],                                      # roll        (base->turret->gimbal)
+            [0, 0, s1, c1, 0],                                       # pitch       (base->turret->gimbal)
             [r_w/(2*a), -r_w/(2*a), 0, 0, 1],                        # yaw         (base->turret)
         ])
 
